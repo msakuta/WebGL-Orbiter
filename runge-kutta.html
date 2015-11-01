@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Orbital simulation with three.js</title>
+	<meta charset="utf-8">
+	<script type="text/javascript"
+	  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+	</script>
+</head>
+<body>
+
+<h2>Gravitational acceleration</h2>
+\(x\) is a position vector here.
+
+$$
+f(x) = -\frac{x}{|x|^3}
+$$
+
+Newton equation
+
+$$
+\frac{d^2 x}{dt^2} = f(x) = -\frac{x}{|x|^3}
+$$
+
+Define an intermediate variable to make it first-order differetial equation \( v \equiv \frac{dx}{dt} \)
+
+$$
+\frac{dv}{dt} = -\frac{x}{|x|^3} \\
+\frac{dx}{dt} = v
+$$
+
+Make the differential deltas
+
+$$
+\Delta v = \frac{x}{|x|^3} \Delta t \\
+\Delta x = v \Delta t
+$$
+
+<h2>Euler method</h2>
+
+Formal definition:
+
+$$
+x_{n+1} = x_n + hf'(t_n, x_n)
+$$
+
+In our case:
+
+$$
+v_{n+1} = v_n + h \frac{x}{|x|^3} \\
+x_{t+1} = x_n + h v(t)
+$$
+
+<h2>Modified Euler method (Midpoint method or Second-order Runge Kutta method)</h2>
+
+Formal definition:
+
+$$
+k_1 = h f'(t_n, x_n) \\
+k_2 = h f'(t_n + \frac 12 h, x_n + \frac 12 k_1) \\
+x_{n+1} = x_n + k_2
+$$
+
+In our case:
+
+$$
+\Delta v_1 = h f(x) \\
+\Delta x_1 = h v(t) \\
+\Delta v_2 = h f(x + \Delta x_1 / 2) \\
+\Delta x_2 = h (v + \Delta v_1 / 2) \\
+v(t+h) = v(t) + \Delta v_2 \\
+x(t+h) = x(t) + \Delta x_2
+$$
+
+<h2>Fourth-order Runge-Kutta method</h2>
+
+Formal definition:
+
+$$
+k_1 = h f'(t_n, x_n) \\
+k_2 = h f'(t_n + \frac 12 h, x_n + \frac 12 k_1) \\
+k_3 = h f'(t_n + \frac 12 h, x_n + \frac 12 k_2) \\
+k_4 = h f'(t_n + h, x_n + k_3) \\
+x_{n+1} = x_n + \frac{k_1}{6} + \frac{k_2}{3} + \frac{k_3}{3} + \frac{k_4}{6}
+$$
+
+In our case: ?
+
+
+
+</body>
+</html>
