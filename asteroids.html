@@ -91,6 +91,16 @@
 				var mesh = new THREE.Mesh( sgeometry, material );
 				group.add( mesh );
 
+				var meshMaterial = new THREE.LineBasicMaterial({color: 0x3f3f3f});
+				var meshGeometry = new THREE.Geometry();
+				for(var x = -10; x <= 10; x++)
+					meshGeometry.vertices.push( new THREE.Vector3( -10, 0, x ), new THREE.Vector3(10, 0, x));
+				for(var x = -10; x <= 10; x++)
+					meshGeometry.vertices.push( new THREE.Vector3( x, 0, -10 ), new THREE.Vector3(x, 0, 10));
+				var mesh = new THREE.LineSegments(meshGeometry, meshMaterial);
+				mesh.scale.x = mesh.scale.z = 100;
+				scene.add(mesh);
+
 				orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
 				orbitMaterial.blending = THREE.AdditiveBlending;
 				orbitMaterial.blendSrc = THREE.OneFactor;
