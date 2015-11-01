@@ -59,6 +59,12 @@
 			var viewScale = 100;
 
 			var startTime = new Date();
+			var asteroids = [];
+			var center_select = false;
+			var select_idx = 0;
+			var select_obj = null;
+
+			var orbitMaterial, selectedOrbitMaterial;
 
 			init();
 			animate();
@@ -68,6 +74,7 @@
 				container = document.getElementById( 'container' );
 
 				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 2000 );
+				camera.position.y = 150;
 				camera.position.z = 500;
 
 				scene = new THREE.Scene();
@@ -84,7 +91,11 @@
 				var mesh = new THREE.Mesh( sgeometry, material );
 				group.add( mesh );
 
-				var orbitMaterial = new THREE.LineBasicMaterial({color: 0x7f7fff});
+				orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
+				orbitMaterial.blending = THREE.AdditiveBlending;
+				orbitMaterial.blendSrc = THREE.OneFactor;
+				orbitMaterial.blendDst = THREE.OneFactor;
+				selectedOrbitMaterial = new THREE.LineBasicMaterial({color: 0xff7fff});
 				var orbitGeometry = new THREE.Geometry();
 				var curve = new THREE.EllipseCurve(0, 0, 1, 1,
 					0, Math.PI * 2, false, 90);
@@ -100,6 +111,7 @@
 					vertex.z = Math.random() - 0.5;
 
 					if(vertex.lengthSq() < 1){
+						var asteroid = {position: vertex};
 						vertex.multiplyScalar(100);
 						vertex.x += 400;
 						vertex.velo = new THREE.Vector3(0,0, Math.sqrt(300. / 400.));
@@ -146,6 +158,9 @@
 						orbitMesh.position.copy(offset);
 						vertex.orbit = orbitMesh;
 						scene.add(orbitMesh);
+						asteroid.orbit = orbitMesh;
+
+						asteroids.push(asteroid);
 					}
 
 				}
@@ -172,6 +187,7 @@
 				container.appendChild( stats.domElement );
 
 				window.addEventListener( 'resize', onWindowResize, false );
+				window.addEventListener( 'keydown', onKeyDown, false );
 
 			}
 
@@ -200,6 +216,10 @@
 				var now = new Date();
 				var time = new Date(startTime.getTime() + (now.getTime() - startTime.getTime()) * 1000000);
 				document.getElementById('time').innerHTML = 'Time: ' + time.getFullYear() + '/' + time.getMonth() + '/' + time.getDate();
+				var prevpos;
+				if(center_select && select_obj){
+					prevpos = select_obj.position.clone();
+				}
 
 				for(i = 0; i < geometry.vertices.length; i++){
 					var vec = geometry.vertices[i];
@@ -210,13 +230,42 @@
 					vec.copy(newVec);
 				}
 
-//				cameraControls.target.copy(geometry.vertices[0]);
+				if(center_select && select_obj){
+					cameraControls.target.copy(select_obj.position);
+					// Move the camera along with the target motion.
+					camera.position.add(select_obj.position.clone().sub(prevpos));
+				}
+				else{
+					cameraControls.target.copy(new THREE.Vector3(0, 0, 0));
+				}
 
 				geometry.verticesNeedUpdate = true;
 
 				cameraControls.update();
 
 				renderer.render( scene, camera );
+
+			}
+
+			function onKeyDown( event ) {
+
+				switch ( event.key ) {
+
+					case 'i':
+						if(select_obj === null)
+							select_obj = asteroids[0];
+						else{
+							select_obj.orbit.material = orbitMaterial;
+							select_idx = (select_idx + 1) % asteroids.length;
+							select_obj = asteroids[select_idx];
+						}
+						select_obj.orbit.material = selectedOrbitMaterial;
+						break;
+
+					case 'c':
+						center_select = !center_select;
+						break;
+				}
 
 			}
 
