@@ -322,7 +322,7 @@
 				document.getElementById('time').innerHTML = 'Time: ' + time.getFullYear() + '/' + time.getMonth() + '/' + time.getDate();
 				var prevpos;
 				if(center_select && select_obj){
-					prevpos = select_obj.position.clone();
+					prevpos = select_obj.vertex.clone();
 				}
 
 				var div = 10;
@@ -355,10 +355,12 @@
 					a.update();
 				}
 
+				var irotate = AxisAngleQuaternion(-1, 0, 0, Math.PI / 2);
 				if(center_select && select_obj){
-					cameraControls.target.copy(select_obj.position);
+					var rvertex = select_obj.vertex.clone().applyQuaternion(irotate);
+					cameraControls.target.copy(rvertex);
 					// Move the camera along with the target motion.
-					camera.position.add(select_obj.position.clone().sub(prevpos));
+					camera.position.add(rvertex.sub(prevpos.applyQuaternion(irotate)));
 				}
 				else{
 					cameraControls.target.copy(new THREE.Vector3(0, 0, 0));
