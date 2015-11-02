@@ -73,6 +73,13 @@
 			var select_obj = null;
 			var debugMode = false;
 
+			var prograde = false;
+			var retrograde = false;
+			var normal = false;
+			var antinormal = false;
+			var incline = false;
+			var antiincline = false;
+
 			var orbitMaterial, selectedOrbitMaterial;
 
 			var AU = 149597871; // Astronomical unit in kilometers
@@ -282,6 +289,7 @@
 
 				window.addEventListener( 'resize', onWindowResize, false );
 				window.addEventListener( 'keydown', onKeyDown, false );
+				window.addEventListener( 'keyup', onKeyUp, false );
 
 			}
 
@@ -324,6 +332,14 @@
 						var sl = a.position.lengthSq();
 						if(sl !== 0){
 							var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * GMsun / sl);
+							if(select_obj === a){
+								if(prograde) select_obj.velo.add(select_obj.velo.clone().normalize().multiplyScalar(1e-6 * deltaTime / div));
+								if(retrograde) select_obj.velo.add(select_obj.velo.clone().normalize().multiplyScalar(-1e-6 * deltaTime / div));
+								if(normal) select_obj.velo.add(select_obj.position.clone().normalize().multiplyScalar(1e-6 * deltaTime / div));
+								if(antinormal) select_obj.velo.add(select_obj.position.clone().normalize().multiplyScalar(-1e-6 * deltaTime / div));
+								if(incline) select_obj.velo.add(select_obj.velo.clone().cross(select_obj.position).normalize().multiplyScalar(1e-6 * deltaTime / div));
+								if(antiincline) select_obj.velo.add(select_obj.velo.clone().cross(select_obj.position).normalize().multiplyScalar(-1e-6 * deltaTime / div));
+							}
 							var dvelo = accel.clone().multiplyScalar(0.5);
 							var vec0 = a.position.clone().add(a.velo.clone().multiplyScalar(deltaTime / div / 2.));
 							var accel1 = vec0.clone().negate().normalize().multiplyScalar(deltaTime / div * GMsun / vec0.lengthSq());
@@ -386,15 +402,57 @@
 						center_select = !center_select;
 						break;
 
-					case 'd':
+					case 'D':
 						debugMode = !debugMode;
 						for(var i = 0; i < asteroids.length; i++){
 							asteroids[i].orbits[0].visible = debugMode;
 							asteroids[i].orbits[1].visible = debugMode;
 						}
 						break;
+
+					case 'w': // prograde
+						prograde = true;
+						break;
+					case 's': // retrograde
+						retrograde = true;
+						break;
+					case 'q': // normal
+						normal = true;
+						break;
+					case 'z': // normal negative
+						antinormal = true;
+						break;
+					case 'a': // orbit plane normal
+						incline = true;
+						break;
+					case 'd': // orbit plane normal negative
+						antiincline = true;
+						break;
 				}
 
+			}
+
+			function onKeyUp( event ) {
+				switch ( event.key ) {
+					case 'w': // prograde
+						prograde = false;
+						break;
+					case 's':
+						retrograde = false;
+						break;
+					case 'q': // prograde
+						normal = false;
+						break;
+					case 'z':
+						antinormal = false;
+						break;
+					case 'a': // orbit plane normal
+						incline = false;
+						break;
+					case 'd': // orbit plane normal negative
+						antiincline = false;
+						break;
+				}
 			}
 
 			init();
