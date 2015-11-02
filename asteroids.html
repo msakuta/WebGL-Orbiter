@@ -94,11 +94,11 @@
 				var meshMaterial = new THREE.LineBasicMaterial({color: 0x3f3f3f});
 				var meshGeometry = new THREE.Geometry();
 				for(var x = -10; x <= 10; x++)
-					meshGeometry.vertices.push( new THREE.Vector3( -10, 0, x ), new THREE.Vector3(10, 0, x));
+					meshGeometry.vertices.push( new THREE.Vector3( -10, x, 0 ), new THREE.Vector3(10, x, 0));
 				for(var x = -10; x <= 10; x++)
-					meshGeometry.vertices.push( new THREE.Vector3( x, 0, -10 ), new THREE.Vector3(x, 0, 10));
+					meshGeometry.vertices.push( new THREE.Vector3( x, -10, 0 ), new THREE.Vector3(x, 10, 0));
 				var mesh = new THREE.LineSegments(meshGeometry, meshMaterial);
-				mesh.scale.x = mesh.scale.z = 100;
+				mesh.scale.x = mesh.scale.y = 100;
 				scene.add(mesh);
 
 				orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
@@ -251,10 +251,21 @@
 
 				geometry.verticesNeedUpdate = true;
 
+//				camera.up.copy(new THREE.Vector3(0,0,1)); // This did't work with OrbitControls
 				cameraControls.update();
+
+				// Rotate axis around X to make Z point upward
+				var rotate = AxisAngleQuaternion(1, 0, 0, Math.PI / 2);
+				var oldPosition = camera.position.clone();
+				camera.position.applyQuaternion(rotate);
+				var oldQuaternion = camera.quaternion.clone();
+				camera.quaternion.copy(rotate.multiply(camera.quaternion));
 
 				renderer.render( scene, camera );
 
+				// Restore the original state because cameraControls expect these variables unchanged
+				camera.quaternion.copy(oldQuaternion);
+				camera.position.copy(oldPosition);
 			}
 
 			function onKeyDown( event ) {
