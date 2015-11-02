@@ -28,6 +28,12 @@
 				padding: 5px;
 			}
 
+			#orbit {
+				position: absolute;
+				top: 2em; width: 100%;
+				padding: 5px;
+			}
+
 			a {
 
 				color: #0080ff;
@@ -40,6 +46,7 @@
 		<div id="container"></div>
 		<div id="info">Asteroid simulation demo - powered by <a href="http://threejs.org" target="_blank">three.js</a></div>
 		<div id="time"></div>
+		<div id="orbit"></div>
 
 		<script src="three.min.js"></script>
 		<script src="stats.min.js"></script>
@@ -59,10 +66,12 @@
 			var viewScale = 100;
 
 			var startTime = new Date();
+			var lastTime = startTime;
 			var asteroids = [];
 			var center_select = false;
 			var select_idx = 0;
 			var select_obj = null;
+			var debugMode = false;
 
 			var orbitMaterial, selectedOrbitMaterial;
 
@@ -79,7 +88,6 @@
 			function Asteroid(position, vertex){
 				this.position = position;
 				this.vertex = vertex;
-				this.m_orients = [];
 			}
 
 			Asteroid.prototype.init = function(){
@@ -98,7 +106,65 @@
 				return now_anomaly + this.eccentricity * Math.sin(now_anomaly);
 			};
 
+			// Update orbital elements from position and velocity.
+			// The whole discussion is found in chapter 4.4 in
+			// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
 			Asteroid.prototype.update = function(){
+				this.vertex.copy(this.position).multiplyScalar(viewScale);
+				// Angular momentum vectors
+				var ang = this.velo.clone().cross(this.position);
+				var r = this.position.length();
+				var v = this.velo.length();
+				// Node vector
+				var N = (new THREE.Vector3(0, 0, 1)).cross(ang);
+				// Eccentricity vector
+				var e = this.position.clone().multiplyScalar(1 / GMsun * ((v * v - GMsun / r))).sub(this.velo.clone().multiplyScalar(this.position.dot(this.velo) / GMsun));
+				this.eccentricity = e.length();
+				this.inclination = Math.acos(ang.z / ang.length());
+				this.ascending_node = Math.acos(N.x / N.length());
+				if(N.y < 0) this.ascending_node = 2 * Math.PI - this.ascending_node;
+				this.semimajor_axis = 1 / (2 / r - v * v / GMsun);
+
+				// Rotation to perifocal frame
+				var planeRot = AxisAngleQuaternion(0, 0, 1, this.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, this.inclination));
+
+				var headingApoapsis = -this.position.dot(this.velo)/Math.abs(this.position.dot(this.velo));
+
+				this.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
+				if(e.z < 0) this.argument_of_perihelion = 2 * Math.PI - this.argument_of_perihelion;
+
+				// DEBUG: Update orbit candidates
+				if(debugMode){
+					for (var i = 0; i < 2; i++) {
+						var argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
+						if(0 < i) argument_of_perihelion = 2 * Math.PI - argument_of_perihelion;
+
+						var debugRotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
+						this.orbits[i].quaternion.copy(debugRotation);
+						this.orbits[i].scale.x = this.semimajor_axis * viewScale * Math.sqrt(1. - this.eccentricity * this.eccentricity);
+						this.orbits[i].scale.y = this.semimajor_axis * viewScale;
+						this.orbits[i].position.copy(new THREE.Vector3(0, -this.semimajor_axis * viewScale * this.eccentricity, 0).applyQuaternion(debugRotation));
+					}
+				}
+
+				// Total rotation of the orbit
+				var rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, this.argument_of_perihelion));
+
+				// Show orbit information
+				if(this === select_obj)
+					document.getElementById('orbit').innerHTML = 'Orbit: '
+						+ 'e=' + this.eccentricity.toFixed(10)
+						+ ' a=' + this.semimajor_axis.toFixed(10)
+						+ ' i=' + (this.inclination / Math.PI).toFixed(10)
+						+ ' Omega=' + (this.ascending_node / Math.PI).toFixed(10)
+						+ ' w=' + (this.argument_of_perihelion / Math.PI).toFixed(10)
+						+ ' head=' + headingApoapsis.toFixed(5);
+
+				// Apply transformation to orbit mesh
+				this.orbit.quaternion.copy(rotation);
+				this.orbit.scale.x = this.semimajor_axis * viewScale * Math.sqrt(1. - this.eccentricity * this.eccentricity);
+				this.orbit.scale.y = this.semimajor_axis * viewScale;
+				this.orbit.position.copy(new THREE.Vector3(0, -this.semimajor_axis * viewScale * this.eccentricity, 0).applyQuaternion(rotation));
 			};
 
 			function init() {
@@ -157,67 +223,39 @@
 				var orbitGeometry = path.createPointsGeometry( 50 );
 
 				geometry = new THREE.Geometry();
-				for ( i = 0; i < 100; i ++ ) {
+				for ( i = 0; i < 10; i ++ ) {
 
-					var vertex = new THREE.Vector3();
-					vertex.x = Math.random() - 0.5;
-					vertex.y = Math.random() - 0.5;
-					vertex.z = Math.random() - 0.5;
+					var angle = Math.random() * Math.PI * 2;
+					var position = new THREE.Vector3();
+					position.x = 0.1 * (Math.random() - 0.5);
+					position.y = 0.1 * (Math.random() + 0.5) + 0.5;
+					position.z = 0.1 * (Math.random() - 0.5);
+					position.applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
-					if(vertex.lengthSq() < 1){
-						var asteroid = {position: vertex};
-						vertex.multiplyScalar(100);
-						vertex.x += 400;
-						vertex.velo = new THREE.Vector3(0,0, Math.sqrt(300. / 400.));
-						vertex.init = function(){
-							this.argument_of_perihelion = Math.random() * Math.PI * 2;
-							this.ascending_node = Math.random() * Math.PI * 2;
-							this.inclination = Math.random() * 0.2;
-							this.eccentricity = 0.4 * Math.random() * Math.random();
-							this.semimajor_axis = (Math.random() + Math.random()) * 1 + 3.5;
-							this.epoch = Math.random();
-							this.mean_anomaly = Math.random();
-						};
-						vertex.get_eccentric_anomaly = function(time){
-							// Calculates eccentric anomaly from mean anomaly in first order approximation
-							// see http://en.wikipedia.org/wiki/Eccentric_anomaly
-							var GMsun = 1.327124400e11; // Product of gravitational constant (G) and Sun's mass (Msun)
-							var AU = 149597871; // Astronomical unit in kilometers
-							var td = time - this.epoch;
-							var period = 2 * Math.PI * Math.sqrt(Math.pow(this.semimajor_axis * AU, 3) / GMsun);
-							var now_anomaly = this.mean_anomaly + td * 2 * Math.PI / period;
-							return now_anomaly + this.eccentricity * Math.sin(now_anomaly);
-						};
+					position.multiplyScalar(3);
+					var vertex = new THREE.Vector3(0,0,0);
+					var asteroid = new Asteroid(position, vertex);
+					asteroid.velo = new THREE.Vector3((Math.random() - 0.5) * 0.3 + 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
+						.multiplyScalar(GMsun * 1e3 / position.lengthSq()).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
-						vertex.init();
-						geometry.vertices.push( vertex );
+					geometry.vertices.push( vertex );
 
-						function AxisAngleQuaternion(x, y, z, angle){
-							var q = new THREE.Quaternion();
-							q.setFromAxisAngle(new THREE.Vector3(x, y, z), angle);
-							return q;
-						}
+					var orbitMesh = new THREE.Line(orbitGeometry, orbitMaterial);
+					asteroid.orbit = orbitMesh;
+					scene.add(orbitMesh);
+					asteroid.orbits = [];
 
+					// DEBUG: draw candidates of orbits
+					for(var j = 0; j < 2; j++){
 						var orbitMesh = new THREE.Line(orbitGeometry, orbitMaterial);
-						var ascend = AxisAngleQuaternion(0, 1, 0, vertex.ascending_node);
-						var incline = AxisAngleQuaternion(1, 0, 0, vertex.inclination);
-						var aop = AxisAngleQuaternion(0, 1, 0, vertex.argument_of_perihelion);
-						var rotx = AxisAngleQuaternion(1, 0, 0, Math.PI / 2);
-						var rotation = ascend.multiply(incline).multiply(aop).multiply(rotx);
-						orbitMesh.quaternion.copy(rotation);
-						orbitMesh.scale.x = vertex.semimajor_axis * viewScale;
-						orbitMesh.scale.y = vertex.semimajor_axis * viewScale * (1. - vertex.eccentricity);
-						offset = new THREE.Vector3(vertex.semimajor_axis * viewScale * vertex.eccentricity, 0, 0);
-						offset.applyQuaternion(rotation);
-						orbitMesh.position.copy(offset);
-						vertex.orbit = orbitMesh;
+						orbitMesh.visible = debugMode;
+						asteroid.orbits[j] = orbitMesh;
 						scene.add(orbitMesh);
-						asteroid.orbit = orbitMesh;
-
-						asteroid.init();
-						asteroid.update();
-						asteroids.push(asteroid);
 					}
+
+					asteroid.init();
+					asteroid.update();
+					asteroids.push(asteroid);
 
 				}
 
@@ -346,6 +384,14 @@
 
 					case 'c':
 						center_select = !center_select;
+						break;
+
+					case 'd':
+						debugMode = !debugMode;
+						for(var i = 0; i < asteroids.length; i++){
+							asteroids[i].orbits[0].visible = debugMode;
+							asteroids[i].orbits[1].visible = debugMode;
+						}
 						break;
 				}
 
