@@ -66,8 +66,40 @@
 
 			var orbitMaterial, selectedOrbitMaterial;
 
-			init();
-			animate();
+			var AU = 149597871; // Astronomical unit in kilometers
+			var GMsun = 1.327124400e11 / AU / AU; // Product of gravitational constant (G) and Sun's mass (Msun)
+
+			function AxisAngleQuaternion(x, y, z, angle){
+				var q = new THREE.Quaternion();
+				q.setFromAxisAngle(new THREE.Vector3(x, y, z), angle);
+				return q;
+			}
+
+			// Asteroid class
+			function Asteroid(position, vertex){
+				this.position = position;
+				this.vertex = vertex;
+				this.m_orients = [];
+			}
+
+			Asteroid.prototype.init = function(){
+				this.ascending_node = Math.random() * Math.PI * 2;
+				this.epoch = Math.random();
+				this.mean_anomaly = Math.random();
+				this.update();
+			};
+
+			Asteroid.prototype.get_eccentric_anomaly = function(time){
+				// Calculates eccentric anomaly from mean anomaly in first order approximation
+				// see http://en.wikipedia.org/wiki/Eccentric_anomaly
+				var td = time - this.epoch;
+				var period = 2 * Math.PI * Math.sqrt(Math.pow(this.semimajor_axis * AU, 3) / GMsun);
+				var now_anomaly = this.mean_anomaly + td * 2 * Math.PI / period;
+				return now_anomaly + this.eccentricity * Math.sin(now_anomaly);
+			};
+
+			Asteroid.prototype.update = function(){
+			};
 
 			function init() {
 
@@ -182,6 +214,8 @@
 						scene.add(orbitMesh);
 						asteroid.orbit = orbitMesh;
 
+						asteroid.init();
+						asteroid.update();
 						asteroids.push(asteroid);
 					}
 
@@ -236,20 +270,35 @@
 
 			function render() {
 				var now = new Date();
-				var time = new Date(startTime.getTime() + (now.getTime() - startTime.getTime()) * 1000000);
+				var time = new Date(startTime.getTime() + (now.getTime() - startTime.getTime()) * 100);
+				var deltaTime = (time.getTime() - lastTime.getTime()) * 1e-3;
+				lastTime = time;
 				document.getElementById('time').innerHTML = 'Time: ' + time.getFullYear() + '/' + time.getMonth() + '/' + time.getDate();
 				var prevpos;
 				if(center_select && select_obj){
 					prevpos = select_obj.position.clone();
 				}
 
-				for(i = 0; i < geometry.vertices.length; i++){
-					var vec = geometry.vertices[i];
-					var sl = vec.lengthSq();
-					var ea = vec.get_eccentric_anomaly(time.getTime() * 1e-3);
-					var newVec = new THREE.Vector3(Math.sin(ea), Math.cos(ea), 0);
-					newVec.applyMatrix4(vec.orbit.matrix);
-					vec.copy(newVec);
+				var div = 10;
+				for(var d = 0; d < div; d++){
+					for(var i = 0; i < asteroids.length; i++){
+						var a = asteroids[i];
+						var sl = a.position.lengthSq();
+						if(sl !== 0){
+							var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * GMsun / sl);
+							var dvelo = accel.clone().multiplyScalar(0.5);
+							var vec0 = a.position.clone().add(a.velo.clone().multiplyScalar(deltaTime / div / 2.));
+							var accel1 = vec0.clone().negate().normalize().multiplyScalar(deltaTime / div * GMsun / vec0.lengthSq());
+							var velo1 = a.velo.clone().add(dvelo);
+
+							a.velo.add(accel1);
+							a.position.add(velo1.multiplyScalar(deltaTime / div));
+						}
+					}
+				}
+				for(var i = 0; i < asteroids.length; i++){
+					var a = asteroids[i];
+					a.update();
 				}
 
 				if(center_select && select_obj){
@@ -301,6 +350,9 @@
 				}
 
 			}
+
+			init();
+			animate();
 
 
 		</script>
