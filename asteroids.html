@@ -101,6 +101,18 @@
 				mesh.scale.x = mesh.scale.y = 100;
 				scene.add(mesh);
 
+				function addAxis(axisVector, color){
+					var axisXMaterial = new THREE.LineBasicMaterial({color: color});
+					var axisXGeometry = new THREE.Geometry();
+					axisXGeometry.vertices.push(new THREE.Vector3(0,0,0), axisVector);
+					var axisX = new THREE.Line(axisXGeometry, axisXMaterial);
+					axisX.scale.multiplyScalar(100);
+					scene.add(axisX);
+				}
+				addAxis(new THREE.Vector3(100,0,0), 0xff0000);
+				addAxis(new THREE.Vector3(0,100,0), 0x00ff00);
+				addAxis(new THREE.Vector3(0,0,100), 0x0000ff);
+
 				orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
 				orbitMaterial.blending = THREE.AdditiveBlending;
 				orbitMaterial.blendSrc = THREE.OneFactor;
