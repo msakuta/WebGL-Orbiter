@@ -80,7 +80,7 @@
 			var incline = false;
 			var antiincline = false;
 
-			var orbitMaterial, selectedOrbitMaterial;
+			var selectedOrbitMaterial;
 
 			var AU = 149597871; // Astronomical unit in kilometers
 			var GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
@@ -92,20 +92,22 @@
 				return q;
 			}
 
-			// Asteroid class
-			function Asteroid(position, vertex){
+			// CelestialBody class
+			function CelestialBody(position, vertex, orbitColor){
 				this.position = position;
+				this.velocity = new THREE.Vector3();
 				this.vertex = vertex;
+				if(orbitColor) this.orbitMaterial = new THREE.LineBasicMaterial({color: orbitColor});
 			}
 
-			Asteroid.prototype.init = function(){
+			CelestialBody.prototype.init = function(){
 				this.ascending_node = Math.random() * Math.PI * 2;
 				this.epoch = Math.random();
 				this.mean_anomaly = Math.random();
 				this.update();
 			};
 
-			Asteroid.prototype.get_eccentric_anomaly = function(time){
+			CelestialBody.prototype.get_eccentric_anomaly = function(time){
 				// Calculates eccentric anomaly from mean anomaly in first order approximation
 				// see http://en.wikipedia.org/wiki/Eccentric_anomaly
 				var td = time - this.epoch;
@@ -117,7 +119,7 @@
 			// Update orbital elements from position and velocity.
 			// The whole discussion is found in chapter 4.4 in
 			// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
-			Asteroid.prototype.update = function(){
+			CelestialBody.prototype.update = function(){
 				this.vertex.copy(this.position).multiplyScalar(viewScale);
 				// Angular momentum vectors
 				var ang = this.velo.clone().cross(this.position);
@@ -235,10 +237,8 @@
 				addAxis(new THREE.Vector3(0,100,0), 0x00ff00);
 				addAxis(new THREE.Vector3(0,0,100), 0x0000ff);
 
-				orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
-				orbitMaterial.blending = THREE.AdditiveBlending;
-				orbitMaterial.blendSrc = THREE.OneFactor;
-				orbitMaterial.blendDst = THREE.OneFactor;
+				var orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
+				CelestialBody.prototype.orbitMaterial = orbitMaterial; // Default orbit material
 				selectedOrbitMaterial = new THREE.LineBasicMaterial({color: 0xff7fff});
 				var orbitGeometry = new THREE.Geometry();
 				var curve = new THREE.EllipseCurve(0, 0, 1, 1,
@@ -247,6 +247,19 @@
 				var orbitGeometry = path.createPointsGeometry( 50 );
 
 				geometry = new THREE.Geometry();
+
+				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
+				var vertex = new THREE.Vector3(0,0,0);
+				var earth = new CelestialBody(new THREE.Vector3(1, 0, 0), vertex, 0x3f7f3f);
+				earth.velo = new THREE.Vector3(0, -1, 0).multiplyScalar(Math.sqrt(GMsun));
+				geometry.vertices.push( vertex );
+				var orbitMesh = new THREE.Line(orbitGeometry, earth.orbitMaterial);
+				earth.orbit = orbitMesh;
+				scene.add(orbitMesh);
+				earth.init();
+				earth.update();
+				asteroids.push(earth);
+
 				for ( i = 0; i < 10; i ++ ) {
 
 					var angle = Math.random() * Math.PI * 2;
@@ -258,20 +271,20 @@
 
 					position.multiplyScalar(2.5);
 					var vertex = new THREE.Vector3(0,0,0);
-					var asteroid = new Asteroid(position, vertex);
+					var asteroid = new CelestialBody(position, vertex);
 					asteroid.velo = new THREE.Vector3((Math.random() - 0.5) * 0.3 + 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
 						.multiplyScalar(Math.sqrt(GMsun / position.length())).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
 					geometry.vertices.push( vertex );
 
-					var orbitMesh = new THREE.Line(orbitGeometry, orbitMaterial);
+					var orbitMesh = new THREE.Line(orbitGeometry, asteroid.orbitMaterial);
 					asteroid.orbit = orbitMesh;
 					scene.add(orbitMesh);
 					asteroid.orbits = [];
 
 					// DEBUG: draw candidates of orbits
 					for(var j = 0; j < 2; j++){
-						var orbitMesh = new THREE.Line(orbitGeometry, orbitMaterial);
+						var orbitMesh = new THREE.Line(orbitGeometry, asteroid.orbitMaterial);
 						orbitMesh.visible = debugMode;
 						asteroid.orbits[j] = orbitMesh;
 						scene.add(orbitMesh);
@@ -421,7 +434,7 @@
 						if(select_obj === null)
 							select_obj = asteroids[0];
 						else{
-							select_obj.orbit.material = orbitMaterial;
+							select_obj.orbit.material = select_obj.orbitMaterial;
 							select_idx = (select_idx + 1) % asteroids.length;
 							select_obj = asteroids[select_idx];
 						}
