@@ -67,7 +67,6 @@
 
 			var simTime;
 			var realTime;
-			var asteroids = [];
 			var center_select = false;
 			var select_idx = 0;
 			var select_obj = null;
@@ -80,12 +79,14 @@
 			var incline = false;
 			var antiincline = false;
 
+			var sun;
+
 			var selectedOrbitMaterial;
 
 			var AU = 149597871; // Astronomical unit in kilometers
 			var GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 			var epsilon = 1e-20; // Doesn't the machine epsilon depend on browsers!??
-			var timescale = 1e7; // This is not a constant; it can be changed by the user
+			var timescale = 1e6; // This is not a constant; it can be changed by the user
 			var rad_per_deg = Math.PI / 180; // Radians per degrees
 
 			function AxisAngleQuaternion(x, y, z, angle){
@@ -95,11 +96,15 @@
 			}
 
 			// CelestialBody class
-			function CelestialBody(position, vertex, orbitColor){
+			function CelestialBody(parent, position, vertex, orbitColor, GM){
 				this.position = position;
 				this.velocity = new THREE.Vector3();
 				this.vertex = vertex;
 				if(orbitColor) this.orbitMaterial = new THREE.LineBasicMaterial({color: orbitColor});
+				this.children = [];
+				this.parent = parent;
+				this.GM = GM || GMsun;
+				if(parent) parent.children.push(this);
 			}
 
 			CelestialBody.prototype.init = function(){
@@ -113,7 +118,7 @@
 				// Calculates eccentric anomaly from mean anomaly in first order approximation
 				// see http://en.wikipedia.org/wiki/Eccentric_anomaly
 				var td = time - this.epoch;
-				var period = 2 * Math.PI * Math.sqrt(Math.pow(this.semimajor_axis * AU, 3) / GMsun);
+				var period = 2 * Math.PI * Math.sqrt(Math.pow(this.semimajor_axis * AU, 3) / this.parent.GM);
 				var now_anomaly = this.mean_anomaly + td * 2 * Math.PI / period;
 				return now_anomaly + this.eccentricity * Math.sin(now_anomaly);
 			};
@@ -122,7 +127,7 @@
 			// The whole discussion is found in chapter 4.4 in
 			// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
 			CelestialBody.prototype.update = function(){
-				this.vertex.copy(this.position).multiplyScalar(viewScale);
+				this.vertex.copy(this.parent.position).add(this.position).multiplyScalar(viewScale);
 				// Angular momentum vectors
 				var ang = this.velo.clone().cross(this.position);
 				var r = this.position.length();
@@ -130,7 +135,7 @@
 				// Node vector
 				var N = (new THREE.Vector3(0, 0, 1)).cross(ang);
 				// Eccentricity vector
-				var e = this.position.clone().multiplyScalar(1 / GMsun * ((v * v - GMsun / r))).sub(this.velo.clone().multiplyScalar(this.position.dot(this.velo) / GMsun));
+				var e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velo.clone().multiplyScalar(this.position.dot(this.velo) / this.parent.GM));
 				this.eccentricity = e.length();
 				this.inclination = Math.acos(ang.z / ang.length());
 				// Avoid zero division
@@ -140,7 +145,7 @@
 					this.ascending_node = Math.acos(N.x / N.length());
 					if(N.y < 0) this.ascending_node = 2 * Math.PI - this.ascending_node;
 				}
-				this.semimajor_axis = 1 / (2 / r - v * v / GMsun);
+				this.semimajor_axis = 1 / (2 / r - v * v / this.parent.GM);
 
 				// Rotation to perifocal frame
 				var planeRot = AxisAngleQuaternion(0, 0, 1, this.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, this.inclination));
@@ -192,7 +197,12 @@
 				this.orbit.quaternion.copy(rotation);
 				this.orbit.scale.x = this.semimajor_axis * viewScale * Math.sqrt(1. - this.eccentricity * this.eccentricity);
 				this.orbit.scale.y = this.semimajor_axis * viewScale;
-				this.orbit.position.copy(new THREE.Vector3(0, -this.semimajor_axis * viewScale * this.eccentricity, 0).applyQuaternion(rotation));
+				this.orbit.position.copy(new THREE.Vector3(0, -this.semimajor_axis * this.eccentricity, 0).applyQuaternion(rotation).add(this.parent.position).multiplyScalar(viewScale));
+
+				for(var i = 0; i < this.children.length; i++){
+					var a = this.children[i];
+					a.update();
+				}
 			};
 
 			function init() {
@@ -208,7 +218,7 @@
 				group = new THREE.Object3D();
 				scene.add( group );
 
-				var material = new THREE.ParticleSystemMaterial( { size: 5 } );
+				var material = new THREE.ParticleSystemMaterial( { size: 0.1 } );
 
 				// Sun
 				var Rsun = 695800. / 149597871. * viewScale;
@@ -252,29 +262,30 @@
 
 				// Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 				// It's a bit difficult to calculate in Newtonian dynamics simulation.
-				function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color){
+				function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent){
 					var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
 						.multiply(AxisAngleQuaternion(0, 1, 0, inclination))
 						.multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
 					var vertex = new THREE.Vector3(0,0,0);
-					var ret = new CelestialBody(new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), vertex, color);
+					var ret = new CelestialBody(parent || sun, new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), vertex, color, GM);
 					geometry.vertices.push( vertex );
 					// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
 					// https://en.wikipedia.org/wiki/Orbital_speed
-					ret.velo = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.sqrt(GMsun * (2 / ret.position.length() - 1 / semimajor_axis))).applyQuaternion(rotation);
+					ret.velo = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.sqrt(ret.parent.GM * (2 / ret.position.length() - 1 / semimajor_axis))).applyQuaternion(rotation);
 					var orbitMesh = new THREE.Line(orbitGeometry, ret.orbitMaterial);
 					ret.orbit = orbitMesh;
 					scene.add(orbitMesh);
 					ret.init();
 					ret.update();
-					asteroids.push(ret);
 					return ret;
 				}
 
+				sun = new CelestialBody(null, new THREE.Vector3(), null, 0xffffff, this.parent.GM);
 				var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f);
 				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f);
 				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
-				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f);
+				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU);
+				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f3f3f, this.parent.GM, earth);
 				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f);
 
 				for ( i = 0; i < 10; i ++ ) {
@@ -288,7 +299,7 @@
 
 					position.multiplyScalar(2.5);
 					var vertex = new THREE.Vector3(0,0,0);
-					var asteroid = new CelestialBody(position, vertex);
+					var asteroid = new CelestialBody(sun, position, vertex);
 					asteroid.velo = new THREE.Vector3((Math.random() - 0.5) * 0.3 + 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
 						.multiplyScalar(Math.sqrt(GMsun / position.length())).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
@@ -309,7 +320,6 @@
 
 					asteroid.init();
 					asteroid.update();
-					asteroids.push(asteroid);
 
 				}
 
@@ -388,14 +398,12 @@
 					prevpos = select_obj.vertex.clone();
 				}
 
-				var accelerate = 1e-15;
-				var div = 10;
-				for(var d = 0; d < div; d++){
-					for(var i = 0; i < asteroids.length; i++){
-						var a = asteroids[i];
+				function simulateBody(children){
+					for(var i = 0; i < children.length; i++){
+						var a = children[i];
 						var sl = a.position.lengthSq();
 						if(sl !== 0){
-							var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * GMsun / sl);
+							var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
 							if(select_obj === a){
 								if(prograde) select_obj.velo.add(select_obj.velo.clone().normalize().multiplyScalar(accelerate * deltaTime / div));
 								if(retrograde) select_obj.velo.add(select_obj.velo.clone().normalize().multiplyScalar(-accelerate * deltaTime / div));
@@ -406,16 +414,23 @@
 							}
 							var dvelo = accel.clone().multiplyScalar(0.5);
 							var vec0 = a.position.clone().add(a.velo.clone().multiplyScalar(deltaTime / div / 2.));
-							var accel1 = vec0.clone().negate().normalize().multiplyScalar(deltaTime / div * GMsun / vec0.lengthSq());
+							var accel1 = vec0.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / vec0.lengthSq());
 							var velo1 = a.velo.clone().add(dvelo);
 
 							a.velo.add(accel1);
 							a.position.add(velo1.multiplyScalar(deltaTime / div));
 						}
+						simulateBody(a.children);
 					}
 				}
-				for(var i = 0; i < asteroids.length; i++){
-					var a = asteroids[i];
+
+				var accelerate = 1e-15;
+				var div = 100; // We should pick subdivide simulation step count by angular speed!
+				for(var d = 0; d < div; d++){
+					simulateBody(sun.children);
+				}
+				for(var i = 0; i < sun.children.length; i++){
+					var a = sun.children[i];
 					a.update();
 				}
 
@@ -455,11 +470,11 @@
 
 					case 'i':
 						if(select_obj === null)
-							select_obj = asteroids[0];
+							select_obj = sun.children[0];
 						else{
 							select_obj.orbit.material = select_obj.orbitMaterial;
-							select_idx = (select_idx + 1) % asteroids.length;
-							select_obj = asteroids[select_idx];
+							select_idx = (select_idx + 1) % sun.children.length;
+							select_obj = sun.children[select_idx];
 						}
 						select_obj.orbit.material = selectedOrbitMaterial;
 						break;
@@ -470,9 +485,9 @@
 
 					case 'D':
 						debugMode = !debugMode;
-						for(var i = 0; i < asteroids.length; i++){
-							asteroids[i].orbits[0].visible = debugMode;
-							asteroids[i].orbits[1].visible = debugMode;
+						for(var i = 0; i < sun.children.length; i++){
+							sun.children[i].orbits[0].visible = debugMode;
+							sun.children[i].orbits[1].visible = debugMode;
 						}
 						break;
 
