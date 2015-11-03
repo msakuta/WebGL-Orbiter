@@ -84,6 +84,7 @@
 
 			var AU = 149597871; // Astronomical unit in kilometers
 			var GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
+			var epsilon = 1e-20; // Doesn't the machine epsilon depend on browsers!??
 
 			function AxisAngleQuaternion(x, y, z, angle){
 				var q = new THREE.Quaternion();
@@ -128,8 +129,13 @@
 				var e = this.position.clone().multiplyScalar(1 / GMsun * ((v * v - GMsun / r))).sub(this.velo.clone().multiplyScalar(this.position.dot(this.velo) / GMsun));
 				this.eccentricity = e.length();
 				this.inclination = Math.acos(ang.z / ang.length());
-				this.ascending_node = Math.acos(N.x / N.length());
-				if(N.y < 0) this.ascending_node = 2 * Math.PI - this.ascending_node;
+				// Avoid zero division
+				if(N.lengthSq() <= epsilon)
+					this.ascending_node = 0;
+				else{
+					this.ascending_node = Math.acos(N.x / N.length());
+					if(N.y < 0) this.ascending_node = 2 * Math.PI - this.ascending_node;
+				}
 				this.semimajor_axis = 1 / (2 / r - v * v / GMsun);
 
 				// Rotation to perifocal frame
@@ -137,13 +143,24 @@
 
 				var headingApoapsis = -this.position.dot(this.velo)/Math.abs(this.position.dot(this.velo));
 
-				this.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
+				// Avoid zero division and still get the correct answer when N == 0.
+				// This is necessary to draw orbit with zero inclination and nonzero eccentricity.
+				if(N.lengthSq() <= epsilon || e.lengthSq() <= epsilon)
+					this.argument_of_perihelion = Math.atan2(e.y, e.x);
+				else
+					this.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
 				if(e.z < 0) this.argument_of_perihelion = 2 * Math.PI - this.argument_of_perihelion;
 
 				// DEBUG: Update orbit candidates
 				if(debugMode){
 					for (var i = 0; i < 2; i++) {
-						var argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
+						var argument_of_perihelion;
+						// Avoid zero division and still get the correct answer when N == 0
+						// This is necessary to draw orbit with zero inclination and nonzero eccentricity.
+						if(N.lengthSq() <= epsilon || e.lengthSq() <= epsilon)
+							argument_of_perihelion = Math.atan2(e.y, e.x);
+						else
+							rgument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
 						if(0 < i) argument_of_perihelion = 2 * Math.PI - argument_of_perihelion;
 
 						var debugRotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
