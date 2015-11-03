@@ -65,8 +65,8 @@
 			var windowHalfY = window.innerHeight / 2;
 			var viewScale = 100;
 
-			var simTime = new Date();
-			var realTime = simTime;
+			var simTime;
+			var realTime;
 			var asteroids = [];
 			var center_select = false;
 			var select_idx = 0;
@@ -322,6 +322,10 @@
 				window.addEventListener( 'keydown', onKeyDown, false );
 				window.addEventListener( 'keyup', onKeyUp, false );
 
+				// Start the clock after the initialization is finished, otherwise
+				// the very first frame of simulation can be long.
+				simTime = new Date();
+				realTime = simTime;
 			}
 
 			function onWindowResize() {
