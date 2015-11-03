@@ -65,8 +65,8 @@
 			var windowHalfY = window.innerHeight / 2;
 			var viewScale = 100;
 
-			var startTime = new Date();
-			var lastTime = startTime;
+			var simTime = new Date();
+			var realTime = simTime;
 			var asteroids = [];
 			var center_select = false;
 			var select_idx = 0;
@@ -85,6 +85,7 @@
 			var AU = 149597871; // Astronomical unit in kilometers
 			var GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 			var epsilon = 1e-20; // Doesn't the machine epsilon depend on browsers!??
+			var timescale = 1e7; // This is not a constant; it can be changed by the user
 
 			function AxisAngleQuaternion(x, y, z, angle){
 				var q = new THREE.Quaternion();
@@ -346,9 +347,10 @@
 
 			function render() {
 				var now = new Date();
-				var time = new Date(startTime.getTime() + (now.getTime() - startTime.getTime()) * 1e7);
-				var deltaTime = (time.getTime() - lastTime.getTime()) * 1e-3;
-				lastTime = time;
+				var time = new Date(simTime.getTime() + (now.getTime() - realTime.getTime()) * timescale);
+				var deltaTime = (time.getTime() - simTime.getTime()) * 1e-3;
+				realTime = now;
+				simTime = time;
 				// Fills reading zero if the value is less than 10, making the returned string always two characters long.
 				// Note that values not less than 100 or negative values are not guaranteed to be two characters wide.
 				// This function is for date time formatting purpose only.
@@ -359,7 +361,8 @@
 						return v;
 				}
 				document.getElementById('time').innerHTML = 'Time: ' + time.getFullYear() + '/' + zerofill(time.getMonth() + 1) + '/' + zerofill(time.getDate())
-					+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds());
+					+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds())
+					+ ' Timescale: ' + timescale.toPrecision(5);
 				var prevpos;
 				if(center_select && select_obj){
 					prevpos = select_obj.vertex.clone();
@@ -470,6 +473,14 @@
 						break;
 					case 'd': // orbit plane normal negative
 						antiincline = true;
+						break;
+
+					// Also support numpad plus and minus
+					case '+': case 'Add':
+						timescale *= 2;
+						break;
+					case '-': case 'Subtract':
+						timescale /= 2;
 						break;
 				}
 
