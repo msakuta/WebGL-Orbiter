@@ -251,8 +251,11 @@
 
 				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
 				var vertex = new THREE.Vector3(0,0,0);
-				var earth = new CelestialBody(new THREE.Vector3(1, 0, 0), vertex, 0x3f7f3f);
-				earth.velo = new THREE.Vector3(0, -1, 0).multiplyScalar(Math.sqrt(GMsun));
+				var targetEccentricity = 0.0167086;
+				var earth = new CelestialBody(new THREE.Vector3(1 - targetEccentricity, 0, 0), vertex, 0x3f7f3f);
+				// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
+				// https://en.wikipedia.org/wiki/Orbital_speed
+				earth.velo = new THREE.Vector3(0, -1, 0).multiplyScalar(Math.sqrt(GMsun * (2 / earth.position.length() - 1)));
 				geometry.vertices.push( vertex );
 				var orbitMesh = new THREE.Line(orbitGeometry, earth.orbitMaterial);
 				earth.orbit = orbitMesh;
