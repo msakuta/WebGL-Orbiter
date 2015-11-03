@@ -319,7 +319,17 @@
 				var time = new Date(startTime.getTime() + (now.getTime() - startTime.getTime()) * 100);
 				var deltaTime = (time.getTime() - lastTime.getTime()) * 1e-3;
 				lastTime = time;
-				document.getElementById('time').innerHTML = 'Time: ' + time.getFullYear() + '/' + time.getMonth() + '/' + time.getDate();
+				// Fills reading zero if the value is less than 10, making the returned string always two characters long.
+				// Note that values not less than 100 or negative values are not guaranteed to be two characters wide.
+				// This function is for date time formatting purpose only.
+				function zerofill(v){
+					if(v < 10)
+						return "0" + v;
+					else
+						return v;
+				}
+				document.getElementById('time').innerHTML = 'Time: ' + time.getFullYear() + '/' + zerofill(time.getMonth() + 1) + '/' + zerofill(time.getDate())
+					+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds());
 				var prevpos;
 				if(center_select && select_obj){
 					prevpos = select_obj.vertex.clone();
