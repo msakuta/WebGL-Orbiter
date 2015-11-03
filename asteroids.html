@@ -86,6 +86,7 @@
 			var GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 			var epsilon = 1e-20; // Doesn't the machine epsilon depend on browsers!??
 			var timescale = 1e7; // This is not a constant; it can be changed by the user
+			var rad_per_deg = Math.PI / 180; // Radians per degrees
 
 			function AxisAngleQuaternion(x, y, z, angle){
 				var q = new THREE.Quaternion();
@@ -249,20 +250,32 @@
 
 				geometry = new THREE.Geometry();
 
+				// Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
+				// It's a bit difficult to calculate in Newtonian dynamics simulation.
+				function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color){
+					var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
+						.multiply(AxisAngleQuaternion(0, 1, 0, inclination))
+						.multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
+					var vertex = new THREE.Vector3(0,0,0);
+					var ret = new CelestialBody(new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), vertex, color);
+					geometry.vertices.push( vertex );
+					// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
+					// https://en.wikipedia.org/wiki/Orbital_speed
+					ret.velo = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.sqrt(GMsun * (2 / ret.position.length() - 1 / semimajor_axis))).applyQuaternion(rotation);
+					var orbitMesh = new THREE.Line(orbitGeometry, ret.orbitMaterial);
+					ret.orbit = orbitMesh;
+					scene.add(orbitMesh);
+					ret.init();
+					ret.update();
+					asteroids.push(ret);
+					return ret;
+				}
+
+				var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f);
+				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f);
 				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
-				var vertex = new THREE.Vector3(0,0,0);
-				var targetEccentricity = 0.0167086;
-				var earth = new CelestialBody(new THREE.Vector3(1 - targetEccentricity, 0, 0), vertex, 0x3f7f3f);
-				// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
-				// https://en.wikipedia.org/wiki/Orbital_speed
-				earth.velo = new THREE.Vector3(0, -1, 0).multiplyScalar(Math.sqrt(GMsun * (2 / earth.position.length() - 1)));
-				geometry.vertices.push( vertex );
-				var orbitMesh = new THREE.Line(orbitGeometry, earth.orbitMaterial);
-				earth.orbit = orbitMesh;
-				scene.add(orbitMesh);
-				earth.init();
-				earth.update();
-				asteroids.push(earth);
+				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f);
+				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f);
 
 				for ( i = 0; i < 10; i ++ ) {
 
