@@ -83,7 +83,7 @@
 			var orbitMaterial, selectedOrbitMaterial;
 
 			var AU = 149597871; // Astronomical unit in kilometers
-			var GMsun = 1.327124400e11 / AU / AU; // Product of gravitational constant (G) and Sun's mass (Msun)
+			var GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 
 			function AxisAngleQuaternion(x, y, z, angle){
 				var q = new THREE.Quaternion();
@@ -178,9 +178,9 @@
 
 				container = document.getElementById( 'container' );
 
-				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 2000 );
-				camera.position.y = 150;
-				camera.position.z = 500;
+				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
+				camera.position.y = 300;
+				camera.position.z = 1000;
 
 				scene = new THREE.Scene();
 
@@ -235,15 +235,15 @@
 					var angle = Math.random() * Math.PI * 2;
 					var position = new THREE.Vector3();
 					position.x = 0.1 * (Math.random() - 0.5);
-					position.y = 0.1 * (Math.random() + 0.5) + 0.5;
+					position.y = 0.1 * (Math.random() - 0.5) + 1;
 					position.z = 0.1 * (Math.random() - 0.5);
 					position.applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
-					position.multiplyScalar(3);
+					position.multiplyScalar(2.5);
 					var vertex = new THREE.Vector3(0,0,0);
 					var asteroid = new Asteroid(position, vertex);
 					asteroid.velo = new THREE.Vector3((Math.random() - 0.5) * 0.3 + 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
-						.multiplyScalar(GMsun * 1e3 / position.lengthSq()).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
+						.multiplyScalar(Math.sqrt(GMsun / position.length())).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
 					geometry.vertices.push( vertex );
 
@@ -316,7 +316,7 @@
 
 			function render() {
 				var now = new Date();
-				var time = new Date(startTime.getTime() + (now.getTime() - startTime.getTime()) * 100);
+				var time = new Date(startTime.getTime() + (now.getTime() - startTime.getTime()) * 1e7);
 				var deltaTime = (time.getTime() - lastTime.getTime()) * 1e-3;
 				lastTime = time;
 				// Fills reading zero if the value is less than 10, making the returned string always two characters long.
@@ -335,6 +335,7 @@
 					prevpos = select_obj.vertex.clone();
 				}
 
+				var accelerate = 1e-15;
 				var div = 10;
 				for(var d = 0; d < div; d++){
 					for(var i = 0; i < asteroids.length; i++){
@@ -343,12 +344,12 @@
 						if(sl !== 0){
 							var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * GMsun / sl);
 							if(select_obj === a){
-								if(prograde) select_obj.velo.add(select_obj.velo.clone().normalize().multiplyScalar(1e-6 * deltaTime / div));
-								if(retrograde) select_obj.velo.add(select_obj.velo.clone().normalize().multiplyScalar(-1e-6 * deltaTime / div));
-								if(normal) select_obj.velo.add(select_obj.position.clone().normalize().multiplyScalar(1e-6 * deltaTime / div));
-								if(antinormal) select_obj.velo.add(select_obj.position.clone().normalize().multiplyScalar(-1e-6 * deltaTime / div));
-								if(incline) select_obj.velo.add(select_obj.velo.clone().cross(select_obj.position).normalize().multiplyScalar(1e-6 * deltaTime / div));
-								if(antiincline) select_obj.velo.add(select_obj.velo.clone().cross(select_obj.position).normalize().multiplyScalar(-1e-6 * deltaTime / div));
+								if(prograde) select_obj.velo.add(select_obj.velo.clone().normalize().multiplyScalar(accelerate * deltaTime / div));
+								if(retrograde) select_obj.velo.add(select_obj.velo.clone().normalize().multiplyScalar(-accelerate * deltaTime / div));
+								if(normal) select_obj.velo.add(select_obj.position.clone().normalize().multiplyScalar(accelerate * deltaTime / div));
+								if(antinormal) select_obj.velo.add(select_obj.position.clone().normalize().multiplyScalar(-accelerate * deltaTime / div));
+								if(incline) select_obj.velo.add(select_obj.velo.clone().cross(select_obj.position).normalize().multiplyScalar(accelerate * deltaTime / div));
+								if(antiincline) select_obj.velo.add(select_obj.velo.clone().cross(select_obj.position).normalize().multiplyScalar(-accelerate * deltaTime / div));
 							}
 							var dvelo = accel.clone().multiplyScalar(0.5);
 							var vec0 = a.position.clone().add(a.velo.clone().multiplyScalar(deltaTime / div / 2.));
