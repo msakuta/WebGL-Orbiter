@@ -35,3 +35,11 @@ Mars Texture
 http://planetpixelemporium.com/mars.html
 
 and renamed from "mars_1k_color.jpg"
+
+
+Background Star Texture
+-----------------------
+
+"hipparcoscyl1.jpg" was obtained from:
+
+http://solarviews.com/cap/ds/hipparcoscyl1.htm

@@ -57,6 +57,7 @@
 			var container, stats;
 			var camera, scene, renderer;
 			var group;
+			var background;
 			var mouseX = 0, mouseY = 0;
 			var geometry;
 			var cameraControls;
@@ -220,6 +221,20 @@
 				camera.position.y = 300;
 				camera.position.z = 1000;
 
+				background = new THREE.Scene();
+				background.rotation.x = Math.PI / 2;
+				var loader = new THREE.TextureLoader();
+				loader.load( 'hipparcoscyl1.jpg', function ( texture ) {
+
+					var geometry = new THREE.SphereGeometry( 2, 20, 20 );
+
+					var material = new THREE.MeshBasicMaterial( { map: texture, overdraw: 0.5, depthTest: false, depthWrite: false, side: THREE.BackSide } );
+					material.depthWrite = false;
+					var mesh = new THREE.Mesh(geometry, material);
+					background.add(mesh);
+
+				} );
+
 				scene = new THREE.Scene();
 
 				group = new THREE.Object3D();
@@ -359,6 +374,7 @@
 				renderer = new THREE.WebGLRenderer();
 				renderer.setClearColor( 0x000000 );
 				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.autoClear = false;
 
 				cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
 				cameraControls.target.set( 0, 0, 0);
@@ -490,6 +506,10 @@
 				var oldQuaternion = camera.quaternion.clone();
 				camera.quaternion.copy(rotate.multiply(camera.quaternion));
 
+				var position = camera.position.clone();
+				camera.position.set(0,0,0);
+				renderer.render( background, camera);
+				camera.position.copy(position);
 				renderer.render( scene, camera );
 
 				// Restore the original state because cameraControls expect these variables unchanged
