@@ -466,7 +466,7 @@
 
 			function onKeyDown( event ) {
 
-				switch ( event.key ) {
+				switch ( String.fromCharCode(event.which || event.keyCode).toLowerCase() ) {
 
 					case 'i':
 						if(select_obj === null)
@@ -501,20 +501,20 @@
 					case 'd': // orbit plane normal negative
 						antiincline = true;
 						break;
-
-					// Also support numpad plus and minus
-					case '+': case 'Add':
-						timescale *= 2;
-						break;
-					case '-': case 'Subtract':
-						timescale /= 2;
-						break;
 				}
+
+				// Annoying browser incompatibilities
+				var code = event.which || event.keyCode;
+				// Also support numpad plus and minus
+				if(code === 107 || code === 187 && event.shiftKey)
+					timescale *= 2;
+				if(code === 109 || code === 189)
+					timescale /= 2;
 
 			}
 
 			function onKeyUp( event ) {
-				switch ( event.key ) {
+				switch ( String.fromCharCode(event.which || event.keyCode).toLowerCase() ) {
 					case 'w': // prograde
 						prograde = false;
 						break;
