@@ -287,7 +287,7 @@
 				}
 
 				sun = new CelestialBody(null, new THREE.Vector3(), null, 0xffffff, this.parent.GM);
-				var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f);
+				var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, 'mercury.jpg', 2439.7);
 				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f);
 				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
 				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, 'land_ocean_ice_cloud_2048.jpg', 6534);
