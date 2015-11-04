@@ -160,26 +160,6 @@
 					this.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
 				if(e.z < 0) this.argument_of_perihelion = 2 * Math.PI - this.argument_of_perihelion;
 
-				// DEBUG: Update orbit candidates
-				if(debugMode){
-					for (var i = 0; i < 2; i++) {
-						var argument_of_perihelion;
-						// Avoid zero division and still get the correct answer when N == 0
-						// This is necessary to draw orbit with zero inclination and nonzero eccentricity.
-						if(N.lengthSq() <= epsilon || e.lengthSq() <= epsilon)
-							argument_of_perihelion = Math.atan2(e.y, e.x);
-						else
-							rgument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
-						if(0 < i) argument_of_perihelion = 2 * Math.PI - argument_of_perihelion;
-
-						var debugRotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
-						this.orbits[i].quaternion.copy(debugRotation);
-						this.orbits[i].scale.x = this.semimajor_axis * viewScale * Math.sqrt(1. - this.eccentricity * this.eccentricity);
-						this.orbits[i].scale.y = this.semimajor_axis * viewScale;
-						this.orbits[i].position.copy(new THREE.Vector3(0, -this.semimajor_axis * viewScale * this.eccentricity, 0).applyQuaternion(debugRotation));
-					}
-				}
-
 				// Total rotation of the orbit
 				var rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, this.argument_of_perihelion));
 
@@ -325,14 +305,6 @@
 					asteroid.orbit = orbitMesh;
 					scene.add(orbitMesh);
 					asteroid.orbits = [];
-
-					// DEBUG: draw candidates of orbits
-					for(var j = 0; j < 2; j++){
-						var orbitMesh = new THREE.Line(orbitGeometry, asteroid.orbitMaterial);
-						orbitMesh.visible = debugMode;
-						asteroid.orbits[j] = orbitMesh;
-						scene.add(orbitMesh);
-					}
 
 					asteroid.init();
 					asteroid.update();
@@ -497,14 +469,6 @@
 
 					case 'c':
 						center_select = !center_select;
-						break;
-
-					case 'D':
-						debugMode = !debugMode;
-						for(var i = 0; i < sun.children.length; i++){
-							sun.children[i].orbits[0].visible = debugMode;
-							sun.children[i].orbits[1].visible = debugMode;
-						}
 						break;
 
 					case 'w': // prograde
