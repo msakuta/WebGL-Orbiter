@@ -101,6 +101,7 @@
 			function CelestialBody(parent, position, vertex, orbitColor, GM){
 				this.position = position;
 				this.velocity = new THREE.Vector3();
+				this.angularVelocity = new THREE.Vector3();
 				this.vertex = vertex;
 				if(orbitColor) this.orbitMaterial = new THREE.LineBasicMaterial({color: orbitColor});
 				this.children = [];
@@ -292,7 +293,7 @@
 
 				// Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 				// It's a bit difficult to calculate in Newtonian dynamics simulation.
-				function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius){
+				function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, angularVelocity){
 					var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
 						.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - inclination))
 						.multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
@@ -321,6 +322,7 @@
 					// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
 					// https://en.wikipedia.org/wiki/Orbital_speed
 					ret.velo = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.sqrt(ret.parent.GM * (2 / ret.position.length() - 1 / semimajor_axis))).applyQuaternion(rotation);
+					ret.angularVelocity = angularVelocity || new THREE.Vector3(0,0,0);
 					var orbitMesh = new THREE.Line(orbitGeometry, ret.orbitMaterial);
 					ret.orbit = orbitMesh;
 					scene.add(orbitMesh);
@@ -333,7 +335,7 @@
 				var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, 'mercury.jpg', 2439.7);
 				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, 'venus.jpg', 6051.8);
 				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
-				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, 'land_ocean_ice_cloud_2048.jpg', 6534);
+				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, 'land_ocean_ice_cloud_2048.jpg', 6534, new THREE.Vector3(2 * Math.PI / ((23 * 60 + 56) * 60 + 4.10)));
 				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, this.parent.GM, earth, 'moon.png', 1737.1);
 				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'mars.jpg', 3389.5);
 				select_obj = earth;
@@ -468,6 +470,10 @@
 
 							a.velo.add(accel1);
 							a.position.add(velo1.multiplyScalar(deltaTime / div));
+							if(a.model){
+								var axis = a.angularVelocity.clone().normalize();
+								a.model.quaternion.multiply(AxisAngleQuaternion(axis.y, -axis.z, axis.x, a.angularVelocity.length() * deltaTime / div));
+							}
 						}
 						simulateBody(a.children);
 					}
