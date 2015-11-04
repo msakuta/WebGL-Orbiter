@@ -267,8 +267,24 @@
 						.multiply(AxisAngleQuaternion(0, 1, 0, inclination))
 						.multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
 					var vertex = new THREE.Vector3(0,0,0);
-					var ret = new CelestialBody(parent || sun, new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), vertex, color, GM);
-					geometry.vertices.push( vertex );
+					var group = new THREE.Object3D();
+					var ret = new CelestialBody(parent || sun, new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), group.position, color, GM);
+//					geometry.vertices.push( vertex );
+					scene.add( group );
+					// earth
+
+					var loader = new THREE.TextureLoader();
+					loader.load( 'land_ocean_ice_cloud_2048.jpg', function ( texture ) {
+
+						var geometry = new THREE.SphereGeometry( 6583, 20, 20 );
+
+						var material = new THREE.MeshBasicMaterial( { map: texture, overdraw: 0.5 } );
+						var mesh = new THREE.Mesh( geometry, material );
+						mesh.scale.x = mesh.scale.y = mesh.scale.z = 1.e3 / AU;
+						mesh.rotation.x = Math.PI / 2;
+						group.add( mesh );
+
+					} );
 					// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
 					// https://en.wikipedia.org/wiki/Orbital_speed
 					ret.velo = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.sqrt(ret.parent.GM * (2 / ret.position.length() - 1 / semimajor_axis))).applyQuaternion(rotation);
@@ -334,7 +350,7 @@
 				cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
 				cameraControls.target.set( 0, 40, 0);
 				cameraControls.maxDistance = 4000;
-				cameraControls.minDistance = 10;
+				cameraControls.minDistance = 1;
 				cameraControls.update();
 
 				container.appendChild( renderer.domElement );
