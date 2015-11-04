@@ -70,7 +70,7 @@
 			var center_select = false;
 			var select_idx = 0;
 			var select_obj = null;
-			var debugMode = false;
+			var nlips_enable = true;
 
 			var prograde = false;
 			var retrograde = false;
@@ -106,6 +106,7 @@
 				this.parent = parent;
 				this.GM = GM || GMsun;
 				if(parent) parent.children.push(this);
+				this.radius = 1 / AU;
 			}
 
 			CelestialBody.prototype.init = function(){
@@ -128,10 +129,28 @@
 			// The whole discussion is found in chapter 4.4 in
 			// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
 			CelestialBody.prototype.update = function(){
+				/// NLIPS: Non-Linear Inverse Perspective Scrolling
+				/// Idea originally found in a game Homeworld that enable
+				/// distant small objects to appear on screen in recognizable size
+				/// but still renders in real scale when zoomed up.
+				function nlipsFactor(o){
+					if(!nlips_enable)
+						return 1;
+					var g_nlips_factor = 1e6;
+					var d = o.vertex.distanceTo(camera.position) / viewScale;
+					var f = d / o.radius * g_nlips_factor + 1;
+					return f;
+				}
+
 				this.vertex.copy(this.parent.position).add(this.position);
 				if(select_obj && center_select)
 					this.vertex.sub(select_obj.position);
 				this.vertex.multiplyScalar(viewScale);
+
+				if(this.model){
+					this.model.scale.set(1,1,1).multiplyScalar(nlipsFactor(this));
+				}
+
 				// Angular momentum vectors
 				var ang = this.velo.clone().cross(this.position);
 				var r = this.position.length();
@@ -190,6 +209,7 @@
 					var a = this.children[i];
 					a.update();
 				}
+
 			};
 
 			function init() {
@@ -264,6 +284,8 @@
 					var vertex = new THREE.Vector3(0,0,0);
 					var group = new THREE.Object3D();
 					var ret = new CelestialBody(parent || sun, new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), group.position, color, GM);
+					ret.model = group;
+					ret.radius = radius;
 //					geometry.vertices.push( vertex );
 					scene.add( group );
 					// earth
@@ -489,6 +511,10 @@
 
 					case 'c':
 						center_select = !center_select;
+						break;
+
+					case 'n': // toggle NLIPS
+						nlips_enable = !nlips_enable;
 						break;
 
 					case 'w': // prograde
