@@ -87,7 +87,7 @@
 			var AU = 149597871; // Astronomical unit in kilometers
 			var GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 			var epsilon = 1e-20; // Doesn't the machine epsilon depend on browsers!??
-			var timescale = 1e6; // This is not a constant; it can be changed by the user
+			var timescale = 1e5; // This is not a constant; it can be changed by the user
 			var rad_per_deg = Math.PI / 180; // Radians per degrees
 
 			function AxisAngleQuaternion(x, y, z, angle){
@@ -321,6 +321,9 @@
 				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, 'land_ocean_ice_cloud_2048.jpg', 6534);
 				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, this.parent.GM, earth, 'moon.png', 1737.1);
 				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'mars.jpg', 3389.5);
+				select_obj = earth;
+				center_select = true;
+				camera.position.set(0.05, 0.03, 0.05);
 
 				for ( i = 0; i < 10; i ++ ) {
 
@@ -420,7 +423,7 @@
 					+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds())
 					+ ' Timescale: ' + timescale.toPrecision(5);
 
-				camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 2);
+				camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);
 				camera.updateProjectionMatrix();
 
 				var prevpos;
