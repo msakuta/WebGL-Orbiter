@@ -222,6 +222,9 @@
 				var mesh = new THREE.LineSegments(meshGeometry, meshMaterial);
 				mesh.scale.x = mesh.scale.y = 100;
 				scene.add(mesh);
+				var mesh2 = new THREE.LineSegments(meshGeometry, meshMaterial);
+				mesh2.scale.x = mesh2.scale.y = 10000 / AU * 100;
+				scene.add(mesh2);
 
 				function addAxis(axisVector, color){
 					var axisXMaterial = new THREE.LineBasicMaterial({color: color});
@@ -288,7 +291,7 @@
 				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f);
 				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
 				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, 'land_ocean_ice_cloud_2048.jpg', 6534);
-				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f3f3f, this.parent.GM, earth, 'moon.png', 1737.1);
+				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, this.parent.GM, earth, 'moon.png', 1737.1);
 				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f);
 
 				for ( i = 0; i < 10; i ++ ) {
