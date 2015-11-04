@@ -6,3 +6,12 @@ http://wms.lroc.asu.edu/lroc/view_rdr_product/WAC_GLOBAL_E000N1800_004P
 
 Lunar Reconnaissance Orbiter Camera Narrow Angle Camera (LROC NAC): NASA / GSFC / ASU
 Lunar Reconnaissance Orbiter Camera Wide Angle Camera (LROC WAC): NASA / GSFC / ASU
+
+Mars Texture
+------------
+
+"mars.jpg" was obtained from:
+
+http://planetpixelemporium.com/mars.html
+
+and renamed from "mars_1k_color.jpg"
