@@ -80,6 +80,7 @@
 			var antiincline = false;
 
 			var sun;
+			var light;
 
 			var selectedOrbitMaterial;
 
@@ -213,6 +214,11 @@
 				var mesh = new THREE.Mesh( sgeometry, material );
 				group.add( mesh );
 
+				// Sun light
+				light = new THREE.PointLight( 0xffffff, 1, 0, 1e-6 );
+				scene.add( light );
+				scene.add( new THREE.AmbientLight( 0x202020 ) );
+
 				var meshMaterial = new THREE.LineBasicMaterial({color: 0x3f3f3f});
 				var meshGeometry = new THREE.Geometry();
 				for(var x = -10; x <= 10; x++)
@@ -267,7 +273,7 @@
 
 						var geometry = new THREE.SphereGeometry( 1, 20, 20 );
 
-						var material = new THREE.MeshBasicMaterial( { map: texture, overdraw: 0.5 } );
+						var material = new THREE.MeshLambertMaterial( { map: texture, color: 0xffffff, shading: THREE.FlatShading, overdraw: 0.5 } );
 						var mesh = new THREE.Mesh( geometry, material );
 						var radiusInAu = 100 * (radius || 6534) / AU;
 						mesh.scale.set(radiusInAu, radiusInAu, radiusInAu);
@@ -440,9 +446,11 @@
 				if(center_select && select_obj){
 					// offset sun position
 					group.position.copy(select_obj.position).multiplyScalar(-viewScale);
+					light.position.copy(select_obj.position).multiplyScalar(-viewScale);
 				}
 				else{
 					group.position.set(0,0,0).multiplyScalar(-viewScale);
+					light.position.set(0,0,0);
 				}
 
 				geometry.verticesNeedUpdate = true;
