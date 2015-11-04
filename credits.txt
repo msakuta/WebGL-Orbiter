@@ -17,6 +17,16 @@ http://planetpixelemporium.com/mercury.html
 and renamed from "mercurymap.jpg"
 
 
+Venus Texture
+---------------
+
+"venuscyl4.jpg" was obtained from:
+
+http://planetpixelemporium.com/mercury.html
+
+and renamed from "venus.jpg"
+
+
 Mars Texture
 ------------
 
