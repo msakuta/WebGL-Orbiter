@@ -161,7 +161,7 @@
 				// Eccentricity vector
 				var e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velo.clone().multiplyScalar(this.position.dot(this.velo) / this.parent.GM));
 				this.eccentricity = e.length();
-				this.inclination = Math.acos(ang.z / ang.length());
+				this.inclination = Math.acos(-ang.z / ang.length());
 				// Avoid zero division
 				if(N.lengthSq() <= epsilon)
 					this.ascending_node = 0;
@@ -172,14 +172,14 @@
 				this.semimajor_axis = 1 / (2 / r - v * v / this.parent.GM);
 
 				// Rotation to perifocal frame
-				var planeRot = AxisAngleQuaternion(0, 0, 1, this.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, this.inclination));
+				var planeRot = AxisAngleQuaternion(0, 0, 1, this.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - this.inclination));
 
 				var headingApoapsis = -this.position.dot(this.velo)/Math.abs(this.position.dot(this.velo));
 
 				// Avoid zero division and still get the correct answer when N == 0.
 				// This is necessary to draw orbit with zero inclination and nonzero eccentricity.
 				if(N.lengthSq() <= epsilon || e.lengthSq() <= epsilon)
-					this.argument_of_perihelion = Math.atan2(e.y, e.x);
+					this.argument_of_perihelion = Math.atan2(-e.y, e.x);
 				else
 					this.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
 				if(e.z < 0) this.argument_of_perihelion = 2 * Math.PI - this.argument_of_perihelion;
@@ -294,7 +294,7 @@
 				// It's a bit difficult to calculate in Newtonian dynamics simulation.
 				function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius){
 					var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
-						.multiply(AxisAngleQuaternion(0, 1, 0, inclination))
+						.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - inclination))
 						.multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
 					var vertex = new THREE.Vector3(0,0,0);
 					var group = new THREE.Object3D();
@@ -352,7 +352,7 @@
 					position.multiplyScalar(2.5);
 					var vertex = new THREE.Vector3(0,0,0);
 					var asteroid = new CelestialBody(sun, position, vertex);
-					asteroid.velo = new THREE.Vector3((Math.random() - 0.5) * 0.3 + 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
+					asteroid.velo = new THREE.Vector3((Math.random() - 0.5) * 0.3 - 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
 						.multiplyScalar(Math.sqrt(GMsun / position.length())).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
 					geometry.vertices.push( vertex );
