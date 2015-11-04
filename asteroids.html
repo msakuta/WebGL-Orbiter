@@ -262,7 +262,7 @@
 
 				// Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 				// It's a bit difficult to calculate in Newtonian dynamics simulation.
-				function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent){
+				function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture){
 					var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
 						.multiply(AxisAngleQuaternion(0, 1, 0, inclination))
 						.multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
@@ -274,7 +274,7 @@
 					// earth
 
 					var loader = new THREE.TextureLoader();
-					loader.load( 'land_ocean_ice_cloud_2048.jpg', function ( texture ) {
+					loader.load( texture || 'land_ocean_ice_cloud_2048.jpg', function ( texture ) {
 
 						var geometry = new THREE.SphereGeometry( 6583, 20, 20 );
 
@@ -301,7 +301,7 @@
 				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f);
 				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
 				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU);
-				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f3f3f, this.parent.GM, earth);
+				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f3f3f, this.parent.GM, earth, 'moon.png');
 				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f);
 
 				for ( i = 0; i < 10; i ++ ) {
