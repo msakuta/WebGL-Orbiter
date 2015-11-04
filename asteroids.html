@@ -127,7 +127,10 @@
 			// The whole discussion is found in chapter 4.4 in
 			// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
 			CelestialBody.prototype.update = function(){
-				this.vertex.copy(this.parent.position).add(this.position).multiplyScalar(viewScale);
+				this.vertex.copy(this.parent.position).add(this.position);
+				if(select_obj && center_select)
+					this.vertex.sub(select_obj.position);
+				this.vertex.multiplyScalar(viewScale);
 				// Angular momentum vectors
 				var ang = this.velo.clone().cross(this.position);
 				var r = this.position.length();
@@ -177,7 +180,10 @@
 				this.orbit.quaternion.copy(rotation);
 				this.orbit.scale.x = this.semimajor_axis * viewScale * Math.sqrt(1. - this.eccentricity * this.eccentricity);
 				this.orbit.scale.y = this.semimajor_axis * viewScale;
-				this.orbit.position.copy(new THREE.Vector3(0, -this.semimajor_axis * this.eccentricity, 0).applyQuaternion(rotation).add(this.parent.position).multiplyScalar(viewScale));
+				this.orbit.position.copy(new THREE.Vector3(0, -this.semimajor_axis * this.eccentricity, 0).applyQuaternion(rotation).add(this.parent.position));
+				if(select_obj && center_select)
+					this.orbit.position.sub(select_obj.position);
+				this.orbit.position.multiplyScalar(viewScale);
 
 				for(var i = 0; i < this.children.length; i++){
 					var a = this.children[i];
@@ -321,9 +327,9 @@
 				renderer.setSize( window.innerWidth, window.innerHeight );
 
 				cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
-				cameraControls.target.set( 0, 40, 0);
+				cameraControls.target.set( 0, 0, 0);
 				cameraControls.maxDistance = 4000;
-				cameraControls.minDistance = 1;
+				cameraControls.minDistance = 0.001;
 				cameraControls.update();
 
 				container.appendChild( renderer.domElement );
@@ -382,6 +388,10 @@
 				document.getElementById('time').innerHTML = 'Time: ' + time.getFullYear() + '/' + zerofill(time.getMonth() + 1) + '/' + zerofill(time.getDate())
 					+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds())
 					+ ' Timescale: ' + timescale.toPrecision(5);
+
+				camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 2);
+				camera.updateProjectionMatrix();
+
 				var prevpos;
 				if(center_select && select_obj){
 					prevpos = select_obj.vertex.clone();
@@ -425,13 +435,11 @@
 
 				var irotate = AxisAngleQuaternion(-1, 0, 0, Math.PI / 2);
 				if(center_select && select_obj){
-					var rvertex = select_obj.vertex.clone().applyQuaternion(irotate);
-					cameraControls.target.copy(rvertex);
-					// Move the camera along with the target motion.
-					camera.position.add(rvertex.sub(prevpos.applyQuaternion(irotate)));
+					// offset sun position
+					group.position.copy(select_obj.position).multiplyScalar(-viewScale);
 				}
 				else{
-					cameraControls.target.copy(new THREE.Vector3(0, 0, 0));
+					group.position.set(0,0,0).multiplyScalar(-viewScale);
 				}
 
 				geometry.verticesNeedUpdate = true;
