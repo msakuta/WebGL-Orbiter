@@ -147,6 +147,13 @@
 			// The whole discussion is found in chapter 4.4 in
 			// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
 			CelestialBody.prototype.update = function(){
+				function visualPosition(o){
+					var position = o.getWorldPosition();
+					if(select_obj && center_select)
+						position.sub(select_obj.getWorldPosition());
+					position.multiplyScalar(viewScale);
+					return position;
+				}
 				/// NLIPS: Non-Linear Inverse Perspective Scrolling
 				/// Idea originally found in a game Homeworld that enable
 				/// distant small objects to appear on screen in recognizable size
@@ -155,75 +162,78 @@
 					if(!nlips_enable)
 						return 1;
 					var g_nlips_factor = 1e6;
-					var d = o.vertex.distanceTo(camera.position) / viewScale;
+					var d = visualPosition(o).distanceTo(camera.position) / viewScale;
 					var f = d / o.radius * g_nlips_factor + 1;
 					return f;
 				}
 
-				this.vertex.copy(this.getWorldPosition());
-				if(select_obj && center_select)
-					this.vertex.sub(select_obj.getWorldPosition());
-				this.vertex.multiplyScalar(viewScale);
+				if(this.vertex)
+					this.vertex.copy(visualPosition(this));
 
 				if(this.model){
+					this.model.position.copy(visualPosition(this));
 					this.model.scale.set(1,1,1).multiplyScalar(nlipsFactor(this));
-					this.model.quaternion.copy(this.quaternion.clone().multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)));
+					this.model.quaternion.copy(this.quaternion.clone().multiply(AxisAngleQuaternion(1, 0, 0, 0*Math.PI / 2)));
 				}
 
-				// Angular momentum vectors
-				var ang = this.velocity.clone().cross(this.position);
-				var r = this.position.length();
-				var v = this.velocity.length();
-				// Node vector
-				var N = (new THREE.Vector3(0, 0, 1)).cross(ang);
-				// Eccentricity vector
-				var e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velocity.clone().multiplyScalar(this.position.dot(this.velocity) / this.parent.GM));
-				this.eccentricity = e.length();
-				this.inclination = Math.acos(-ang.z / ang.length());
-				// Avoid zero division
-				if(N.lengthSq() <= epsilon)
-					this.ascending_node = 0;
-				else{
-					this.ascending_node = Math.acos(N.x / N.length());
-					if(N.y < 0) this.ascending_node = 2 * Math.PI - this.ascending_node;
+				if(this.parent){
+					// Angular momentum vectors
+					var ang = this.velocity.clone().cross(this.position);
+					var r = this.position.length();
+					var v = this.velocity.length();
+					// Node vector
+					var N = (new THREE.Vector3(0, 0, 1)).cross(ang);
+					// Eccentricity vector
+					var e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velocity.clone().multiplyScalar(this.position.dot(this.velocity) / this.parent.GM));
+					this.eccentricity = e.length();
+					this.inclination = Math.acos(-ang.z / ang.length());
+					// Avoid zero division
+					if(N.lengthSq() <= epsilon)
+						this.ascending_node = 0;
+					else{
+						this.ascending_node = Math.acos(N.x / N.length());
+						if(N.y < 0) this.ascending_node = 2 * Math.PI - this.ascending_node;
+					}
+					this.semimajor_axis = 1 / (2 / r - v * v / this.parent.GM);
+
+					// Rotation to perifocal frame
+					var planeRot = AxisAngleQuaternion(0, 0, 1, this.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - this.inclination));
+
+					var headingApoapsis = -this.position.dot(this.velocity)/Math.abs(this.position.dot(this.velocity));
+
+					// Avoid zero division and still get the correct answer when N == 0.
+					// This is necessary to draw orbit with zero inclination and nonzero eccentricity.
+					if(N.lengthSq() <= epsilon || e.lengthSq() <= epsilon)
+						this.argument_of_perihelion = Math.atan2(-e.y, e.x);
+					else
+						this.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
+					if(e.z < 0) this.argument_of_perihelion = 2 * Math.PI - this.argument_of_perihelion;
+
+					// Total rotation of the orbit
+					var rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, this.argument_of_perihelion));
+
+					// Show orbit information
+					if(this === select_obj)
+						document.getElementById('orbit').innerHTML = 'Orbit: '
+							+ 'e=' + this.eccentricity.toFixed(10)
+							+ ' a=' + this.semimajor_axis.toFixed(10)
+							+ ' i=' + (this.inclination / Math.PI).toFixed(10)
+							+ ' Omega=' + (this.ascending_node / Math.PI).toFixed(10)
+							+ ' w=' + (this.argument_of_perihelion / Math.PI).toFixed(10)
+							+ ' head=' + headingApoapsis.toFixed(5)
+							+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + this.angularVelocity.y.toFixed(10) + ',' + this.angularVelocity.z.toFixed(10);
+
+					// Apply transformation to orbit mesh
+					if(this.orbit){
+						this.orbit.quaternion.copy(rotation);
+						this.orbit.scale.x = this.semimajor_axis * viewScale * Math.sqrt(1. - this.eccentricity * this.eccentricity);
+						this.orbit.scale.y = this.semimajor_axis * viewScale;
+						this.orbit.position.copy(new THREE.Vector3(0, -this.semimajor_axis * this.eccentricity, 0).applyQuaternion(rotation).add(this.parent.getWorldPosition()));
+						if(select_obj && center_select)
+							this.orbit.position.sub(select_obj.getWorldPosition());
+						this.orbit.position.multiplyScalar(viewScale);
+					}
 				}
-				this.semimajor_axis = 1 / (2 / r - v * v / this.parent.GM);
-
-				// Rotation to perifocal frame
-				var planeRot = AxisAngleQuaternion(0, 0, 1, this.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - this.inclination));
-
-				var headingApoapsis = -this.position.dot(this.velocity)/Math.abs(this.position.dot(this.velocity));
-
-				// Avoid zero division and still get the correct answer when N == 0.
-				// This is necessary to draw orbit with zero inclination and nonzero eccentricity.
-				if(N.lengthSq() <= epsilon || e.lengthSq() <= epsilon)
-					this.argument_of_perihelion = Math.atan2(-e.y, e.x);
-				else
-					this.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
-				if(e.z < 0) this.argument_of_perihelion = 2 * Math.PI - this.argument_of_perihelion;
-
-				// Total rotation of the orbit
-				var rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, this.argument_of_perihelion));
-
-				// Show orbit information
-				if(this === select_obj)
-					document.getElementById('orbit').innerHTML = 'Orbit: '
-						+ 'e=' + this.eccentricity.toFixed(10)
-						+ ' a=' + this.semimajor_axis.toFixed(10)
-						+ ' i=' + (this.inclination / Math.PI).toFixed(10)
-						+ ' Omega=' + (this.ascending_node / Math.PI).toFixed(10)
-						+ ' w=' + (this.argument_of_perihelion / Math.PI).toFixed(10)
-						+ ' head=' + headingApoapsis.toFixed(5)
-						+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + this.angularVelocity.y.toFixed(10) + ',' + this.angularVelocity.z.toFixed(10);
-
-				// Apply transformation to orbit mesh
-				this.orbit.quaternion.copy(rotation);
-				this.orbit.scale.x = this.semimajor_axis * viewScale * Math.sqrt(1. - this.eccentricity * this.eccentricity);
-				this.orbit.scale.y = this.semimajor_axis * viewScale;
-				this.orbit.position.copy(new THREE.Vector3(0, -this.semimajor_axis * this.eccentricity, 0).applyQuaternion(rotation).add(this.parent.getWorldPosition()));
-				if(select_obj && center_select)
-					this.orbit.position.sub(select_obj.getWorldPosition());
-				this.orbit.position.multiplyScalar(viewScale);
 
 				for(var i = 0; i < this.children.length; i++){
 					var a = this.children[i];
@@ -262,11 +272,11 @@
 				var material = new THREE.ParticleSystemMaterial( { size: 0.1 } );
 
 				// Sun
-				var Rsun = 695800. / 149597871. * viewScale;
-				var sgeometry = new THREE.SphereGeometry( Rsun, 20, 20 );
+				var Rsun = 695800.;
+				var sgeometry = new THREE.SphereGeometry( Rsun / AU * viewScale, 20, 20 );
 
-				var mesh = new THREE.Mesh( sgeometry, material );
-				group.add( mesh );
+				var sunMesh = new THREE.Mesh( sgeometry, material );
+				group.add( sunMesh );
 
 				// Sun light
 				light = new THREE.PointLight( 0xffffff, 1, 0, 1e-6 );
@@ -367,6 +377,8 @@
 				}
 
 				sun = new CelestialBody(null, new THREE.Vector3(), null, 0xffffff, this.parent.GM);
+				sun.radius = Rsun;
+				sun.model = group;
 				var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, 'mercury.jpg', 2439.7);
 				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, 'venus.jpg', 6051.8);
 				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
@@ -480,12 +492,8 @@
 				camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);
 				camera.updateProjectionMatrix();
 
-				var prevpos;
-				if(center_select && select_obj){
-					prevpos = select_obj.vertex.clone();
-				}
-
-				function simulateBody(children){
+				function simulateBody(parent){
+					var children = parent.children;
 					for(var i = 0; i < children.length; i++){
 						var a = children[i];
 						var sl = a.position.lengthSq();
@@ -513,35 +521,25 @@
 
 							a.velocity.add(accel1);
 							a.position.add(velo1.multiplyScalar(deltaTime / div));
-							if(a.model){
+							if(0 < a.angularVelocity.lengthSq()){
 								var axis = a.angularVelocity.clone().normalize();
-								a.model.quaternion.multiply(AxisAngleQuaternion(axis.y, -axis.z, axis.x, a.angularVelocity.length() * deltaTime / div));
+								a.quaternion.multiply(AxisAngleQuaternion(axis.x, axis.y, axis.z, a.angularVelocity.length() * deltaTime / div));
 							}
 						}
-						simulateBody(a.children);
+						simulateBody(a);
 					}
 				}
 
 				var accelerate = 1e-15;
 				var div = 100; // We should pick subdivide simulation step count by angular speed!
 				for(var d = 0; d < div; d++){
-					simulateBody(sun.children);
+					simulateBody(sun);
 				}
-				for(var i = 0; i < sun.children.length; i++){
-					var a = sun.children[i];
-					a.update();
-				}
+				sun.update();
 
 				var irotate = AxisAngleQuaternion(-1, 0, 0, Math.PI / 2);
-				if(center_select && select_obj){
-					// offset sun position
-					group.position.copy(select_obj.getWorldPosition()).multiplyScalar(-viewScale);
-					light.position.copy(select_obj.getWorldPosition()).multiplyScalar(-viewScale);
-				}
-				else{
-					group.position.set(0,0,0).multiplyScalar(-viewScale);
-					light.position.set(0,0,0);
-				}
+				// offset sun position
+				light.position.copy(sun.model.position);
 
 				geometry.verticesNeedUpdate = true;
 
