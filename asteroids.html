@@ -102,7 +102,7 @@
 				this.position = position;
 				this.velocity = new THREE.Vector3();
 				this.angularVelocity = new THREE.Vector3();
-				this.vertex = vertex;
+				this.vertex = vertex || new THREE.Vector3();
 				if(orbitColor) this.orbitMaterial = new THREE.LineBasicMaterial({color: orbitColor});
 				this.children = [];
 				this.parent = parent;
@@ -127,6 +127,13 @@
 				return now_anomaly + this.eccentricity * Math.sin(now_anomaly);
 			};
 
+			CelestialBody.prototype.getWorldPosition = function(){
+				if(this.parent)
+					return this.parent.getWorldPosition().clone().add(this.position);
+				else
+					return this.position;
+			};
+
 			// Update orbital elements from position and velocity.
 			// The whole discussion is found in chapter 4.4 in
 			// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
@@ -144,9 +151,9 @@
 					return f;
 				}
 
-				this.vertex.copy(this.parent.position).add(this.position);
+				this.vertex.copy(this.getWorldPosition());
 				if(select_obj && center_select)
-					this.vertex.sub(select_obj.position);
+					this.vertex.sub(select_obj.getWorldPosition());
 				this.vertex.multiplyScalar(viewScale);
 
 				if(this.model){
@@ -154,13 +161,13 @@
 				}
 
 				// Angular momentum vectors
-				var ang = this.velo.clone().cross(this.position);
+				var ang = this.velocity.clone().cross(this.position);
 				var r = this.position.length();
-				var v = this.velo.length();
+				var v = this.velocity.length();
 				// Node vector
 				var N = (new THREE.Vector3(0, 0, 1)).cross(ang);
 				// Eccentricity vector
-				var e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velo.clone().multiplyScalar(this.position.dot(this.velo) / this.parent.GM));
+				var e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velocity.clone().multiplyScalar(this.position.dot(this.velocity) / this.parent.GM));
 				this.eccentricity = e.length();
 				this.inclination = Math.acos(-ang.z / ang.length());
 				// Avoid zero division
@@ -175,7 +182,7 @@
 				// Rotation to perifocal frame
 				var planeRot = AxisAngleQuaternion(0, 0, 1, this.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - this.inclination));
 
-				var headingApoapsis = -this.position.dot(this.velo)/Math.abs(this.position.dot(this.velo));
+				var headingApoapsis = -this.position.dot(this.velocity)/Math.abs(this.position.dot(this.velocity));
 
 				// Avoid zero division and still get the correct answer when N == 0.
 				// This is necessary to draw orbit with zero inclination and nonzero eccentricity.
@@ -202,9 +209,9 @@
 				this.orbit.quaternion.copy(rotation);
 				this.orbit.scale.x = this.semimajor_axis * viewScale * Math.sqrt(1. - this.eccentricity * this.eccentricity);
 				this.orbit.scale.y = this.semimajor_axis * viewScale;
-				this.orbit.position.copy(new THREE.Vector3(0, -this.semimajor_axis * this.eccentricity, 0).applyQuaternion(rotation).add(this.parent.position));
+				this.orbit.position.copy(new THREE.Vector3(0, -this.semimajor_axis * this.eccentricity, 0).applyQuaternion(rotation).add(this.parent.getWorldPosition()));
 				if(select_obj && center_select)
-					this.orbit.position.sub(select_obj.position);
+					this.orbit.position.sub(select_obj.getWorldPosition());
 				this.orbit.position.multiplyScalar(viewScale);
 
 				for(var i = 0; i < this.children.length; i++){
@@ -321,7 +328,7 @@
 					} );
 					// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
 					// https://en.wikipedia.org/wiki/Orbital_speed
-					ret.velo = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.sqrt(ret.parent.GM * (2 / ret.position.length() - 1 / semimajor_axis))).applyQuaternion(rotation);
+					ret.velocity = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.sqrt(ret.parent.GM * (2 / ret.position.length() - 1 / semimajor_axis))).applyQuaternion(rotation);
 					ret.angularVelocity = angularVelocity || new THREE.Vector3(0,0,0);
 					var orbitMesh = new THREE.Line(orbitGeometry, ret.orbitMaterial);
 					ret.orbit = orbitMesh;
@@ -354,7 +361,7 @@
 					position.multiplyScalar(2.5);
 					var vertex = new THREE.Vector3(0,0,0);
 					var asteroid = new CelestialBody(sun, position, vertex);
-					asteroid.velo = new THREE.Vector3((Math.random() - 0.5) * 0.3 - 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
+					asteroid.velocity = new THREE.Vector3((Math.random() - 0.5) * 0.3 - 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
 						.multiplyScalar(Math.sqrt(GMsun / position.length())).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
 					geometry.vertices.push( vertex );
@@ -456,19 +463,19 @@
 						if(sl !== 0){
 							var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
 							if(select_obj === a){
-								if(prograde) select_obj.velo.add(select_obj.velo.clone().normalize().multiplyScalar(accelerate * deltaTime / div));
-								if(retrograde) select_obj.velo.add(select_obj.velo.clone().normalize().multiplyScalar(-accelerate * deltaTime / div));
-								if(normal) select_obj.velo.add(select_obj.position.clone().normalize().multiplyScalar(accelerate * deltaTime / div));
-								if(antinormal) select_obj.velo.add(select_obj.position.clone().normalize().multiplyScalar(-accelerate * deltaTime / div));
-								if(incline) select_obj.velo.add(select_obj.velo.clone().cross(select_obj.position).normalize().multiplyScalar(accelerate * deltaTime / div));
-								if(antiincline) select_obj.velo.add(select_obj.velo.clone().cross(select_obj.position).normalize().multiplyScalar(-accelerate * deltaTime / div));
+								if(prograde) select_obj.velocity.add(select_obj.velocity.clone().normalize().multiplyScalar(accelerate * deltaTime / div));
+								if(retrograde) select_obj.velocity.add(select_obj.velocity.clone().normalize().multiplyScalar(-accelerate * deltaTime / div));
+								if(normal) select_obj.velocity.add(select_obj.position.clone().normalize().multiplyScalar(accelerate * deltaTime / div));
+								if(antinormal) select_obj.velocity.add(select_obj.position.clone().normalize().multiplyScalar(-accelerate * deltaTime / div));
+								if(incline) select_obj.velocity.add(select_obj.velocity.clone().cross(select_obj.position).normalize().multiplyScalar(accelerate * deltaTime / div));
+								if(antiincline) select_obj.velocity.add(select_obj.velocity.clone().cross(select_obj.position).normalize().multiplyScalar(-accelerate * deltaTime / div));
 							}
 							var dvelo = accel.clone().multiplyScalar(0.5);
-							var vec0 = a.position.clone().add(a.velo.clone().multiplyScalar(deltaTime / div / 2.));
+							var vec0 = a.position.clone().add(a.velocity.clone().multiplyScalar(deltaTime / div / 2.));
 							var accel1 = vec0.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / vec0.lengthSq());
-							var velo1 = a.velo.clone().add(dvelo);
+							var velo1 = a.velocity.clone().add(dvelo);
 
-							a.velo.add(accel1);
+							a.velocity.add(accel1);
 							a.position.add(velo1.multiplyScalar(deltaTime / div));
 							if(a.model){
 								var axis = a.angularVelocity.clone().normalize();
@@ -492,8 +499,8 @@
 				var irotate = AxisAngleQuaternion(-1, 0, 0, Math.PI / 2);
 				if(center_select && select_obj){
 					// offset sun position
-					group.position.copy(select_obj.position).multiplyScalar(-viewScale);
-					light.position.copy(select_obj.position).multiplyScalar(-viewScale);
+					group.position.copy(select_obj.getWorldPosition()).multiplyScalar(-viewScale);
+					light.position.copy(select_obj.getWorldPosition()).multiplyScalar(-viewScale);
 				}
 				else{
 					group.position.set(0,0,0).multiplyScalar(-viewScale);
@@ -531,11 +538,36 @@
 						if(select_obj === null)
 							select_obj = sun.children[0];
 						else{
-							select_obj.orbit.material = select_obj.orbitMaterial;
-							select_idx = (select_idx + 1) % sun.children.length;
-							select_obj = sun.children[select_idx];
+							// Some objects do not have an orbit
+							if(select_obj.orbit)
+								select_obj.orbit.material = select_obj.orbitMaterial;
+							var objs = select_obj.children;
+							if(0 < objs.length){
+								select_obj = objs[0];
+							}
+							else{
+								var selected = false;
+								var prev = select_obj;
+								for(var parent = select_obj.parent; parent; parent = parent.parent){
+									objs = parent.children;
+									for(var i = 0; i < objs.length; i++){
+										var o = objs[i];
+										if(o === prev && i + 1 < objs.length){
+											select_obj = objs[i+1];
+											selected = true;
+											break;
+										}
+									}
+									if(selected)
+										break;
+									prev = parent;
+								}
+								if(!parent)
+									select_obj = sun;
+							}
 						}
-						select_obj.orbit.material = selectedOrbitMaterial;
+						if(select_obj.orbit)
+							select_obj.orbit.material = selectedOrbitMaterial;
 						break;
 
 					case 'c':
