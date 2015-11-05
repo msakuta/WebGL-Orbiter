@@ -76,6 +76,10 @@
 			var nlips_enable = true;
 			var grid_enable = false;
 
+			var up = false;
+			var down = false;
+			var left = false;
+			var right = false;
 			var prograde = false;
 			var retrograde = false;
 			var normal = false;
@@ -104,6 +108,7 @@
 			function CelestialBody(parent, position, vertex, orbitColor, GM){
 				this.position = position;
 				this.velocity = new THREE.Vector3();
+				this.quaternion = new THREE.Quaternion();
 				this.angularVelocity = new THREE.Vector3();
 				this.vertex = vertex || new THREE.Vector3();
 				if(orbitColor) this.orbitMaterial = new THREE.LineBasicMaterial({color: orbitColor});
@@ -112,6 +117,7 @@
 				this.GM = GM || GMsun;
 				if(parent) parent.children.push(this);
 				this.radius = 1 / AU;
+				this.controllable = false;
 			}
 
 			CelestialBody.prototype.init = function(){
@@ -161,6 +167,7 @@
 
 				if(this.model){
 					this.model.scale.set(1,1,1).multiplyScalar(nlipsFactor(this));
+					this.model.quaternion.copy(this.quaternion.clone().multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)));
 				}
 
 				// Angular momentum vectors
@@ -206,7 +213,8 @@
 						+ ' i=' + (this.inclination / Math.PI).toFixed(10)
 						+ ' Omega=' + (this.ascending_node / Math.PI).toFixed(10)
 						+ ' w=' + (this.argument_of_perihelion / Math.PI).toFixed(10)
-						+ ' head=' + headingApoapsis.toFixed(5);
+						+ ' head=' + headingApoapsis.toFixed(5)
+						+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + this.angularVelocity.y.toFixed(10) + ',' + this.angularVelocity.z.toFixed(10);
 
 				// Apply transformation to orbit mesh
 				this.orbit.quaternion.copy(rotation);
@@ -306,7 +314,7 @@
 
 				// Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 				// It's a bit difficult to calculate in Newtonian dynamics simulation.
-				function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, angularVelocity, modelName){
+				function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, angularVelocity, params){
 					var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
 						.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - inclination))
 						.multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
@@ -334,14 +342,18 @@
 
 						} );
 					}
-					else if(modelName){
+					else if(params.modelName){
 						var loader = new THREE.OBJLoader();
-						loader.load( modelName, function ( object ) {
+						loader.load( params.modelName, function ( object ) {
 							var radiusInAu = 100 * (radius || 6534) / AU;
 							object.scale.set(radiusInAu, radiusInAu, radiusInAu);
 							group.add( object );
 						} );
 					}
+
+					if(params && params.controllable)
+						ret.controllable = params.controllable;
+
 					// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
 					// https://en.wikipedia.org/wiki/Orbital_speed
 					ret.velocity = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.sqrt(ret.parent.GM * (2 / ret.position.length() - 1 / semimajor_axis))).applyQuaternion(rotation);
@@ -359,12 +371,12 @@
 				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, 'venus.jpg', 6051.8);
 				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
 				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, 'land_ocean_ice_cloud_2048.jpg', 6534, new THREE.Vector3(2 * Math.PI / ((23 * 60 + 56) * 60 + 4.10)));
-				var sat = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, null, 'rocket.obj');
+				var sat = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, null, {modelName: 'rocket.obj', controllable: true});
 				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, this.parent.GM, earth, 'moon.png', 1737.1);
 				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'mars.jpg', 3389.5);
-				select_obj = earth;
+				select_obj = sat;
 				center_select = true;
-				camera.position.set(0.05, 0.03, 0.05);
+				camera.position.set(0.005, 0.003, 0.005);
 
 				for ( i = 0; i < 10; i ++ ) {
 
@@ -478,8 +490,15 @@
 						var a = children[i];
 						var sl = a.position.lengthSq();
 						if(sl !== 0){
+							var angleAcceleration = 1e-1;
 							var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
 							if(select_obj === a){
+								if(up) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(down) select_obj.angularVelocity.add(new THREE.Vector3(-1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(left) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(right) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(!up && !down && !left && !right && 1e-12 < select_obj.angularVelocity.lengthSq())
+									select_obj.angularVelocity.add(select_obj.angularVelocity.clone().normalize().multiplyScalar(-angleAcceleration * deltaTime / div));
 								if(prograde) select_obj.velocity.add(select_obj.velocity.clone().normalize().multiplyScalar(accelerate * deltaTime / div));
 								if(retrograde) select_obj.velocity.add(select_obj.velocity.clone().normalize().multiplyScalar(-accelerate * deltaTime / div));
 								if(normal) select_obj.velocity.add(select_obj.position.clone().normalize().multiplyScalar(accelerate * deltaTime / div));
@@ -550,8 +569,9 @@
 			}
 
 			function onKeyDown( event ) {
+				var char = String.fromCharCode(event.which || event.keyCode).toLowerCase();
 
-				switch ( String.fromCharCode(event.which || event.keyCode).toLowerCase() ) {
+				switch ( char ) {
 
 					case 'i':
 						if(select_obj === null)
@@ -600,12 +620,16 @@
 					case 'g':
 						grid_enable = !grid_enable;
 						break;
+				}
 
+				if(select_obj && select_obj.controllable) switch( char ){
 					case 'w': // prograde
-						prograde = true;
+						up = true;
+//						prograde = true;
 						break;
 					case 's': // retrograde
-						retrograde = true;
+						down = true;
+//						retrograde = true;
 						break;
 					case 'q': // normal
 						normal = true;
@@ -614,10 +638,12 @@
 						antinormal = true;
 						break;
 					case 'a': // orbit plane normal
-						incline = true;
+						left = true;
+//						incline = true;
 						break;
 					case 'd': // orbit plane normal negative
-						antiincline = true;
+						right = true;
+//						antiincline = true;
 						break;
 				}
 
@@ -634,10 +660,12 @@
 			function onKeyUp( event ) {
 				switch ( String.fromCharCode(event.which || event.keyCode).toLowerCase() ) {
 					case 'w': // prograde
-						prograde = false;
+						up = false;
+//						prograde = false;
 						break;
 					case 's':
-						retrograde = false;
+						down = false;
+//						retrograde = false;
 						break;
 					case 'q': // prograde
 						normal = false;
@@ -646,10 +674,12 @@
 						antinormal = false;
 						break;
 					case 'a': // orbit plane normal
-						incline = false;
+						left = false;
+//						incline = false;
 						break;
 					case 'd': // orbit plane normal negative
-						antiincline = false;
+						right = false;
+//						antiincline = false;
 						break;
 				}
 			}
