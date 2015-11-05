@@ -61,6 +61,7 @@
 			var mouseX = 0, mouseY = 0;
 			var geometry;
 			var cameraControls;
+			var grids;
 
 			var windowHalfX = window.innerWidth / 2;
 			var windowHalfY = window.innerHeight / 2;
@@ -72,6 +73,7 @@
 			var select_idx = 0;
 			var select_obj = null;
 			var nlips_enable = true;
+			var grid_enable = false;
 
 			var prograde = false;
 			var retrograde = false;
@@ -268,12 +270,13 @@
 					meshGeometry.vertices.push( new THREE.Vector3( -10, x, 0 ), new THREE.Vector3(10, x, 0));
 				for(var x = -10; x <= 10; x++)
 					meshGeometry.vertices.push( new THREE.Vector3( x, -10, 0 ), new THREE.Vector3(x, 10, 0));
+				grids = new THREE.Object3D();
 				var mesh = new THREE.LineSegments(meshGeometry, meshMaterial);
 				mesh.scale.x = mesh.scale.y = 100;
-				scene.add(mesh);
+				grids.add(mesh);
 				var mesh2 = new THREE.LineSegments(meshGeometry, meshMaterial);
 				mesh2.scale.x = mesh2.scale.y = 10000 / AU * 100;
-				scene.add(mesh2);
+				grids.add(mesh2);
 
 				function addAxis(axisVector, color){
 					var axisXMaterial = new THREE.LineBasicMaterial({color: color});
@@ -281,11 +284,13 @@
 					axisXGeometry.vertices.push(new THREE.Vector3(0,0,0), axisVector);
 					var axisX = new THREE.Line(axisXGeometry, axisXMaterial);
 					axisX.scale.multiplyScalar(100);
-					scene.add(axisX);
+					grids.add(axisX);
 				}
 				addAxis(new THREE.Vector3(100,0,0), 0xff0000);
 				addAxis(new THREE.Vector3(0,100,0), 0x00ff00);
 				addAxis(new THREE.Vector3(0,0,100), 0x0000ff);
+
+				scene.add(grids);
 
 				var orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
 				CelestialBody.prototype.orbitMaterial = orbitMaterial; // Default orbit material
@@ -509,6 +514,8 @@
 
 				geometry.verticesNeedUpdate = true;
 
+				grids.visible = grid_enable;
+
 //				camera.up.copy(new THREE.Vector3(0,0,1)); // This did't work with OrbitControls
 				cameraControls.update();
 
@@ -576,6 +583,10 @@
 
 					case 'n': // toggle NLIPS
 						nlips_enable = !nlips_enable;
+						break;
+
+					case 'g':
+						grid_enable = !grid_enable;
 						break;
 
 					case 'w': // prograde
