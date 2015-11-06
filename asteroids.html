@@ -80,6 +80,11 @@
 			var down = false;
 			var left = false;
 			var right = false;
+			var counterclockwise = false;
+			var clockwise = false;
+			var accelerate = false;
+			var decelerate = false;
+			var throttle = 0.;
 			var prograde = false;
 			var retrograde = false;
 			var normal = false;
@@ -499,6 +504,8 @@
 				camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);
 				camera.updateProjectionMatrix();
 
+				var acceleration = 5e-10;
+				var div = 100; // We should pick subdivide simulation step count by angular speed!
 				function simulateBody(parent){
 					var children = parent.children;
 					for(var i = 0; i < children.length; i++){
@@ -507,19 +514,33 @@
 						if(sl !== 0){
 							var angleAcceleration = 1e-1;
 							var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
-							if(select_obj === a && select_obj.controllable){
-								if(up) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-								if(down) select_obj.angularVelocity.add(new THREE.Vector3(-1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+							if(select_obj === a && select_obj.controllable && timescale <= 1){
+								if(up) select_obj.angularVelocity.add(new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(down) select_obj.angularVelocity.add(new THREE.Vector3(0, -1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(left) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(right) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-								if(!up && !down && !left && !right && 1e-12 < select_obj.angularVelocity.lengthSq())
-									select_obj.angularVelocity.add(select_obj.angularVelocity.clone().normalize().multiplyScalar(-angleAcceleration * deltaTime / div));
-								if(prograde) select_obj.velocity.add(select_obj.velocity.clone().normalize().multiplyScalar(accelerate * deltaTime / div));
-								if(retrograde) select_obj.velocity.add(select_obj.velocity.clone().normalize().multiplyScalar(-accelerate * deltaTime / div));
-								if(normal) select_obj.velocity.add(select_obj.position.clone().normalize().multiplyScalar(accelerate * deltaTime / div));
-								if(antinormal) select_obj.velocity.add(select_obj.position.clone().normalize().multiplyScalar(-accelerate * deltaTime / div));
-								if(incline) select_obj.velocity.add(select_obj.velocity.clone().cross(select_obj.position).normalize().multiplyScalar(accelerate * deltaTime / div));
-								if(antiincline) select_obj.velocity.add(select_obj.velocity.clone().cross(select_obj.position).normalize().multiplyScalar(-accelerate * deltaTime / div));
+								if(counterclockwise) select_obj.angularVelocity.add(new THREE.Vector3(-1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(clockwise) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(accelerate) throttle = Math.min(1, throttle + deltaTime / div);
+								if(decelerate) throttle = Math.max(0, throttle - deltaTime / div);
+								if(clockwise) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(!up && !down && !left && !right && !counterclockwise && !clockwise){
+									// Immediately stop micro-rotation if the body is controlled.
+									// This is done to make it still in larger timescale, since micro-rotation cannot be canceled
+									// by product of angularVelocity and quaternion which underflows by square.
+									// Think that the vehicle has a momentum wheels that cancels micro-rotation continuously working.
+									if(1e-6 < select_obj.angularVelocity.lengthSq())
+										select_obj.angularVelocity.add(select_obj.angularVelocity.clone().normalize().multiplyScalar(-angleAcceleration * deltaTime / div));
+									else
+										select_obj.angularVelocity.set(0, 0, 0);
+								}
+								if(0 < throttle) select_obj.velocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(acceleration * throttle * deltaTime / div));
+								if(prograde) select_obj.velocity.add(select_obj.velocity.clone().normalize().multiplyScalar(acceleration * deltaTime / div));
+								if(retrograde) select_obj.velocity.add(select_obj.velocity.clone().normalize().multiplyScalar(-acceleration * deltaTime / div));
+								if(normal) select_obj.velocity.add(select_obj.position.clone().normalize().multiplyScalar(acceleration * deltaTime / div));
+								if(antinormal) select_obj.velocity.add(select_obj.position.clone().normalize().multiplyScalar(-acceleration * deltaTime / div));
+								if(incline) select_obj.velocity.add(select_obj.velocity.clone().cross(select_obj.position).normalize().multiplyScalar(acceleration * deltaTime / div));
+								if(antiincline) select_obj.velocity.add(select_obj.velocity.clone().cross(select_obj.position).normalize().multiplyScalar(-acceleration * deltaTime / div));
 							}
 							var dvelo = accel.clone().multiplyScalar(0.5);
 							var vec0 = a.position.clone().add(a.velocity.clone().multiplyScalar(deltaTime / div / 2.));
@@ -538,8 +559,6 @@
 					}
 				}
 
-				var accelerate = 1e-15;
-				var div = 100; // We should pick subdivide simulation step count by angular speed!
 				for(var d = 0; d < div; d++){
 					simulateBody(sun);
 				}
@@ -638,10 +657,12 @@
 //						retrograde = true;
 						break;
 					case 'q': // normal
-						normal = true;
+						counterclockwise = true;
+//						normal = true;
 						break;
-					case 'z': // normal negative
-						antinormal = true;
+					case 'e': // normal negative
+						clockwise = true;
+//						antinormal = true;
 						break;
 					case 'a': // orbit plane normal
 						left = true;
@@ -650,6 +671,12 @@
 					case 'd': // orbit plane normal negative
 						right = true;
 //						antiincline = true;
+						break;
+					case 'z':
+						accelerate = true;
+						break;
+					case 'x':
+						decelerate = true;
 						break;
 				}
 
@@ -674,10 +701,12 @@
 //						retrograde = false;
 						break;
 					case 'q': // prograde
-						normal = false;
+						counterclockwise = false;
+//						normal = false;
 						break;
-					case 'z':
-						antinormal = false;
+					case 'e':
+						clockwise = false;
+//						antinormal = false;
 						break;
 					case 'a': // orbit plane normal
 						left = false;
@@ -686,6 +715,12 @@
 					case 'd': // orbit plane normal negative
 						right = false;
 //						antiincline = false;
+						break;
+					case 'z':
+						accelerate = false;
+						break;
+					case 'x':
+						decelerate = false;
 						break;
 				}
 			}
