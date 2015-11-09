@@ -59,6 +59,8 @@
 			var camera, scene, renderer;
 			var group;
 			var background;
+			var overlay, overlayCamera;
+			var navballMesh, prograde, retrograde;
 			var mouseX = 0, mouseY = 0;
 			var geometry;
 			var cameraControls;
@@ -85,12 +87,6 @@
 			var accelerate = false;
 			var decelerate = false;
 			var throttle = 0.;
-			var prograde = false;
-			var retrograde = false;
-			var normal = false;
-			var antinormal = false;
-			var incline = false;
-			var antiincline = false;
 
 			var sun;
 			var light;
@@ -269,6 +265,44 @@
 
 				} );
 
+				overlayCamera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -1000, 1000 );
+
+				overlay = new THREE.Scene();
+				var loader = new THREE.TextureLoader();
+				loader.load( 'navball.png', function ( texture ) {
+
+					var geometry = new THREE.SphereGeometry( 100, 20, 20 );
+
+					var material = new THREE.MeshBasicMaterial( { map: texture, overdraw: 0.5, depthTest: false, depthWrite: false } );
+					navballMesh = new THREE.Mesh(geometry, material);
+					overlay.add(navballMesh);
+
+				} );
+
+				var spriteGeometry = new THREE.PlaneGeometry( 40, 40 );
+                prograde = new THREE.Mesh(spriteGeometry,
+					new THREE.MeshBasicMaterial({
+						map: THREE.ImageUtils.loadTexture( "prograde.png" ),
+						color: 0xffffff,
+						side: THREE.DoubleSide,
+						depthTest: false, 
+						depthWrite: false,
+						transparent: true,
+					} )
+				);
+                overlay.add(prograde);
+				retrograde = new THREE.Mesh(spriteGeometry,
+					new THREE.MeshBasicMaterial({
+						map: THREE.ImageUtils.loadTexture( "retrograde.png" ),
+						color: 0xffffff,
+						side: THREE.DoubleSide,
+						depthTest: false, 
+						depthWrite: false,
+						transparent: true,
+					} )
+				);
+                overlay.add(retrograde);
+
 				scene = new THREE.Scene();
 
 				group = new THREE.Object3D();
@@ -396,6 +430,7 @@
 					{axialTilt: 23.4392811 * rad_per_deg,
 					rotationPeriod: ((23 * 60 + 56) * 60 + 4.10)});
 				var sat = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: 'rocket.obj', controllable: true});
+				sat.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
 				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, this.parent.GM, earth, 'moon.png', 1737.1);
 				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'mars.jpg', 3389.5);
 				select_obj = sat;
@@ -504,7 +539,7 @@
 				camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);
 				camera.updateProjectionMatrix();
 
-				var acceleration = 5e-10;
+				var acceleration = 5e-8;
 				var div = 100; // We should pick subdivide simulation step count by angular speed!
 				function simulateBody(parent){
 					var children = parent.children;
@@ -512,13 +547,13 @@
 						var a = children[i];
 						var sl = a.position.lengthSq();
 						if(sl !== 0){
-							var angleAcceleration = 1e-1;
+							var angleAcceleration = 1e-0;
 							var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
 							if(select_obj === a && select_obj.controllable && timescale <= 1){
-								if(up) select_obj.angularVelocity.add(new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-								if(down) select_obj.angularVelocity.add(new THREE.Vector3(0, -1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-								if(left) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-								if(right) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(up) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(down) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(left) select_obj.angularVelocity.add(new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+								if(right) select_obj.angularVelocity.add(new THREE.Vector3(0, -1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(counterclockwise) select_obj.angularVelocity.add(new THREE.Vector3(-1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(clockwise) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(accelerate) throttle = Math.min(1, throttle + deltaTime / div);
@@ -535,12 +570,6 @@
 										select_obj.angularVelocity.set(0, 0, 0);
 								}
 								if(0 < throttle) select_obj.velocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(acceleration * throttle * deltaTime / div));
-								if(prograde) select_obj.velocity.add(select_obj.velocity.clone().normalize().multiplyScalar(acceleration * deltaTime / div));
-								if(retrograde) select_obj.velocity.add(select_obj.velocity.clone().normalize().multiplyScalar(-acceleration * deltaTime / div));
-								if(normal) select_obj.velocity.add(select_obj.position.clone().normalize().multiplyScalar(acceleration * deltaTime / div));
-								if(antinormal) select_obj.velocity.add(select_obj.position.clone().normalize().multiplyScalar(-acceleration * deltaTime / div));
-								if(incline) select_obj.velocity.add(select_obj.velocity.clone().cross(select_obj.position).normalize().multiplyScalar(acceleration * deltaTime / div));
-								if(antiincline) select_obj.velocity.add(select_obj.velocity.clone().cross(select_obj.position).normalize().multiplyScalar(-acceleration * deltaTime / div));
 							}
 							var dvelo = accel.clone().multiplyScalar(0.5);
 							var vec0 = a.position.clone().add(a.velocity.clone().multiplyScalar(deltaTime / div / 2.));
@@ -570,6 +599,14 @@
 
 				geometry.verticesNeedUpdate = true;
 
+				var north = new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.parent.quaternion);
+				var tangent = north.cross(select_obj.position).normalize();
+				var qball = new THREE.Quaternion();
+				var mat = new THREE.Matrix4();
+				var normal = select_obj.position.clone().normalize().negate();
+				mat.makeBasis(tangent.clone().cross(normal), tangent, normal);
+				qball.setFromRotationMatrix (mat);
+
 				grids.visible = grid_enable;
 
 //				camera.up.copy(new THREE.Vector3(0,0,1)); // This did't work with OrbitControls
@@ -587,6 +624,39 @@
 				renderer.render( background, camera);
 				camera.position.copy(position);
 				renderer.render( scene, camera );
+
+				if(navballMesh && select_obj && select_obj.controllable){
+					navballMesh.quaternion.copy(
+						AxisAngleQuaternion(1, 0, 0, -1*Math.PI / 2)
+						.multiply(select_obj.quaternion)
+						.multiply(AxisAngleQuaternion(0, 1, 0, -1*Math.PI / 2))
+						.conjugate()
+//						.multiply(qball)
+/*						(AxisAngleQuaternion(1, 0, 0, -1*Math.PI / 2))
+						.multiply(AxisAngleQuaternion(0, 0, 1, 1*Math.PI / 2))
+						.multiply(select_obj.quaternion.clone().conjugate())
+						.multiply(q)*/
+						);
+					navballMesh.position.y = -window.innerHeight / 2 + 100;
+					var grade;
+					var factor;
+					if(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) < 0){
+						grade = retrograde;
+						prograde.visible = false;
+						factor = 1.;
+					}
+					else{
+						grade = prograde;
+						retrograde.visible = false;
+						factor = -1.;
+					}
+					grade.visible = true;
+					grade.position.y = -window.innerHeight / 2 + 100 + factor * new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) / select_obj.velocity.length() * 100;
+					grade.position.x = factor * new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) / select_obj.velocity.length() * 100;
+					camera.position.set(0,0,0);
+					camera.quaternion.set(1,0,0,0);
+					renderer.render( overlay, overlayCamera);
+				}
 
 				// Restore the original state because cameraControls expect these variables unchanged
 				camera.quaternion.copy(oldQuaternion);
