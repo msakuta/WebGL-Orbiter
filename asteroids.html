@@ -77,6 +77,7 @@
 			var select_obj = null;
 			var nlips_enable = true;
 			var grid_enable = false;
+			var sync_rotate = false;
 
 			var up = false;
 			var down = false;
@@ -612,6 +613,14 @@
 //				camera.up.copy(new THREE.Vector3(0,0,1)); // This did't work with OrbitControls
 				cameraControls.update();
 
+				if(sync_rotate && select_obj){
+					camera.quaternion.copy(
+						AxisAngleQuaternion(1, 0, 0, -Math.PI / 2)
+						.multiply(select_obj.quaternion.clone())
+						.multiply(AxisAngleQuaternion(0, 1, 0, -1*Math.PI / 2)));
+					camera.position.copy(new THREE.Vector3(0, 0.2, 1).normalize().multiplyScalar(camera.position.length()).applyQuaternion(camera.quaternion));
+				}
+
 				// Rotate axis around X to make Z point upward
 				var rotate = AxisAngleQuaternion(1, 0, 0, Math.PI / 2);
 				var oldPosition = camera.position.clone();
@@ -714,6 +723,10 @@
 
 					case 'g':
 						grid_enable = !grid_enable;
+						break;
+
+					case 'h':
+						sync_rotate = !sync_rotate;
 						break;
 				}
 
