@@ -61,6 +61,7 @@
 			var background;
 			var overlay, overlayCamera;
 			var navballMesh, prograde, retrograde;
+			var timescaleControl;
 			var mouseX = 0, mouseY = 0;
 			var geometry;
 			var cameraControls;
@@ -487,6 +488,47 @@
 				stats.domElement.style.top = '0px';
 				container.appendChild( stats.domElement );
 
+				timescaleControl = new (function(){
+					this.domElement = document.createElement('div');
+					this.domElement.style.position = 'absolute';
+					this.domElement.style.top = '50px';
+					this.domElement.style.background = '#7f7f7f';
+					this.domElement.style.zIndex = 10;
+					var forwards = [];
+					var series = [1, 5, 10, 100, 1e3, 1e4, 1e5];
+					var timeIndex = 0;
+					function clickForward(number){
+						for(var i = 0; i < forwards.length; i++)
+							forwards[i].src = i <= number ? 'images/forward.png' : 'images/forward-inactive.png';
+						text.innerHTML = 'Timescale: x' + series[number];
+						timescale = series[number];
+						timeIndex = number;
+					}
+					for(var i = 0; i < series.length; i++){
+						var forward = document.createElement('img');
+						forward.src = i <= timeIndex ? 'images/forward.png' : 'images/forward-inactive.png';
+						forward.style.width = '20px';
+						forward.number = i;
+						forward.addEventListener('click', function(e){clickForward(this.number)});
+						this.domElement.appendChild(forward);
+						forwards.push(forward);
+					}
+					var text = document.createElement('div');
+					text.innerHTML = 'Timescale: x1';
+					this.domElement.appendChild(text);
+					this.increment = function(){
+						if(timeIndex + 1 < series.length)
+							timeIndex++;
+						clickForward(timeIndex);
+					}
+					this.decrement = function(){
+						if(0 <= timeIndex - 1)
+							timeIndex--;
+						clickForward(timeIndex);
+					}
+				})();
+				container.appendChild( timescaleControl.domElement );
+
 				window.addEventListener( 'resize', onWindowResize, false );
 				window.addEventListener( 'keydown', onKeyDown, false );
 				window.addEventListener( 'keyup', onKeyUp, false );
@@ -764,9 +806,9 @@
 				var code = event.which || event.keyCode;
 				// Also support numpad plus and minus
 				if(code === 107 || code === 187 && event.shiftKey)
-					timescale *= 2;
+					timescaleControl.increment();
 				if(code === 109 || code === 189)
-					timescale /= 2;
+					timescaleControl.decrement();
 
 			}
 
