@@ -1,15 +1,16 @@
-# roche
+# WebGLOrbitSimulator
 
-Very simple orbit simulator experiment powered by three.js
+An orbit simulator with Newtonian dynamics which can be manipulated like
+amazing game Kerbal Space Program.
 
 Try it now on your browser!
 
-http://msakuta.github.io/roche/roche.html
+http://msakuta.github.io/WebGL-Orbiter/orbiter.html
 
 
 ## Sources
 
-* roche.html
+* orbiter.html
 
   The real-time orbital simulator with three.js and WebGL.
   You'll need a WebGL supporting browser in order to enable this simulation.
@@ -18,11 +19,6 @@ http://msakuta.github.io/roche/roche.html
 
   Formulation of methods used for simulation steps.  Euler method and Runge-Kutta method
   are presented.  You'll need a decent browser with JavaScript support to see the formula.
-
-* roche-glut.py
-
-  Python version of the simulator.
-  You'll need Python 2.6+ and PyOpenGL in order to run this program.
 
 
 ## Libraries
