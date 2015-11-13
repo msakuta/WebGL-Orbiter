@@ -22,15 +22,9 @@
 				padding: 5px;
 			}
 
-			#time {
-				position: absolute;
-				top: 1em; width: 100%;
-				padding: 5px;
-			}
-
 			#orbit {
 				position: absolute;
-				top: 2em; width: 100%;
+				top: 1em; width: 100%;
 				padding: 5px;
 			}
 
@@ -45,7 +39,6 @@
 
 		<div id="container"></div>
 		<div id="info">Asteroid simulation demo - powered by <a href="http://threejs.org" target="_blank">three.js</a></div>
-		<div id="time"></div>
 		<div id="orbit"></div>
 
 		<script src="three.min.js"></script>
@@ -489,6 +482,13 @@
 				container.appendChild( stats.domElement );
 
 				timescaleControl = new (function(){
+					function clickForward(number){
+						for(var i = 0; i < forwards.length; i++)
+							forwards[i].src = i <= number ? 'images/forward.png' : 'images/forward-inactive.png';
+						text.innerHTML = 'Timescale: x' + series[number];
+						timescale = series[number];
+						timeIndex = number;
+					}
 					this.domElement = document.createElement('div');
 					this.domElement.style.position = 'absolute';
 					this.domElement.style.top = '50px';
@@ -497,13 +497,6 @@
 					var forwards = [];
 					var series = [1, 5, 10, 100, 1e3, 1e4, 1e5];
 					var timeIndex = 0;
-					function clickForward(number){
-						for(var i = 0; i < forwards.length; i++)
-							forwards[i].src = i <= number ? 'images/forward.png' : 'images/forward-inactive.png';
-						text.innerHTML = 'Timescale: x' + series[number];
-						timescale = series[number];
-						timeIndex = number;
-					}
 					for(var i = 0; i < series.length; i++){
 						var forward = document.createElement('img');
 						forward.src = i <= timeIndex ? 'images/forward.png' : 'images/forward-inactive.png';
@@ -516,6 +509,11 @@
 					var text = document.createElement('div');
 					text.innerHTML = 'Timescale: x1';
 					this.domElement.appendChild(text);
+					var date = document.createElement('div');
+					this.domElement.appendChild(date);
+					this.setDate = function(text){
+						date.innerHTML = text;
+					}
 					this.increment = function(){
 						if(timeIndex + 1 < series.length)
 							timeIndex++;
@@ -575,9 +573,8 @@
 					else
 						return v;
 				}
-				document.getElementById('time').innerHTML = 'Time: ' + time.getFullYear() + '/' + zerofill(time.getMonth() + 1) + '/' + zerofill(time.getDate())
-					+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds())
-					+ ' Timescale: ' + timescale.toPrecision(5);
+				timescaleControl.setDate(time.getFullYear() + '/' + zerofill(time.getMonth() + 1) + '/' + zerofill(time.getDate())
+					+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds()));
 
 				camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);
 				camera.updateProjectionMatrix();
