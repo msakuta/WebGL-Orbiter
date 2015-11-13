@@ -1,4 +1,4 @@
-# WebGLOrbitSimulator
+# WebGL-Orbiter
 
 An orbit simulator with Newtonian dynamics which can be manipulated like
 amazing game Kerbal Space Program.
