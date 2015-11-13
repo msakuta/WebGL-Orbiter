@@ -7,6 +7,11 @@ Try it now on your browser!
 
 http://msakuta.github.io/WebGL-Orbiter/orbiter.html
 
+## Screenshots
+
+![](screenshots/screenshot1.jpg)
+
+![](screenshots/screenshot2.jpg)
 
 ## Sources
 
