@@ -600,6 +600,8 @@
 
 				geometry.verticesNeedUpdate = true;
 
+				// First, calculate the quaternion for rotating the system so that 
+				// X axis points north, Y axis points east and Z axis points zenith.
 				var north = new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.parent.quaternion);
 				var tangent = north.cross(select_obj.position).normalize();
 				var qball = new THREE.Quaternion();
@@ -613,21 +615,20 @@
 //				camera.up.copy(new THREE.Vector3(0,0,1)); // This did't work with OrbitControls
 				cameraControls.update();
 
+				var oldPosition = camera.position.clone();
+				var oldQuaternion = camera.quaternion.clone();
 				if(sync_rotate && select_obj){
 					camera.quaternion.copy(
-						AxisAngleQuaternion(1, 0, 0, -Math.PI / 2)
-						.multiply(select_obj.quaternion.clone())
+						select_obj.quaternion.clone()
 						.multiply(AxisAngleQuaternion(0, 1, 0, -1*Math.PI / 2)));
 					camera.position.copy(new THREE.Vector3(0, 0.2, 1).normalize().multiplyScalar(camera.position.length()).applyQuaternion(camera.quaternion));
 				}
-
-				// Rotate axis around X to make Z point upward
-				var rotate = AxisAngleQuaternion(1, 0, 0, Math.PI / 2);
-				var oldPosition = camera.position.clone();
-				camera.position.applyQuaternion(rotate);
-				var oldQuaternion = camera.quaternion.clone();
-				camera.quaternion.copy(rotate.multiply(camera.quaternion));
-
+				else{
+					// Rotate axis around X to make Z point upward
+					var rotate = AxisAngleQuaternion(1, 0, 0, Math.PI / 2);
+					camera.position.applyQuaternion(rotate);
+					camera.quaternion.copy(rotate.multiply(camera.quaternion));
+				}
 				var position = camera.position.clone();
 				camera.position.set(0,0,0);
 				renderer.render( background, camera);
@@ -636,15 +637,11 @@
 
 				if(navballMesh && select_obj && select_obj.controllable){
 					navballMesh.quaternion.copy(
-						AxisAngleQuaternion(1, 0, 0, -1*Math.PI / 2)
-						.multiply(select_obj.quaternion)
-						.multiply(AxisAngleQuaternion(0, 1, 0, -1*Math.PI / 2))
-						.conjugate()
-//						.multiply(qball)
-/*						(AxisAngleQuaternion(1, 0, 0, -1*Math.PI / 2))
-						.multiply(AxisAngleQuaternion(0, 0, 1, 1*Math.PI / 2))
+						AxisAngleQuaternion(0, 1, 0, -1*Math.PI / 2)
+						.multiply(AxisAngleQuaternion(0, 0, 1, Math.PI))
 						.multiply(select_obj.quaternion.clone().conjugate())
-						.multiply(q)*/
+						.multiply(qball)
+						.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2))
 						);
 					navballMesh.position.y = -window.innerHeight / 2 + 100;
 					var grade;
@@ -652,12 +649,12 @@
 					if(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) < 0){
 						grade = retrograde;
 						prograde.visible = false;
-						factor = 1.;
+						factor = -1.;
 					}
 					else{
 						grade = prograde;
 						retrograde.visible = false;
-						factor = -1.;
+						factor = 1.;
 					}
 					grade.visible = true;
 					grade.position.y = -window.innerHeight / 2 + 100 + factor * new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) / select_obj.velocity.length() * 100;
