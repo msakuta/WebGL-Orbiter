@@ -255,7 +255,7 @@
 				background = new THREE.Scene();
 				background.rotation.x = Math.PI / 2;
 				var loader = new THREE.TextureLoader();
-				loader.load( 'hipparcoscyl1.jpg', function ( texture ) {
+				loader.load( 'images/hipparcoscyl1.jpg', function ( texture ) {
 
 					var geometry = new THREE.SphereGeometry( 2, 20, 20 );
 
@@ -270,7 +270,7 @@
 
 				overlay = new THREE.Scene();
 				var loader = new THREE.TextureLoader();
-				loader.load( 'navball.png', function ( texture ) {
+				loader.load( 'images/navball.png', function ( texture ) {
 
 					var geometry = new THREE.SphereGeometry( 100, 20, 20 );
 
@@ -283,7 +283,7 @@
 				var spriteGeometry = new THREE.PlaneGeometry( 40, 40 );
                 prograde = new THREE.Mesh(spriteGeometry,
 					new THREE.MeshBasicMaterial({
-						map: THREE.ImageUtils.loadTexture( "prograde.png" ),
+						map: THREE.ImageUtils.loadTexture( "images/prograde.png" ),
 						color: 0xffffff,
 						side: THREE.DoubleSide,
 						depthTest: false, 
@@ -294,7 +294,7 @@
                 overlay.add(prograde);
 				retrograde = new THREE.Mesh(spriteGeometry,
 					new THREE.MeshBasicMaterial({
-						map: THREE.ImageUtils.loadTexture( "retrograde.png" ),
+						map: THREE.ImageUtils.loadTexture( "images/retrograde.png" ),
 						color: 0xffffff,
 						side: THREE.DoubleSide,
 						depthTest: false, 
@@ -379,7 +379,7 @@
 
 					if(texture){
 						var loader = new THREE.TextureLoader();
-						loader.load( texture || 'land_ocean_ice_cloud_2048.jpg', function ( texture ) {
+						loader.load( texture || 'images/land_ocean_ice_cloud_2048.jpg', function ( texture ) {
 
 							var geometry = new THREE.SphereGeometry( 1, 20, 20 );
 
@@ -424,16 +424,16 @@
 				sun = new CelestialBody(null, new THREE.Vector3(), null, 0xffffff, this.parent.GM);
 				sun.radius = Rsun;
 				sun.model = group;
-				var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, 'mercury.jpg', 2439.7);
-				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, 'venus.jpg', 6051.8);
+				var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, 'images/mercury.jpg', 2439.7);
+				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, 'images/venus.jpg', 6051.8);
 				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
-				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, 'land_ocean_ice_cloud_2048.jpg', 6534,
+				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, 'images/land_ocean_ice_cloud_2048.jpg', 6534,
 					{axialTilt: 23.4392811 * rad_per_deg,
 					rotationPeriod: ((23 * 60 + 56) * 60 + 4.10)});
 				var sat = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: 'rocket.obj', controllable: true});
 				sat.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
-				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, this.parent.GM, earth, 'moon.png', 1737.1);
-				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'mars.jpg', 3389.5);
+				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, this.parent.GM, earth, 'images/moon.png', 1737.1);
+				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'images/mars.jpg', 3389.5);
 				select_obj = sat;
 				center_select = true;
 				camera.position.set(0.005, 0.003, 0.005);
