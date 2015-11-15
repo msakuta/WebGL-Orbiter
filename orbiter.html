@@ -395,6 +395,29 @@
 							object.scale.set(radiusInAu, radiusInAu, radiusInAu);
 							group.add( object );
 						} );
+						var blastGroup = new THREE.Object3D();
+						group.add(blastGroup);
+						blastGroup.visible = false;
+						blastGroup.position.x = -60 / AU;
+						ret.blastModel = blastGroup;
+						var spriteMaterial = new THREE.SpriteMaterial({
+							map: THREE.ImageUtils.loadTexture( "images/blast.png" ),
+							blending: THREE.AdditiveBlending,
+							depthWrite: false,
+							transparent: true,
+						});
+						var blast = new THREE.Sprite(spriteMaterial);
+						blast.position.x = -30 / AU;
+						blast.scale.multiplyScalar(100 / AU);
+						blastGroup.add(blast);
+						var blast2 = new THREE.Sprite(spriteMaterial);
+						blast2.position.x = -60 / AU;
+						blast2.scale.multiplyScalar(50 / AU);
+						blastGroup.add(blast2);
+						var blast2 = new THREE.Sprite(spriteMaterial);
+						blast2.position.x = -80 / AU;
+						blast2.scale.multiplyScalar(30 / AU);
+						blastGroup.add(blast2);
 					}
 
 					if(params && params.controllable)
@@ -536,6 +559,11 @@
 						var max = rect.height - handleRect.height;
 						handle.style.top = (1 - pos) * max + 'px';
 						throttle = pos;
+						if(select_obj && select_obj.blastModel){
+							select_obj.blastModel.visible = 0 < throttle;
+							var size = (throttle + 0.1) / 1.1;
+							select_obj.blastModel.scale.set(size, size, size);
+						}
 					}
 					function movePosition(event){
 						var rect = element.getBoundingClientRect();
