@@ -56,6 +56,7 @@
 			var navballMesh, prograde, retrograde;
 			var timescaleControl;
 			var throttleControl;
+			var speedControl;
 			var mouseX = 0, mouseY = 0;
 			var geometry;
 			var cameraControls;
@@ -700,6 +701,40 @@
 				})();
 				container.appendChild( rotationControl.domElement );
 
+				speedControl = new (function(){
+					function setSize(){
+						element.style.top = (window.innerHeight - 2 * navballRadius - 32) + 'px';
+						element.style.left = (window.innerWidth / 2 - element.getBoundingClientRect().width / 2) + 'px';
+					}
+					var buttonHeight = 32;
+					var buttonWidth = 32;
+					this.domElement = document.createElement('div');
+					var element = this.domElement;
+					element.style.position = 'absolute';
+					setSize();
+					element.style.zIndex = 7;
+					element.style.background = 'rgba(0, 0, 0, 0.5)';
+					window.addEventListener('resize', setSize);
+					var title = document.createElement('div');
+					title.innerHTML = 'Orbit';
+					element.appendChild(title);
+					var valueElement = document.createElement('div');
+					element.appendChild(valueElement);
+					this.setSpeed = function(){
+						if(select_obj){
+							var value = select_obj.velocity.length() * AU;
+							if(value < 1)
+								valueElement.innerHTML = (value * 1000).toFixed(5) + 'm/s';
+							else
+								valueElement.innerHTML = value.toFixed(5) + 'km/s';
+						}
+						else
+							valueElement.innerHTML = '';
+						element.style.left = (window.innerWidth / 2 - element.getBoundingClientRect().width / 2) + 'px';
+					}
+				})();
+				container.appendChild( speedControl.domElement );
+
 				window.addEventListener( 'resize', onWindowResize, false );
 				window.addEventListener( 'keydown', onKeyDown, false );
 				window.addEventListener( 'keyup', onKeyUp, false );
@@ -748,6 +783,7 @@
 				}
 				timescaleControl.setDate(time.getFullYear() + '/' + zerofill(time.getMonth() + 1) + '/' + zerofill(time.getDate())
 					+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds()));
+				speedControl.setSpeed();
 
 				camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);
 				camera.updateProjectionMatrix();
