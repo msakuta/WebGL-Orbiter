@@ -55,6 +55,7 @@
 			var overlay, overlayCamera;
 			var navballMesh, prograde, retrograde;
 			var timescaleControl;
+			var throttleControl;
 			var mouseX = 0, mouseY = 0;
 			var geometry;
 			var cameraControls;
@@ -93,6 +94,7 @@
 			var epsilon = 1e-40; // Doesn't the machine epsilon depend on browsers!??
 			var timescale = 1e0; // This is not a constant; it can be changed by the user
 			var rad_per_deg = Math.PI / 180; // Radians per degrees
+			var navballRadius = 64;
 
 			function AxisAngleQuaternion(x, y, z, angle){
 				var q = new THREE.Quaternion();
@@ -266,7 +268,7 @@
 				var loader = new THREE.TextureLoader();
 				loader.load( 'images/navball.png', function ( texture ) {
 
-					var geometry = new THREE.SphereGeometry( 100, 20, 20 );
+					var geometry = new THREE.SphereGeometry( navballRadius, 20, 20 );
 
 					var material = new THREE.MeshBasicMaterial( { map: texture, overdraw: 0.5, depthTest: false, depthWrite: false } );
 					navballMesh = new THREE.Mesh(geometry, material);
@@ -527,6 +529,75 @@
 				})();
 				container.appendChild( timescaleControl.domElement );
 
+				throttleControl = new (function(){
+					function updatePosition(pos){
+						var rect = element.getBoundingClientRect();
+						var handleRect = handle.getBoundingClientRect();
+						var max = rect.height - handleRect.height;
+						handle.style.top = (1 - pos) * max + 'px';
+						throttle = pos;
+					}
+					function movePosition(event){
+						var rect = element.getBoundingClientRect();
+						var handleRect = handle.getBoundingClientRect();
+						var max = rect.height - handleRect.height;
+						var pos = Math.min(max, Math.max(0, (event.y - rect.top) - handleRect.height / 2));
+						updatePosition(1 - pos / max);
+					}
+					var guideHeight = 128;
+					var guideWidth = 32;
+					this.domElement = document.createElement('div');
+					this.domElement.style.position = 'absolute';
+					this.domElement.style.top = (window.innerHeight - guideHeight) + 'px';
+					this.domElement.style.left = (windowHalfX - navballRadius - guideWidth) + 'px';
+					this.domElement.style.background = '#7f7f7f';
+					this.domElement.style.zIndex = 10;
+					var element = this.domElement;
+					var dragging = false;
+					var im = document.createElement('img');
+					im.src = 'images/throttle-back.png';
+					im.onmousedown = function(event){
+						dragging = true;
+						movePosition(event);
+					};
+					im.onmousemove = function(event){
+						if(dragging && event.buttons & 1)
+							movePosition(event);
+					};
+					im.onmouseup = function(event){
+						dragging = false;
+					}
+					im.draggable = true;
+					im.ondragstart = function(event){
+						event.preventDefault();
+					};
+					this.domElement.appendChild(im);
+					var handle = document.createElement('img');
+					handle.src = 'images/throttle-handle.png';
+					handle.style.position = 'absolute';
+					handle.style.top = (guideHeight - 16) + 'px';
+					handle.style.left = '0px';
+					handle.onmousemove = im.onmousemove;
+					handle.onmousedown = im.onmousedown;
+					handle.onmouseup = im.onmouseup;
+					handle.ondragstart = im.ondragstart;
+					this.domElement.appendChild(handle);
+					this.increment = function(delta){
+						updatePosition(Math.min(1, throttle + delta));
+					}
+					this.decrement = function(delta){
+						updatePosition(Math.max(0, throttle - delta));
+					}
+					this.setThrottle = function(value){
+						updatePosition(value);
+					}
+					window.addEventListener('resize', function(){
+						element.style.top = (window.innerHeight - guideHeight) + 'px';
+						element.style.left = (window.innerWidth / 2 - navballRadius - guideWidth) + 'px';
+					});
+				})();
+				container.appendChild( throttleControl.domElement );
+
 				window.addEventListener( 'resize', onWindowResize, false );
 				window.addEventListener( 'keydown', onKeyDown, false );
 				window.addEventListener( 'keyup', onKeyUp, false );
@@ -579,7 +650,7 @@
 				camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);
 				camera.updateProjectionMatrix();
 
-				var acceleration = 5e-8;
+				var acceleration = 5e-10;
 				var div = 100; // We should pick subdivide simulation step count by angular speed!
 				function simulateBody(parent){
 					var children = parent.children;
@@ -596,8 +667,8 @@
 								if(right) select_obj.angularVelocity.add(new THREE.Vector3(0, -1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(counterclockwise) select_obj.angularVelocity.add(new THREE.Vector3(-1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(clockwise) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-								if(accelerate) throttle = Math.min(1, throttle + deltaTime / div);
-								if(decelerate) throttle = Math.max(0, throttle - deltaTime / div);
+								if(accelerate) throttleControl.increment(deltaTime / div);
+								if(decelerate) throttleControl.decrement(deltaTime / div);
 								if(clockwise) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(!up && !down && !left && !right && !counterclockwise && !clockwise){
 									// Immediately stop micro-rotation if the body is controlled.
@@ -682,7 +753,7 @@
 						.multiply(qball)
 						.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2))
 						);
-					navballMesh.position.y = -window.innerHeight / 2 + 100;
+					navballMesh.position.y = -window.innerHeight / 2 + navballRadius;
 					var grade;
 					var factor;
 					if(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) < 0){
@@ -696,8 +767,8 @@
 						factor = 1.;
 					}
 					grade.visible = true;
-					grade.position.y = -window.innerHeight / 2 + 100 + factor * new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) / select_obj.velocity.length() * 100;
-					grade.position.x = factor * new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) / select_obj.velocity.length() * 100;
+					grade.position.y = -window.innerHeight / 2 + navballRadius + factor * new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) / select_obj.velocity.length() * navballRadius;
+					grade.position.x = factor * new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) / select_obj.velocity.length() * navballRadius;
 					camera.position.set(0,0,0);
 					camera.quaternion.set(1,0,0,0);
 					renderer.render( overlay, overlayCamera);
@@ -792,10 +863,10 @@
 //						antiincline = true;
 						break;
 					case 'z':
-						accelerate = true;
+						throttleControl.setThrottle(1);
 						break;
 					case 'x':
-						decelerate = true;
+						throttleControl.setThrottle(0);
 						break;
 				}
 
@@ -806,7 +877,10 @@
 					timescaleControl.increment();
 				if(code === 109 || code === 189)
 					timescaleControl.decrement();
-
+				if(code === 16)
+					accelerate = true;
+				if(code === 17)
+					decelerate = true;
 			}
 
 			function onKeyUp( event ) {
@@ -835,13 +909,13 @@
 						right = false;
 //						antiincline = false;
 						break;
-					case 'z':
-						accelerate = false;
-						break;
-					case 'x':
-						decelerate = false;
-						break;
 				}
+				// Annoying browser incompatibilities
+				var code = event.which || event.keyCode;
+				if(code === 16)
+					accelerate = false;
+				if(code === 17)
+					decelerate = false;
 			}
 
 			init();
