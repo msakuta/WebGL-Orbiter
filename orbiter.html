@@ -370,8 +370,8 @@
 				var orbitGeometry = new THREE.Geometry();
 				var curve = new THREE.EllipseCurve(0, 0, 1, 1,
 					0, Math.PI * 2, false, 90);
-				var path = new THREE.Path( curve.getPoints( 50 ) );
-				var orbitGeometry = path.createPointsGeometry( 50 );
+				var path = new THREE.Path( curve.getPoints( 256 ) );
+				var orbitGeometry = path.createPointsGeometry( 256 );
 
 				geometry = new THREE.Geometry();
 
@@ -724,9 +724,9 @@
 						if(select_obj){
 							var value = select_obj.velocity.length() * AU;
 							if(value < 1)
-								valueElement.innerHTML = (value * 1000).toFixed(5) + 'm/s';
+								valueElement.innerHTML = (value * 1000).toFixed(4) + 'm/s';
 							else
-								valueElement.innerHTML = value.toFixed(5) + 'km/s';
+								valueElement.innerHTML = value.toFixed(4) + 'km/s';
 						}
 						else
 							valueElement.innerHTML = '';
