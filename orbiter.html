@@ -263,6 +263,13 @@
 				} );
 
 				overlayCamera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -1000, 1000 );
+				window.addEventListener('resize', function(){
+					overlayCamera.left = window.innerWidth / - 2;
+					overlayCamera.right = window.innerWidth / 2;
+					overlayCamera.top = window.innerHeight / 2;
+					overlayCamera.bottom = window.innerHeight / - 2;
+					overlayCamera.updateProjectionMatrix();
+				});
 
 				overlay = new THREE.Scene();
 				var loader = new THREE.TextureLoader();
