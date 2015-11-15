@@ -274,6 +274,15 @@
 					navballMesh = new THREE.Mesh(geometry, material);
 					overlay.add(navballMesh);
 
+					var spriteMaterial = new THREE.SpriteMaterial({
+						map: THREE.ImageUtils.loadTexture( "images/watermark.png" ),
+						depthTest: false,
+						depthWrite: false,
+						transparent: true,
+					});
+					var watermark = new THREE.Sprite(spriteMaterial);
+					watermark.scale.set(64, 32, 64);
+					navballMesh.add(watermark);
 				} );
 
 				var spriteGeometry = new THREE.PlaneGeometry( 40, 40 );
