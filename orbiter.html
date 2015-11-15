@@ -540,12 +540,13 @@
 					this.domElement.style.background = '#7f7f7f';
 					this.domElement.style.zIndex = 10;
 					var forwards = [];
-					var series = [1, 5, 10, 100, 1e3, 1e4, 1e5];
+					var series = [1, 5, 10, 100, 1e3, 1e4, 1e5, 1e6];
 					var timeIndex = 0;
 					for(var i = 0; i < series.length; i++){
 						var forward = document.createElement('img');
 						forward.src = i <= timeIndex ? 'images/forward.png' : 'images/forward-inactive.png';
-						forward.style.width = '20px';
+						forward.style.width = '15px';
+						forward.style.height = '20px';
 						forward.number = i;
 						forward.addEventListener('click', function(e){clickForward(this.number)});
 						this.domElement.appendChild(forward);

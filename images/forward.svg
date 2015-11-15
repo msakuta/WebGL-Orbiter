@@ -10,16 +10,16 @@
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="256"
+   width="192"
    height="256"
-   viewBox="0 0 256 256"
+   viewBox="0 0 192 256"
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
    sodipodi:docname="forward.svg"
-   inkscape:export-filename="D:\projects\roche\prograde.png"
-   inkscape:export-xdpi="90"
-   inkscape:export-ydpi="90">
+   inkscape:export-filename="D:\projects\WebGL-Orbiter\images\forward.png"
+   inkscape:export-xdpi="7.0300002"
+   inkscape:export-ydpi="7.0300002">
   <defs
      id="defs4">
     <linearGradient
@@ -42,7 +42,8 @@
        y1="924.36218"
        x2="225.11803"
        y2="924.36218"
-       gradientUnits="userSpaceOnUse" />
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(-32,0)" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -52,8 +53,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.8"
-     inkscape:cx="138.78781"
-     inkscape:cy="137.73028"
+     inkscape:cx="124.86692"
+     inkscape:cy="147.38417"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -89,9 +90,10 @@
      id="layer1"
      transform="translate(0,-796.36216)">
     <path
-       style="fill:url(#linearGradient5099);fill-rule:evenodd;stroke:#000000;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
-       d="m 32,828.36216 0,192.00004 192,-96.00004 z"
+       style="fill:url(#linearGradient5099);fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 3,828.36216 3,1020.3622 184,924.36216 Z"
        id="path5091"
-       inkscape:connector-curvature="0" />
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccc" />
   </g>
 </svg>
