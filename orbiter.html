@@ -440,6 +440,8 @@
 					if(params && params.controllable)
 						ret.controllable = params.controllable;
 
+					ret.soi = params && params.soi ? params.soi / AU : 0;
+
 					// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
 					// https://en.wikipedia.org/wiki/Orbital_speed
 					ret.velocity = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.sqrt(ret.parent.GM * (2 / ret.position.length() - 1 / semimajor_axis))).applyQuaternion(rotation);
@@ -460,16 +462,17 @@
 				sun = new CelestialBody(null, new THREE.Vector3(), null, 0xffffff, this.parent.GM);
 				sun.radius = Rsun;
 				sun.model = group;
-				var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, 'images/mercury.jpg', 2439.7);
-				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, 'images/venus.jpg', 6051.8);
+				var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, 'images/mercury.jpg', 2439.7, {soi: 2e5});
+				var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, 'images/venus.jpg', 6051.8, {soi: 5e5});
 				// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
 				var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, 'images/land_ocean_ice_cloud_2048.jpg', 6534,
 					{axialTilt: 23.4392811 * rad_per_deg,
-					rotationPeriod: ((23 * 60 + 56) * 60 + 4.10)});
+					rotationPeriod: ((23 * 60 + 56) * 60 + 4.10),
+					soi: 5e5});
 				var sat = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: 'rocket.obj', controllable: true});
 				sat.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
-				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, this.parent.GM, earth, 'images/moon.png', 1737.1);
-				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'images/mars.jpg', 3389.5);
+				var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, 4904.8695 / AU / AU / AU, earth, 'images/moon.png', 1737.1, {soi: 1e5});
+				var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'images/mars.jpg', 3389.5, {soi: 3e5});
 				select_obj = sat;
 				center_select = true;
 				camera.position.set(0.005, 0.003, 0.005);
@@ -792,7 +795,7 @@
 				var div = 100; // We should pick subdivide simulation step count by angular speed!
 				function simulateBody(parent){
 					var children = parent.children;
-					for(var i = 0; i < children.length; i++){
+					for(var i = 0; i < children.length;){
 						var a = children[i];
 						var sl = a.position.lengthSq();
 						if(sl !== 0){
@@ -832,7 +835,44 @@
 								a.quaternion.multiplyQuaternions(AxisAngleQuaternion(axis.x, axis.y, axis.z, a.angularVelocity.length() * deltaTime / div), a.quaternion);
 							}
 						}
+						// Only controllable objects can change orbiting body
+						if(a.controllable){
+							// Check if we are leaving sphere of influence of current parent.
+							if(a.parent.parent && a.parent.soi && a.parent.soi * 1.01 < a.position.length()){
+								a.position.add(parent.position);
+								a.velocity.add(parent.velocity);
+								var j = children.indexOf(a);
+								if(0 <= j)
+									children.splice(j, 1);
+								a.parent = parent.parent;
+								a.parent.children.push(a);
+								continue; // Continue but not increment i
+							}
+							var skip = false;
+							// Check if we are entering sphere of influence of another sibling.
+							for(var j = 0; j < children.length; j++){
+								var aj = children[j];
+								if(aj === a)
+									continue;
+								if(!aj.soi)
+									continue;
+								if(aj.position.distanceTo(a.position) < aj.soi * .99){
+									a.position.sub(aj.position);
+									a.velocity.sub(aj.velocity);
+									var k = children.indexOf(a);
+									if(0 <= k)
+										children.splice(k, 1);
+									a.parent = aj;
+									aj.children.push(a);
+									skip = true;
+									break;
+								}
+							}
+							if(skip)
+								continue; // Continue but not increment i
+						}
 						simulateBody(a);
+						i++;
 					}
 				}
 
