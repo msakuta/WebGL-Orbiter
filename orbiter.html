@@ -590,7 +590,7 @@
 						var rect = element.getBoundingClientRect();
 						var handleRect = handle.getBoundingClientRect();
 						var max = rect.height - handleRect.height;
-						var pos = Math.min(max, Math.max(0, (event.y - rect.top) - handleRect.height / 2));
+						var pos = Math.min(max, Math.max(0, (event.clientY - rect.top) - handleRect.height / 2));
 						updatePosition(1 - pos / max);
 					}
 					var guideHeight = 128;
