@@ -248,6 +248,7 @@
 				camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
 				camera.position.y = 300;
 				camera.position.z = 1000;
+				camera.up.set(0,0,1);
 
 				background = new THREE.Scene();
 				background.rotation.x = Math.PI / 2;
@@ -900,12 +901,6 @@
 						select_obj.quaternion.clone()
 						.multiply(AxisAngleQuaternion(0, 1, 0, -1*Math.PI / 2)));
 					camera.position.copy(new THREE.Vector3(0, 0.2, 1).normalize().multiplyScalar(camera.position.length()).applyQuaternion(camera.quaternion));
-				}
-				else{
-					// Rotate axis around X to make Z point upward
-					var rotate = AxisAngleQuaternion(1, 0, 0, Math.PI / 2);
-					camera.position.applyQuaternion(rotate);
-					camera.quaternion.copy(rotate.multiply(camera.quaternion));
 				}
 				var position = camera.position.clone();
 				camera.position.set(0,0,0);
