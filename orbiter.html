@@ -22,12 +22,6 @@
 				padding: 5px;
 			}
 
-			#orbit {
-				position: absolute;
-				top: 1em; width: 100%;
-				padding: 5px;
-			}
-
 			a {
 
 				color: #0080ff;
@@ -38,8 +32,7 @@
 	<body>
 
 		<div id="container"></div>
-		<div id="info">Asteroid simulation demo - powered by <a href="http://threejs.org" target="_blank">three.js</a></div>
-		<div id="orbit"></div>
+		<div id="info">Orbital rocket simulation demo - powered by <a href="http://threejs.org" target="_blank">three.js</a></div>
 
 		<script src="three.min.js"></script>
 		<script src="stats.min.js"></script>
@@ -57,6 +50,7 @@
 			var timescaleControl;
 			var throttleControl;
 			var speedControl;
+			var orbitalElementControl;
 			var mouseX = 0, mouseY = 0;
 			var geometry;
 			var cameraControls;
@@ -227,14 +221,15 @@
 
 					// Show orbit information
 					if(this === select_obj)
-						document.getElementById('orbit').innerHTML = 'Orbit: '
-							+ 'e=' + this.eccentricity.toFixed(10)
-							+ ' a=' + this.semimajor_axis.toFixed(10)
-							+ ' i=' + (this.inclination / Math.PI).toFixed(10)
-							+ ' Omega=' + (this.ascending_node / Math.PI).toFixed(10)
-							+ ' w=' + (this.argument_of_perihelion / Math.PI).toFixed(10)
-							+ ' head=' + headingApoapsis.toFixed(5)
-							+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + this.angularVelocity.y.toFixed(10) + ',' + this.angularVelocity.z.toFixed(10);
+						orbitalElementControl.setText(
+							  'e=' + this.eccentricity.toFixed(10) + '<br>'
+							+ ' a=' + this.semimajor_axis.toFixed(10) + '<br>'
+							+ ' i=' + (this.inclination / Math.PI).toFixed(10) + '<br>'
+							+ ' Omega=' + (this.ascending_node / Math.PI).toFixed(10) + '<br>'
+							+ ' w=' + (this.argument_of_perihelion / Math.PI).toFixed(10) + '<br>'
+							+ ' head=' + headingApoapsis.toFixed(5) + '<br>'
+//							+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + '<br>' + this.angularVelocity.y.toFixed(10) + ',' + '<br>' + this.angularVelocity.z.toFixed(10)
+							);
 
 					// Apply transformation to orbit mesh
 					if(this.orbit){
@@ -786,6 +781,61 @@
 					}
 				})();
 				container.appendChild( speedControl.domElement );
+
+				orbitalElementControl = new (function(){
+					var buttonHeight = 32;
+					var buttonWidth = 32;
+					this.domElement = document.createElement('div');
+					var element = this.domElement;
+					element.style.position = 'absolute';
+					element.style.textAlign = 'left';
+					element.style.top = 120 + 'px';
+					element.style.left = 0 + 'px';
+					element.style.zIndex = 7;
+					var visible = false;
+					var icon = document.createElement('img');
+					icon.src = 'images/orbitIcon.png';
+					element.appendChild(icon);
+
+					var title = document.createElement('div');
+					title.innerHTML = 'Orbital Elements';
+					title.style.display = 'none';
+					element.appendChild(title);
+
+					var valueElement = document.createElement('div');
+					element.appendChild(valueElement);
+					valueElement.id = 'orbit';
+					valueElement.style.display = 'none';
+
+					// Register event handlers
+					icon.ondragstart = function(event){
+						event.preventDefault();
+					};
+					icon.onclick = function(event){
+						visible = !visible;
+						if(visible){
+							valueElement.style.display = 'block';
+							element.style.background = 'rgba(0, 0, 0, 0.5)';
+						}
+						else{
+							valueElement.style.display = 'none';
+							element.style.background = 'rgba(0, 0, 0, 0)';
+						}
+					};
+					icon.onmouseenter = function(event){
+						if(!visible)
+							title.style.display = 'block';
+					};
+					icon.onmouseleave = function(event){
+						if(!visible)
+							title.style.display = 'none';
+					};
+
+					this.setText = function(text){
+						valueElement.innerHTML = text;
+					}
+				})();
+				container.appendChild( orbitalElementControl.domElement );
 
 				window.addEventListener( 'resize', onWindowResize, false );
 				window.addEventListener( 'keydown', onKeyDown, false );
