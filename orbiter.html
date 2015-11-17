@@ -888,16 +888,6 @@
 
 				geometry.verticesNeedUpdate = true;
 
-				// First, calculate the quaternion for rotating the system so that 
-				// X axis points north, Y axis points east and Z axis points zenith.
-				var north = new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.parent.quaternion);
-				var tangent = north.cross(select_obj.position).normalize();
-				var qball = new THREE.Quaternion();
-				var mat = new THREE.Matrix4();
-				var normal = select_obj.position.clone().normalize().negate();
-				mat.makeBasis(tangent.clone().cross(normal), tangent, normal);
-				qball.setFromRotationMatrix (mat);
-
 				grids.visible = grid_enable;
 
 //				camera.up.copy(new THREE.Vector3(0,0,1)); // This did't work with OrbitControls
@@ -924,6 +914,16 @@
 				renderer.render( scene, camera );
 
 				if(navballMesh && select_obj && select_obj.controllable){
+					// First, calculate the quaternion for rotating the system so that 
+					// X axis points north, Y axis points east and Z axis points zenith.
+					var north = new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.parent.quaternion);
+					var tangent = north.cross(select_obj.position).normalize();
+					var qball = new THREE.Quaternion();
+					var mat = new THREE.Matrix4();
+					var normal = select_obj.position.clone().normalize().negate();
+					mat.makeBasis(tangent.clone().cross(normal), tangent, normal);
+					qball.setFromRotationMatrix (mat);
+
 					navballMesh.quaternion.copy(
 						AxisAngleQuaternion(0, 1, 0, -1*Math.PI / 2)
 						.multiply(AxisAngleQuaternion(0, 0, 1, Math.PI))
