@@ -15,6 +15,8 @@ http://msakuta.github.io/WebGL-Orbiter/orbiter.html
 
 ![](screenshots/screenshot3.jpg)
 
+![](screenshots/screenshot4.jpg)
+
 ## Controls
 
 * '+' key increases simulation speed of time
