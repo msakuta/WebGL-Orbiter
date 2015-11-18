@@ -231,6 +231,56 @@
 //							+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + '<br>' + this.angularVelocity.y.toFixed(10) + ',' + '<br>' + this.angularVelocity.z.toFixed(10)
 							);
 
+					// If eccentricity is over 1, the trajectory is a hyperbola.
+					// It could be parabola in case of eccentricity == 1, but we ignore
+					// this impractical case for now.
+					if(1 < this.eccentricity){
+						// Allocate the hyperbolic shape and mesh only if necessary,
+						// since most of celestial bodies are all on permanent elliptical orbit.
+						if(!this.hyperbolicGeometry)
+							this.hyperbolicGeometry = new THREE.Geometry();
+
+						// Calculate the vertices every frame since the hyperbola changes shape
+						// depending on orbital elements.
+						var thetaInf = Math.acos(-1 / this.eccentricity);
+						this.hyperbolicGeometry.vertices.length = 0;
+						var h2 = ang.lengthSq();
+						for(var i = -19; i < 20; i++){
+							// Transform by square root to make far side of the hyperbola less "polygonic"
+							var isign = i < 0 ? -1 : 1;
+							var theta = thetaInf * isign * Math.sqrt(Math.abs(i) / 20);
+							this.hyperbolicGeometry.vertices.push(
+								new THREE.Vector3( Math.sin(theta), Math.cos(theta), 0 )
+								.multiplyScalar(h2 / this.parent.GM / (1 + this.eccentricity * Math.cos(theta))) );
+						}
+						// Signal three.js to update the vertices
+						this.hyperbolicGeometry.verticesNeedUpdate = true;
+
+						// Allocate hyperbola mesh and add it to the scene.
+						if(!this.hyperbolicMesh){
+							this.hyperbolicMesh = new THREE.Line(this.hyperbolicGeometry, this.orbitMaterial);
+							scene.add(this.hyperbolicMesh);
+						}
+						this.hyperbolicMesh.quaternion.copy(rotation);
+						this.hyperbolicMesh.scale.x = viewScale;
+						this.hyperbolicMesh.scale.y = viewScale;
+						this.hyperbolicMesh.position.copy(this.parent.getWorldPosition());
+						if(select_obj && center_select)
+							this.hyperbolicMesh.position.sub(select_obj.getWorldPosition());
+						this.hyperbolicMesh.position.multiplyScalar(viewScale);
+
+						// Switch from ellipse to hyperbola
+						this.hyperbolicMesh.visible = true;
+						if(this.orbit)
+							this.orbit.visible = false;
+					}
+					else if(this.hyperbolicMesh){
+						// Switch back to ellipse from hyperbola
+						if(this.orbit)
+							this.orbit.visible = true;
+						this.hyperbolicMesh.visible = false;
+					}
+
 					// Apply transformation to orbit mesh
 					if(this.orbit){
 						this.orbit.quaternion.copy(rotation);
