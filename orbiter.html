@@ -51,6 +51,7 @@
 			var throttleControl;
 			var speedControl;
 			var orbitalElementControl;
+			var altitudeControl;
 			var mouseX = 0, mouseY = 0;
 			var geometry;
 			var cameraControls;
@@ -888,6 +889,37 @@
 				})();
 				container.appendChild( orbitalElementControl.domElement );
 
+				altitudeControl = new (function(){
+					var buttonHeight = 32;
+					var buttonWidth = 32;
+					this.domElement = document.createElement('div');
+					var element = this.domElement;
+					element.style.position = 'absolute';
+					element.style.top = '2em';
+					element.style.left = '50%';
+					element.style.background = 'rgba(0,0,0,0.5)';
+					element.style.zIndex = 8;
+					var visible = false;
+
+					// Register event handlers
+					element.ondragstart = function(event){
+						event.preventDefault();
+					};
+
+					this.setText = function(value){
+						var text;
+						if(value < 1e5)
+							text = value.toFixed(4) + 'km';
+						else if(value < 1e8)
+							text = (value / 1000).toFixed(4) + 'Mm';
+						else
+							text = (value / AU).toFixed(4) + 'AU';
+						element.innerHTML = text;
+						element.style.marginLeft = -element.getBoundingClientRect().width / 2 + 'px';
+					};
+				})();
+				container.appendChild( altitudeControl.domElement );
+
 				window.addEventListener( 'resize', onWindowResize, false );
 				window.addEventListener( 'keydown', onKeyDown, false );
 				window.addEventListener( 'keyup', onKeyUp, false );
@@ -1098,6 +1130,12 @@
 				// Restore the original state because cameraControls expect these variables unchanged
 				camera.quaternion.copy(oldQuaternion);
 				camera.position.copy(oldPosition);
+
+				if(select_obj && select_obj.parent){
+					altitudeControl.setText(select_obj.position.length() * AU - select_obj.parent.radius);
+				}
+				else
+					altitudeControl.setText(0);
 			}
 
 			function onKeyDown( event ) {
