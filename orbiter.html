@@ -163,14 +163,19 @@
 				/// Calculate position of periapsis and apoapsis on the screen
 				/// for placing overlay icons.
 				/// peri = -1 if periapsis, otherwise 1
-				function calcApsePosition(peri){
+				function calcApsePosition(peri, apsis){
 					var worldPos = e.clone().normalize().multiplyScalar(peri * scope.semimajor_axis * (1 - peri * scope.eccentricity)).sub(scope.position);
 					var cameraPos = worldPos.multiplyScalar(viewScale).applyMatrix4(camera.matrixWorldInverse);
 					var persPos = cameraPos.applyProjection(camera.projectionMatrix);
 					persPos.x *= windowHalfX;
 					persPos.y *= windowHalfY;
 					persPos.y -= peri * 8;
-					return persPos;
+					if(0 < persPos.z && persPos.z < 1){
+						apsis.position.copy(persPos);
+						apsis.visible = true;
+					}
+					else
+						apsis.visible = false;
 				};
 				var scope = this;
 
@@ -294,19 +299,15 @@
 
 					if(this.apoapsis){
 						// if eccentricity is zero or more than 1, apoapsis is not defined
-						if(this === select_obj && 0 < this.eccentricity && this.eccentricity < 1){
-							this.apoapsis.visible = true;
-							this.apoapsis.position.copy(calcApsePosition(-1));
-						}
+						if(this === select_obj && 0 < this.eccentricity && this.eccentricity < 1)
+							calcApsePosition(-1, this.apoapsis);
 						else
 							this.apoapsis.visible = false;
 					}
 					if(this.periapsis){
 						// if eccentricity is zero, periapsis is not defined
-						if(this === select_obj && 0 < this.eccentricity){
-							this.periapsis.visible = true;
-							this.periapsis.position.copy(calcApsePosition(1));
-						}
+						if(this === select_obj && 0 < this.eccentricity)
+							calcApsePosition(1, this.periapsis);
 						else
 							this.periapsis.visible = false;
 					}
