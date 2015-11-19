@@ -52,6 +52,7 @@
 			var speedControl;
 			var orbitalElementControl;
 			var altitudeControl;
+			var messageControl;
 			var mouseX = 0, mouseY = 0;
 			var geometry;
 			var cameraControls;
@@ -624,6 +625,10 @@
 
 				timescaleControl = new (function(){
 					function clickForward(number){
+						if(select_obj && 0 < select_obj.throttle){
+							messageControl.setText('You cannot timewarp while accelerating');
+							return;
+						}
 						for(var i = 0; i < forwards.length; i++)
 							forwards[i].src = i <= number ? 'images/forward.png' : 'images/forward-inactive.png';
 						text.innerHTML = 'Timescale: x' + series[number];
@@ -657,6 +662,10 @@
 						date.innerHTML = text;
 					}
 					this.increment = function(){
+						if(select_obj && 0 < select_obj.throttle){
+							messageControl.setText('You cannot timewarp while accelerating');
+							return;
+						}
 						if(timeIndex + 1 < series.length)
 							timeIndex++;
 						clickForward(timeIndex);
@@ -671,6 +680,10 @@
 
 				throttleControl = new (function(){
 					function updatePosition(pos){
+						if(1 < timescale && 0 < pos){
+							messageControl.setText('You cannot accelerate while timewarping');
+							return;
+						}
 						var rect = element.getBoundingClientRect();
 						var handleRect = handle.getBoundingClientRect();
 						var max = rect.height - handleRect.height;
@@ -923,6 +936,44 @@
 				})();
 				container.appendChild( altitudeControl.domElement );
 
+				messageControl = new (function(){
+					this.domElement = document.createElement('div');
+					var element = this.domElement;
+					element.style.position = 'absolute';
+					element.style.top = '25%';
+					element.style.left = '50%';
+					element.style.fontSize = '20px';
+					element.style.fontWeight = 'bold';
+					element.style.textShadow = '0px 0px 5px rgba(0,0,0,1)';
+					element.style.zIndex = 20;
+					var showTime = 0;
+
+					// Register event handlers
+					element.ondragstart = function(event){
+						event.preventDefault();
+					};
+
+					this.setText = function(text){
+						element.innerHTML = text;
+						element.style.marginTop = -element.getBoundingClientRect().height / 2 + 'px';
+						element.style.marginLeft = -element.getBoundingClientRect().width / 2 + 'px';
+						showTime = 5; // Seconds to show should depend on text length!
+						element.style.opacity = '1';
+					};
+
+					this.timeStep = function(deltaTime){
+						if(showTime < deltaTime){
+							element.style.opacity = '0';
+							showTime = 0;
+							return;
+						}
+						showTime -= deltaTime;
+						if(showTime < 2);
+							element.style.opacity = (showTime / 2).toString();
+					}
+				})
+				container.appendChild( messageControl.domElement );
+
 				window.addEventListener( 'resize', onWindowResize, false );
 				window.addEventListener( 'keydown', onKeyDown, false );
 				window.addEventListener( 'keyup', onKeyUp, false );
@@ -956,7 +1007,8 @@
 
 			function render() {
 				var now = new Date();
-				var time = new Date(simTime.getTime() + (now.getTime() - realTime.getTime()) * timescale);
+				var realDeltaTimeMilliSec = now.getTime() - realTime.getTime();
+				var time = new Date(simTime.getTime() + realDeltaTimeMilliSec * timescale);
 				var deltaTime = (time.getTime() - simTime.getTime()) * 1e-3;
 				realTime = now;
 				simTime = time;
@@ -972,6 +1024,7 @@
 				timescaleControl.setDate(time.getFullYear() + '/' + zerofill(time.getMonth() + 1) + '/' + zerofill(time.getDate())
 					+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds()));
 				speedControl.setSpeed();
+				messageControl.timeStep(realDeltaTimeMilliSec * 1e-3);
 
 				camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);
 				camera.updateProjectionMatrix();
@@ -986,6 +1039,9 @@
 						if(sl !== 0){
 							var angleAcceleration = 1e-0;
 							var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
+							// Allow trying to increase throttle when timewarping in order to show the message
+							if(accelerate) throttleControl.increment(deltaTime / div);
+							if(decelerate) throttleControl.decrement(deltaTime / div);
 							if(select_obj === a && select_obj.controllable && timescale <= 1){
 								if(up) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(down) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
@@ -993,8 +1049,6 @@
 								if(right) select_obj.angularVelocity.add(new THREE.Vector3(0, -1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(counterclockwise) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(clockwise) select_obj.angularVelocity.add(new THREE.Vector3(-1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-								if(accelerate) throttleControl.increment(deltaTime / div);
-								if(decelerate) throttleControl.decrement(deltaTime / div);
 								if(!up && !down && !left && !right && !counterclockwise && !clockwise){
 									// Immediately stop micro-rotation if the body is controlled.
 									// This is done to make it still in larger timescale, since micro-rotation cannot be canceled
