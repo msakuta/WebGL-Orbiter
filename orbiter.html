@@ -610,6 +610,7 @@
 
 				cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
 				cameraControls.target.set( 0, 0, 0);
+				cameraControls.noPan = true;
 				cameraControls.maxDistance = 4000;
 				cameraControls.minDistance = 1 / AU;
 				cameraControls.update();
