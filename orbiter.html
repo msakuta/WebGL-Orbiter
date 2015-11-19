@@ -78,7 +78,6 @@
 			var clockwise = false;
 			var accelerate = false;
 			var decelerate = false;
-			var throttle = 0.;
 
 			var sun;
 			var light;
@@ -112,6 +111,7 @@
 				if(parent) parent.children.push(this);
 				this.radius = 1 / AU;
 				this.controllable = false;
+				this.throttle = 0.;
 			}
 
 			CelestialBody.prototype.init = function(){
@@ -675,10 +675,10 @@
 						var handleRect = handle.getBoundingClientRect();
 						var max = rect.height - handleRect.height;
 						handle.style.top = (1 - pos) * max + 'px';
-						throttle = pos;
+						select_obj.throttle = pos;
 						if(select_obj && select_obj.blastModel){
-							select_obj.blastModel.visible = 0 < throttle;
-							var size = (throttle + 0.1) / 1.1;
+							select_obj.blastModel.visible = 0 < select_obj.throttle;
+							var size = (select_obj.throttle + 0.1) / 1.1;
 							select_obj.blastModel.scale.set(size, size, size);
 						}
 					}
@@ -728,10 +728,12 @@
 					handle.ondragstart = im.ondragstart;
 					this.domElement.appendChild(handle);
 					this.increment = function(delta){
-						updatePosition(Math.min(1, throttle + delta));
+						if(select_obj)
+							updatePosition(Math.min(1, select_obj.throttle + delta));
 					}
 					this.decrement = function(delta){
-						updatePosition(Math.max(0, throttle - delta));
+						if(select_obj)
+							updatePosition(Math.max(0, select_obj.throttle - delta));
 					}
 					this.setThrottle = function(value){
 						updatePosition(value);
@@ -1003,7 +1005,8 @@
 									else
 										select_obj.angularVelocity.set(0, 0, 0);
 								}
-								if(0 < throttle) select_obj.velocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(acceleration * throttle * deltaTime / div));
+								if(0 < select_obj.throttle)
+									select_obj.velocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(acceleration * select_obj.throttle * deltaTime / div));
 							}
 							var dvelo = accel.clone().multiplyScalar(0.5);
 							var vec0 = a.position.clone().add(a.velocity.clone().multiplyScalar(deltaTime / div / 2.));
