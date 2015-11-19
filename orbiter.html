@@ -1042,9 +1042,6 @@
 						if(sl !== 0){
 							var angleAcceleration = 1e-0;
 							var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
-							// Allow trying to increase throttle when timewarping in order to show the message
-							if(accelerate) throttleControl.increment(deltaTime / div);
-							if(decelerate) throttleControl.decrement(deltaTime / div);
 							if(select_obj === a && select_obj.controllable && timescale <= 1){
 								if(up) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
 								if(down) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
@@ -1120,6 +1117,10 @@
 				}
 
 				for(var d = 0; d < div; d++){
+					// Allow trying to increase throttle when timewarping in order to show the message
+					if(accelerate) throttleControl.increment(deltaTime / div);
+					if(decelerate) throttleControl.decrement(deltaTime / div);
+
 					simulateBody(sun);
 				}
 				sun.update();
