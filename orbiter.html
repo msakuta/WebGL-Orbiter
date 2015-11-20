@@ -54,7 +54,6 @@
 			var altitudeControl;
 			var messageControl;
 			var mouseX = 0, mouseY = 0;
-			var geometry;
 			var cameraControls;
 			var grids;
 
@@ -104,7 +103,6 @@
 				this.velocity = new THREE.Vector3();
 				this.quaternion = new THREE.Quaternion();
 				this.angularVelocity = new THREE.Vector3();
-				this.vertex = vertex || new THREE.Vector3();
 				if(orbitColor) this.orbitMaterial = new THREE.LineBasicMaterial({color: orbitColor});
 				this.children = [];
 				this.parent = parent;
@@ -457,22 +455,17 @@
 				var path = new THREE.Path( curve.getPoints( 256 ) );
 				var orbitGeometry = path.createPointsGeometry( 256 );
 
-				geometry = new THREE.Geometry();
-
 				// Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 				// It's a bit difficult to calculate in Newtonian dynamics simulation.
 				function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params){
 					var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
 						.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - inclination))
 						.multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
-					var vertex = new THREE.Vector3(0,0,0);
 					var group = new THREE.Object3D();
 					var ret = new CelestialBody(parent || sun, new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), group.position, color, GM);
 					ret.model = group;
 					ret.radius = radius;
-//					geometry.vertices.push( vertex );
 					scene.add( group );
-					// earth
 
 					if(texture){
 						var loader = new THREE.TextureLoader();
@@ -482,7 +475,7 @@
 
 							var material = new THREE.MeshLambertMaterial( { map: texture, color: 0xffffff, shading: THREE.FlatShading, overdraw: 0.5 } );
 							var mesh = new THREE.Mesh( geometry, material );
-							var radiusInAu = 100 * (radius || 6534) / AU;
+							var radiusInAu = viewScale * (radius || 6534) / AU;
 							mesh.scale.set(radiusInAu, radiusInAu, radiusInAu);
 							mesh.rotation.x = Math.PI / 2;
 							group.add( mesh );
@@ -575,6 +568,20 @@
 				center_select = true;
 				camera.position.set(0.005, 0.003, 0.005);
 
+				// Use icosahedron instead of sphere to make it look like uniform
+				var asteroidGeometry = new THREE.IcosahedronGeometry( 1, 2 );
+				// Modulate the vertices randomly to make it look like an asteroid. Simplex noise is desirable.
+				for(var i = 0; i < asteroidGeometry.vertices.length; i++){
+					asteroidGeometry.vertices[i].multiplyScalar(0.3 * (Math.random() - 0.5) + 1);
+				}
+				// Recalculate normal vectors according to updated vertices
+				asteroidGeometry.computeFaceNormals();
+				asteroidGeometry.computeVertexNormals();
+
+				// Detail texture is desired
+				var asteroidMaterial = new THREE.MeshLambertMaterial( { color: 0x7f5f3f, shading: THREE.SmoothShading, overdraw: 0.5 } );
+
+				// Randomly generate asteroids
 				for ( i = 0; i < 10; i ++ ) {
 
 					var angle = Math.random() * Math.PI * 2;
@@ -585,26 +592,29 @@
 					position.applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
 					position.multiplyScalar(2.5);
-					var vertex = new THREE.Vector3(0,0,0);
-					var asteroid = new CelestialBody(sun, position, vertex);
+					var asteroid = new CelestialBody(sun, position);
 					asteroid.velocity = new THREE.Vector3((Math.random() - 0.5) * 0.3 - 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
 						.multiplyScalar(Math.sqrt(GMsun / position.length())).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
-					geometry.vertices.push( vertex );
+					asteroid.radius = Math.random() * 1 + 0.1;
+					// We need nested Object3D for NLIPS
+					asteroid.model = new THREE.Object3D();
+					// The inner Mesh object has scale determined by radius
+					var shape = new THREE.Mesh( asteroidGeometry, asteroidMaterial );
+					asteroid.model.add(shape);
+					var radiusInAu = viewScale * asteroid.radius / AU;
+					shape.scale.set(radiusInAu, radiusInAu, radiusInAu);
+					shape.up.set(0,0,1);
+					scene.add( asteroid.model );
 
 					var orbitMesh = new THREE.Line(orbitGeometry, asteroid.orbitMaterial);
 					asteroid.orbit = orbitMesh;
 					scene.add(orbitMesh);
-					asteroid.orbits = [];
 
 					asteroid.init();
 					asteroid.update();
 
 				}
-
-				var particles = new THREE.ParticleSystem( geometry, material );
-
-				scene.add( particles );
 
 				renderer = new THREE.WebGLRenderer();
 				renderer.setClearColor( 0x000000 );
@@ -1249,8 +1259,6 @@
 				var irotate = AxisAngleQuaternion(-1, 0, 0, Math.PI / 2);
 				// offset sun position
 				light.position.copy(sun.model.position);
-
-				geometry.verticesNeedUpdate = true;
 
 				grids.visible = grid_enable;
 
