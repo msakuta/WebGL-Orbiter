@@ -37,6 +37,16 @@ http://planetpixelemporium.com/mars.html
 and renamed from "mars_1k_color.jpg"
 
 
+Jupiter Texture
+------------
+
+"jupiter.jpg" was obtained from":
+
+http://planetpixelemporium.com/jupiter.html
+
+and renamed from "jupiter2_1k.jpg"
+
+
 Background Star Texture
 -----------------------
 
