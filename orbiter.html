@@ -579,8 +579,16 @@
 				asteroidGeometry.computeFaceNormals();
 				asteroidGeometry.computeVertexNormals();
 
-				// Detail texture is desired
-				var asteroidMaterial = new THREE.MeshLambertMaterial( { color: 0x7f5f3f, shading: THREE.SmoothShading, overdraw: 0.5 } );
+				// Perlin noise is applied as detail texture.
+				// It's asynchrnonous because it's shared by multiple asteroids.
+				var asteroidTexture = THREE.ImageUtils.loadTexture('images/perlin.jpg');
+				asteroidTexture.wrapS = THREE.RepeatWrapping;
+				asteroidTexture.wrapT = THREE.RepeatWrapping;
+				asteroidTexture.repeat.set(4, 4);
+				var asteroidMaterial = new THREE.MeshLambertMaterial( {
+					map: asteroidTexture,
+					color: 0xffaf7f, shading: THREE.SmoothShading, overdraw: 0.5
+				} );
 
 				// Randomly generate asteroids
 				for ( i = 0; i < 10; i ++ ) {
