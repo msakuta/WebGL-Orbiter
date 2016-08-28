@@ -10,6 +10,8 @@ var timescaleControl;
 var throttleControl;
 var speedControl;
 var orbitalElementControl;
+var statsControl;
+var settingsControl;
 var altitudeControl;
 var messageControl;
 var mouseX = 0, mouseY = 0;
@@ -49,8 +51,6 @@ var epsilon = 1e-40; // Doesn't the machine epsilon depend on browsers!??
 var timescale = 1e0; // This is not a constant; it can be changed by the user
 var rad_per_deg = Math.PI / 180; // Radians per degrees
 var navballRadius = 64;
-
-var statsControl;
 
 function AxisAngleQuaternion(x, y, z, angle){
 	var q = new THREE.Quaternion();
@@ -962,6 +962,7 @@ function init() {
 			else{
 				valueElement.style.display = 'none';
 				element.style.background = 'rgba(0, 0, 0, 0)';
+				settingsControl.domElement.style.top = element.getBoundingClientRect().bottom + 'px';
 			}
 		};
 		icon.onmouseenter = function(event){
@@ -996,9 +997,111 @@ function init() {
 			valueElements[1].innerHTML = deltaV;
 			valueElements[2].innerHTML = select_obj.ignitionCount;
 			valueElement.style.marginLeft = (buttonWidth - valueElement.getBoundingClientRect().width) + 'px';
+			settingsControl.domElement.style.top = valueElement.getBoundingClientRect().bottom + 'px';
 		}
 	})();
 	container.appendChild( statsControl.domElement );
+
+	var scope = this;
+
+	settingsControl = new (function(){
+		function setSize(){
+			element.style.left = (window.innerWidth - buttonWidth) + 'px';
+			titleSetSize();
+		}
+		function titleSetSize(){
+			var r = title.getBoundingClientRect();
+			title.style.top = (icon.getBoundingClientRect().height - r.height) + 'px';
+			title.style.left = (-r.width) + 'px';
+		}
+		var buttonTop = 154;
+		var buttonHeight = 32;
+		var buttonWidth = 32;
+		this.domElement = document.createElement('div');
+		var element = this.domElement;
+		element.style.position = 'absolute';
+		element.style.textAlign = 'left';
+		element.style.top = buttonTop + 'px';
+		element.style.left = 0 + 'px';
+		element.style.zIndex = 7;
+		var visible = false;
+		var icon = document.createElement('img');
+		icon.src = 'images/settingsIcon.png';
+		icon.style.width = buttonWidth + 'px';
+		icon.style.height = buttonHeight + 'px';
+		element.appendChild(icon);
+
+		var title = document.createElement('div');
+		title.innerHTML = 'Settings';
+		title.style.display = 'none';
+		title.style.position = 'absolute';
+		title.style.background = 'rgba(0, 0, 0, 0.5)';
+		title.style.zIndex = 20;
+		element.appendChild(title);
+
+		var valueElement = document.createElement('div');
+		element.appendChild(valueElement);
+		valueElement.style.display = 'none';
+		valueElement.style.position = 'absolute';
+		valueElement.style.background = 'rgba(0, 0, 0, 0.5)';
+		valueElement.style.border = '3px ridge #7f3f3f';
+		valueElement.style.padding = '3px';
+		// The settings variables are function local variables, so we can't just pass this pointer
+		// and parameter name and do something like `this[name] = !this[name]`.
+		var toggleFuncs = [function(){grid_enable = !grid_enable}, function(){sync_rotate = !sync_rotate}, function(){nlips_enable = !nlips_enable}];
+		var checkElements = [];
+		for(var i = 0; i < 3; i++){
+			var lineElement = document.createElement('div');
+			var checkbox = document.createElement('input');
+			checkbox.type = 'checkbox';
+			checkbox.onclick = toggleFuncs[i];
+			lineElement.appendChild(checkbox);
+			checkElements.push(checkbox);
+			lineElement.insertAdjacentHTML('beforeend', ['Show&nbsp;grid&nbsp;(G)', 'Chase&nbsp;camera&nbsp;(H)', 'Nonlinear&nbsp;scale&nbsp;(N)'][i]);
+			lineElement.style.fontWeight = 'bold';
+			lineElement.style.paddingRight = '1em';
+			lineElement.style.whiteSpace = 'nowrap';
+			valueElement.appendChild(lineElement);
+		}
+
+		setSize();
+
+		// Register event handlers
+		window.addEventListener('resize', setSize);
+		icon.ondragstart = function(event){
+			event.preventDefault();
+		};
+		icon.onclick = function(event){
+			visible = !visible;
+			if(visible){
+				valueElement.style.display = 'block';
+				element.style.background = 'rgba(0, 0, 0, 0.5)';
+			}
+			else{
+				valueElement.style.display = 'none';
+				element.style.background = 'rgba(0, 0, 0, 0)';
+			}
+		};
+		icon.onmouseenter = function(event){
+			if(!visible)
+				title.style.display = 'block';
+			titleSetSize();
+		};
+		icon.onmouseleave = function(event){
+			if(!visible)
+				title.style.display = 'none';
+		};
+
+		this.setText = function(text){
+			if(!visible)
+				return;
+			checkElements[0].checked = grid_enable;
+			checkElements[1].checked = sync_rotate;
+			checkElements[2].checked = nlips_enable;
+			valueElement.style.marginLeft = (buttonWidth - valueElement.getBoundingClientRect().width) + 'px';
+		}
+	})();
+	container.appendChild( settingsControl.domElement );
 
 	altitudeControl = new (function(){
 		var buttonHeight = 32;
@@ -1125,6 +1228,7 @@ function render() {
 		+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds()));
 	speedControl.setSpeed();
 	statsControl.setText();
+	settingsControl.setText();
 	messageControl.timeStep(realDeltaTimeMilliSec * 1e-3);
 
 	camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);
