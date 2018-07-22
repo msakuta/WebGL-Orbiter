@@ -196,6 +196,8 @@ CelestialBody.prototype.update = function(){
 				+ ' Omega=' + (this.ascending_node / Math.PI).toFixed(10) + '<br>'
 				+ ' w=' + (this.argument_of_perihelion / Math.PI).toFixed(10) + '<br>'
 				+ ' head=' + headingApoapsis.toFixed(5) + '<br>'
+				+ ' periapsis=' + (scope.semimajor_axis * (1 - scope.eccentricity)).toFixed(10) + '<br>'
+				+ ' apoapsis=' + (scope.semimajor_axis * (1 + scope.eccentricity)).toFixed(10) + '<br>'
 //							+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + '<br>' + this.angularVelocity.y.toFixed(10) + ',' + '<br>' + this.angularVelocity.z.toFixed(10)
 				);
 
