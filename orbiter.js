@@ -199,17 +199,21 @@ CelestialBody.prototype.update = function(){
 
 		// Show orbit information
 		if(this === select_obj){
+			// Yes, building a whole table markup by string manipulation.
+			// I know it's inefficient, but it's easy to implement. I'm lazy.
 			orbitalElementControl.setText(
-				  'e=' + this.eccentricity.toFixed(10) + '<br>'
-				+ ' a=' + unitConvLength(this.semimajor_axis) + '<br>'
-				+ ' i=' + (this.inclination / Math.PI).toFixed(10) + '<br>'
-				+ ' Omega=' + (this.ascending_node / Math.PI).toFixed(10) + '<br>'
-				+ ' w=' + (this.argument_of_perihelion / Math.PI).toFixed(10) + '<br>'
-				+ ' head=' + headingApoapsis.toFixed(5) + '<br>'
-				+ ' periapsis=' + unitConvLength(scope.semimajor_axis * (1 - scope.eccentricity)) + '<br>'
-				+ ' apoapsis=' + unitConvLength(scope.semimajor_axis * (1 + scope.eccentricity)) + '<br>'
+				'<table class="table1">'
+				+ ' <tr><td>e</td><td>' + this.eccentricity.toFixed(10) + '</td></tr>'
+				+ ' <tr><td>a</td><td>' + unitConvLength(this.semimajor_axis) + '</td></tr>'
+				+ ' <tr><td>i</td><td>' + (this.inclination / Math.PI).toFixed(10) + '</td></tr>'
+				+ ' <tr><td>Omega</td><td>' + (this.ascending_node / Math.PI).toFixed(10) + '</td></tr>'
+				+ ' <tr><td>w</td><td>' + (this.argument_of_perihelion / Math.PI).toFixed(10) + '</td></tr>'
+				+ ' <tr><td>Periapsis</td><td>' + unitConvLength(scope.semimajor_axis * (1 - scope.eccentricity)) + '</td></tr>'
+				+ ' <tr><td>Apoapsis</td><td>' + unitConvLength(scope.semimajor_axis * (1 + scope.eccentricity)) + '</td></tr>'
+				+ ' <tr><td>head</td><td>' + headingApoapsis.toFixed(5) + '</td></tr>'
 //							+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + '<br>' + this.angularVelocity.y.toFixed(10) + ',' + '<br>' + this.angularVelocity.z.toFixed(10)
-				);
+				+'</table>'
+			);
 		}
 
 		// If eccentricity is over 1, the trajectory is a hyperbola.
