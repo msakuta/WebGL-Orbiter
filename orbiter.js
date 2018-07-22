@@ -29,6 +29,7 @@ var select_idx = 0;
 var select_obj = null;
 var nlips_enable = true;
 var grid_enable = false;
+var units_km = true;
 var sync_rotate = false;
 
 var up = false;
@@ -187,19 +188,29 @@ CelestialBody.prototype.update = function(){
 		// Total rotation of the orbit
 		var rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, this.argument_of_perihelion));
 
+		// Convert length of unit au into a fixed-length string considering user unit selection.
+		// Also appends unit string for clarity.
+		function unitConvLength(au){
+			if(units_km)
+				return (au * AU).toPrecision(10) + ' km';
+			else
+				return au.toFixed(10) + ' AU';
+		}
+
 		// Show orbit information
-		if(this === select_obj)
+		if(this === select_obj){
 			orbitalElementControl.setText(
 				  'e=' + this.eccentricity.toFixed(10) + '<br>'
-				+ ' a=' + this.semimajor_axis.toFixed(10) + '<br>'
+				+ ' a=' + unitConvLength(this.semimajor_axis) + '<br>'
 				+ ' i=' + (this.inclination / Math.PI).toFixed(10) + '<br>'
 				+ ' Omega=' + (this.ascending_node / Math.PI).toFixed(10) + '<br>'
 				+ ' w=' + (this.argument_of_perihelion / Math.PI).toFixed(10) + '<br>'
 				+ ' head=' + headingApoapsis.toFixed(5) + '<br>'
-				+ ' periapsis=' + (scope.semimajor_axis * (1 - scope.eccentricity)).toFixed(10) + '<br>'
-				+ ' apoapsis=' + (scope.semimajor_axis * (1 + scope.eccentricity)).toFixed(10) + '<br>'
+				+ ' periapsis=' + unitConvLength(scope.semimajor_axis * (1 - scope.eccentricity)) + '<br>'
+				+ ' apoapsis=' + unitConvLength(scope.semimajor_axis * (1 + scope.eccentricity)) + '<br>'
 //							+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + '<br>' + this.angularVelocity.y.toFixed(10) + ',' + '<br>' + this.angularVelocity.z.toFixed(10)
 				);
+		}
 
 		// If eccentricity is over 1, the trajectory is a hyperbola.
 		// It could be parabola in case of eccentricity == 1, but we ignore
@@ -1050,16 +1061,25 @@ function init() {
 		valueElement.style.padding = '3px';
 		// The settings variables are function local variables, so we can't just pass this pointer
 		// and parameter name and do something like `this[name] = !this[name]`.
-		var toggleFuncs = [function(){grid_enable = !grid_enable}, function(){sync_rotate = !sync_rotate}, function(){nlips_enable = !nlips_enable}];
+		var toggleFuncs = [
+			function(){grid_enable = !grid_enable},
+			function(){sync_rotate = !sync_rotate},
+			function(){nlips_enable = !nlips_enable},
+			function(){units_km = !units_km}
+		];
 		var checkElements = [];
-		for(var i = 0; i < 3; i++){
+		for(var i = 0; i < toggleFuncs.length; i++){
 			var lineElement = document.createElement('div');
 			var checkbox = document.createElement('input');
 			checkbox.type = 'checkbox';
 			checkbox.onclick = toggleFuncs[i];
 			lineElement.appendChild(checkbox);
 			checkElements.push(checkbox);
-			lineElement.insertAdjacentHTML('beforeend', ['Show&nbsp;grid&nbsp;(G)', 'Chase&nbsp;camera&nbsp;(H)', 'Nonlinear&nbsp;scale&nbsp;(N)'][i]);
+			lineElement.insertAdjacentHTML('beforeend', [
+				'Show&nbsp;grid&nbsp;(G)',
+				'Chase&nbsp;camera&nbsp;(H)',
+				'Nonlinear&nbsp;scale&nbsp;(N)',
+				'Units in KM&nbsp;(K)'][i]);
 			lineElement.style.fontWeight = 'bold';
 			lineElement.style.paddingRight = '1em';
 			lineElement.style.whiteSpace = 'nowrap';
@@ -1100,6 +1120,7 @@ function init() {
 			checkElements[0].checked = grid_enable;
 			checkElements[1].checked = sync_rotate;
 			checkElements[2].checked = nlips_enable;
+			checkElements[3].checked = units_km;
 			valueElement.style.marginLeft = (buttonWidth - valueElement.getBoundingClientRect().width) + 'px';
 		}
 	})();
@@ -1460,6 +1481,10 @@ function onKeyDown( event ) {
 
 		case 'h':
 			sync_rotate = !sync_rotate;
+			break;
+
+		case 'k':
+			units_km = !units_km;
 			break;
 	}
 
