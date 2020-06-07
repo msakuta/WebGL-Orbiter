@@ -1077,13 +1077,18 @@ function init() {
 			var checkbox = document.createElement('input');
 			checkbox.type = 'checkbox';
 			checkbox.onclick = toggleFuncs[i];
+			var id = 'settings_check_' + i;
+			checkbox.setAttribute('id', id);
 			lineElement.appendChild(checkbox);
 			checkElements.push(checkbox);
-			lineElement.insertAdjacentHTML('beforeend', [
+			var label = document.createElement('label');
+			label.setAttribute('for', id);
+			label.innerHTML = [
 				'Show&nbsp;grid&nbsp;(G)',
 				'Chase&nbsp;camera&nbsp;(H)',
 				'Nonlinear&nbsp;scale&nbsp;(N)',
-				'Units in KM&nbsp;(K)'][i]);
+				'Units in KM&nbsp;(K)'][i];
+			lineElement.appendChild(label);
 			lineElement.style.fontWeight = 'bold';
 			lineElement.style.paddingRight = '1em';
 			lineElement.style.whiteSpace = 'nowrap';
