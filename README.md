@@ -38,6 +38,59 @@ http://msakuta.github.io/WebGL-Orbiter/orbiter.html
 
 ## User Interface
 
+
+### Overlays
+
+#### Periapsis
+
+![Periapsis](images/periapsis.png)
+
+This icon is shown on the periapsis of current orbit.
+
+#### Apoapsis
+
+![Apoapsis](images/apoapsis.png)
+
+This icon is shown on the apoapsis of current orbit.
+
+### Navigation ball/Throttle bar
+
+![navball](screenshots/navball.jpg)
+
+On the bottom of the screen is the navigation ball and throttle bar.
+
+Clicking on the throttle bar on the left will control the throttle.
+
+The navigation ball on the right indicates the orientation of the vehicle
+in relation to currently orbiting body.
+
+
+#### Prograde/retrograde icon
+
+![prograde](images/prograde.png)
+![retrograde](images/retrograde.png)
+
+These icons on the navigation ball indicates which direction the rocket is
+going, in relation to the vehicle's orientation.
+
+The left icon is called prograde, meaning the direction the vehicle is going.
+Accelerating in this direction will put more energy on the orbit and push it wider.
+
+The right icon is retrograde, meaning the direction opposite to the vehicle is going.
+Accelerating in this direction will reduce the energy from the orbit and make it narrower.
+
+
+#### Watermark
+
+![watermark](images/watermark.png)
+
+This icon indicates horizontal line in the vehicle's orientation.
+The navigation ball is oriented in a way that the watermark is fixed.
+
+It is common to see this kind of instrument in actual aerospace vehicle.
+I guess this is useful for aerial vehicles, but not so much in space.
+
+
 ### Simulation Speed Control
 
 On top left corner of the screen is a widget for controlling the speed of the simulation, from real-time to a million times faster than reality.
