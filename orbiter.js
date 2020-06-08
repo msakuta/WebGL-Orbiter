@@ -101,6 +101,13 @@ CelestialBody.prototype.getWorldPosition = function(){
 		return this.position;
 };
 
+CelestialBody.prototype.setOrbitingVelocity = function(semimajor_axis, rotation){
+	this.velocity = new THREE.Vector3(1, 0, 0)
+		.multiplyScalar(Math.sqrt(this.parent.GM * (2 / this.position.length() - 1 / semimajor_axis)))
+		.applyQuaternion(rotation);
+}
+
+
 // Update orbital elements from position and velocity.
 // The whole discussion is found in chapter 4.4 in
 // https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
@@ -514,7 +521,7 @@ function init() {
 
 		// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
 		// https://en.wikipedia.org/wiki/Orbital_speed
-		ret.velocity = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.sqrt(ret.parent.GM * (2 / ret.position.length() - 1 / semimajor_axis))).applyQuaternion(rotation);
+		ret.setOrbitingVelocity(semimajor_axis, rotation);
 		if(params && params.axialTilt && params.rotationPeriod){
 			ret.quaternion = AxisAngleQuaternion(1, 0, 0, params.axialTilt);
 			ret.angularVelocity = new THREE.Vector3(0, 0, 2 * Math.PI / params.rotationPeriod).applyQuaternion(ret.quaternion);
@@ -539,12 +546,12 @@ function init() {
 		{axialTilt: 23.4392811 * rad_per_deg,
 		rotationPeriod: ((23 * 60 + 56) * 60 + 4.10),
 		soi: 5e5});
-	var sat = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: 'rocket.obj', controllable: true});
-	sat.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
+	var rocket = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: 'rocket.obj', controllable: true});
+	rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
 	var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, 4904.8695 / AU / AU / AU, earth, 'images/moon.png', 1737.1, {soi: 1e5});
 	var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'images/mars.jpg', 3389.5, {soi: 3e5});
 	var jupiter = AddPlanet(5.204267, 0.048775, 1.305 * rad_per_deg, 100.492 * rad_per_deg, 275.066 * rad_per_deg, 0x7f7f3f, 126686534 / AU / AU / AU, sun, 'images/jupiter.jpg', 69911, {soi: 10e6});
-	select_obj = sat;
+	select_obj = rocket;
 	center_select = true;
 	camera.position.set(0.005, 0.003, 0.005);
 
@@ -1237,7 +1244,10 @@ function init() {
 			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #ffff7f;"
 			+ "font-size: 25px; text-align: center";
 		var scenarios = [
-			"Earth", "Moon", "Mars"
+			{title: "Earth", parent: earth, semimajor_axis: 10000 / AU},
+			{title: "Moon", parent: moon, semimajor_axis: 3000 / AU},
+			{title: "Mars", parent: mars, semimajor_axis: 5000 / AU},
+			{title: "Venus", parent: venus, semimajor_axis: 10000 / AU, ascending_node: Math.PI},
 		];
 		var elem = document.createElement('div');
 		elem.style.margin = "15px";
@@ -1249,7 +1259,23 @@ function init() {
 			elem.style.margin = "15px";
 			elem.style.padding = "15px";
 			elem.style.border = "1px solid #ffff00";
-			elem.innerHTML = scenarios[i];
+			elem.innerHTML = scenarios[i].title;
+			elem.onclick = (function(scenario){
+				return function(){
+					var ascending_node = scenario.ascending_node || 0.;
+					var eccentricity = scenario.eccentricity || 0.;
+					var rotation = scenario.rotation || AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2);
+					var j = rocket.parent.children.indexOf(rocket);
+					if(0 <= j) rocket.parent.children.splice(j, 1);
+					rocket.parent = scenario.parent;
+					rocket.parent.children.push(rocket);
+					rocket.position = new THREE.Vector3(0, 1 - eccentricity, 0)
+						.multiplyScalar(scenario.semimajor_axis).applyQuaternion(rotation);
+					rocket.setOrbitingVelocity(scenario.semimajor_axis, rotation);
+					visible = false;
+					valueElement.style.display = 'none';
+				}
+			})(scenarios[i]);
 			valueElement.appendChild(elem);
 		}
 		this.domElement.appendChild(valueElement);
@@ -1261,14 +1287,12 @@ function init() {
 			visible = !visible;
 			if(visible){
 				valueElement.style.display = 'block';
-				// element.style.background = 'rgba(0, 0, 0, 0.5)';
 				var rect = valueElement.getBoundingClientRect();
 				valueElement.style.marginLeft = -rect.width / 2 + "px";
 				valueElement.style.marginTop = -rect.height / 2 + "px";
 			}
 			else{
 				valueElement.style.display = 'none';
-				// element.style.background = 'rgba(0, 0, 0, 0)';
 			}
 		};
 		icon.onmouseenter = function(event){
