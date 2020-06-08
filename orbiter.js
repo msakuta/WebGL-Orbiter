@@ -17,6 +17,7 @@ var messageControl;
 var mouseX = 0, mouseY = 0;
 var cameraControls;
 var grids;
+var scenarioSelectorControl;
 
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
@@ -906,16 +907,16 @@ function init() {
 	})();
 	container.appendChild( orbitalElementControl.domElement );
 
+	function rightTitleSetSize(title, icon){
+		var r = title.getBoundingClientRect();
+		title.style.top = (icon.getBoundingClientRect().height - r.height) + 'px';
+		title.style.left = (-r.width) + 'px';
+	}
+
 	statsControl = new (function(){
 		function setSize(){
 			element.style.left = (window.innerWidth - buttonWidth) + 'px';
-			titleSetSize();
-		}
-		function titleSetSize(){
-			title.style.left = '0px';
-			var r = title.getBoundingClientRect();
-			title.style.top = (buttonTop + buttonHeight - r.height) + 'px';
-			title.style.left = (window.innerWidth - r.width - buttonWidth) + 'px';
+			rightTitleSetSize(title, icon);
 		}
 		var buttonTop = 120;
 		var buttonHeight = 32;
@@ -941,7 +942,7 @@ function init() {
 		title.style.top = buttonTop + 'px';
 		title.style.background = 'rgba(0, 0, 0, 0.5)';
 		title.style.zIndex = 20;
-		container.appendChild(title); // Appending to element's children didn't work well
+		element.appendChild(title);
 
 		var valueElement = document.createElement('div');
 		element.appendChild(valueElement);
@@ -985,7 +986,7 @@ function init() {
 		icon.onmouseenter = function(event){
 			if(!visible)
 				title.style.display = 'block';
-			titleSetSize();
+			rightTitleSetSize(title, icon);
 		};
 		icon.onmouseleave = function(event){
 			if(!visible)
@@ -1024,12 +1025,7 @@ function init() {
 	settingsControl = new (function(){
 		function setSize(){
 			element.style.left = (window.innerWidth - buttonWidth) + 'px';
-			titleSetSize();
-		}
-		function titleSetSize(){
-			var r = title.getBoundingClientRect();
-			title.style.top = (icon.getBoundingClientRect().height - r.height) + 'px';
-			title.style.left = (-r.width) + 'px';
+			rightTitleSetSize(title, icon);
 		}
 		var buttonTop = 154;
 		var buttonHeight = 32;
@@ -1116,7 +1112,7 @@ function init() {
 		icon.onmouseenter = function(event){
 			if(!visible)
 				title.style.display = 'block';
-			titleSetSize();
+			rightTitleSetSize(title, icon);
 		};
 		icon.onmouseleave = function(event){
 			if(!visible)
@@ -1206,6 +1202,86 @@ function init() {
 		}
 	})
 	container.appendChild( messageControl.domElement );
+
+	scenarioSelectorControl = new (function(){
+		//document.createElement('div');
+		var buttonTop = 0;
+		var buttonHeight = 32;
+		var buttonWidth = 32;
+		this.domElement = document.createElement('div');
+		var element = this.domElement;
+		element.style.position = 'absolute';
+		element.style.textAlign = 'left';
+		element.style.top = buttonTop + 'px';
+		element.style.right = 0 + 'px';
+		element.style.zIndex = 7;
+		var icon = document.createElement('img');
+		icon.src = 'images/menuIcon.png';
+		icon.style.width = buttonWidth + 'px';
+		icon.style.height = buttonHeight + 'px';
+		var visible = false;
+		element.appendChild(icon);
+
+		var title = document.createElement('div');
+		title.innerHTML = 'Scenarios';
+		title.style.display = 'none';
+		title.style.position = 'absolute';
+		title.style.background = 'rgba(0, 0, 0, 0.5)';
+		title.style.zIndex = 20;
+		element.appendChild(title);
+
+		var valueElement = document.createElement('div');
+		// valueElement.style.display = "none";
+		// valueElement.style.position = "fixed";
+		valueElement.style.cssText = "display: none; position: fixed; left: 50%;"
+			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #ffff7f;"
+			+ "font-size: 25px; text-align: center";
+		var scenarios = [
+			"Earth", "Moon", "Mars"
+		];
+		var elem = document.createElement('div');
+		elem.style.margin = "15px";
+		elem.style.padding = "15px";
+		elem.innerHTML = "Scenario Selector";
+		valueElement.appendChild(elem);
+		for(var i = 0; i < scenarios.length; i++){
+			var elem = document.createElement('div');
+			elem.style.margin = "15px";
+			elem.style.padding = "15px";
+			elem.style.border = "1px solid #ffff00";
+			elem.innerHTML = scenarios[i];
+			valueElement.appendChild(elem);
+		}
+		this.domElement.appendChild(valueElement);
+
+		icon.ondragstart = function(event){
+			event.preventDefault();
+		};
+		icon.onclick = function(event){
+			visible = !visible;
+			if(visible){
+				valueElement.style.display = 'block';
+				// element.style.background = 'rgba(0, 0, 0, 0.5)';
+				var rect = valueElement.getBoundingClientRect();
+				valueElement.style.marginLeft = -rect.width / 2 + "px";
+				valueElement.style.marginTop = -rect.height / 2 + "px";
+			}
+			else{
+				valueElement.style.display = 'none';
+				// element.style.background = 'rgba(0, 0, 0, 0)';
+			}
+		};
+		icon.onmouseenter = function(event){
+			if(!visible)
+				title.style.display = 'block';
+			rightTitleSetSize(title, icon);
+		};
+		icon.onmouseleave = function(event){
+			if(!visible)
+				title.style.display = 'none';
+		};
+	});
+	container.appendChild( scenarioSelectorControl.domElement );
 
 	window.addEventListener( 'resize', onWindowResize, false );
 	window.addEventListener( 'keydown', onKeyDown, false );
