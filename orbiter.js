@@ -621,6 +621,7 @@ function init() {
 	cameraControls.noPan = true;
 	cameraControls.maxDistance = 4000;
 	cameraControls.minDistance = 1 / AU;
+	cameraControls.zoomSpeed = 5.;
 	cameraControls.update();
 
 	container.appendChild( renderer.domElement );
