@@ -1243,10 +1243,11 @@ function init() {
 			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #ffff7f;"
 			+ "font-size: 25px; text-align: center";
 		var scenarios = [
-			{title: "Earth", parent: earth, semimajor_axis: 10000 / AU},
-			{title: "Moon", parent: moon, semimajor_axis: 3000 / AU},
-			{title: "Mars", parent: mars, semimajor_axis: 5000 / AU},
-			{title: "Venus", parent: venus, semimajor_axis: 10000 / AU, ascending_node: Math.PI},
+			{title: "Earth orbit", parent: earth, semimajor_axis: 10000 / AU},
+			{title: "Moon orbit", parent: moon, semimajor_axis: 3000 / AU},
+			{title: "Mars orbit", parent: mars, semimajor_axis: 5000 / AU},
+			{title: "Venus orbit", parent: venus, semimajor_axis: 10000 / AU, ascending_node: Math.PI},
+			{title: "Jupiter orbit", parent: jupiter, semimajor_axis: 100000 / AU},
 		];
 		var elem = document.createElement('div');
 		elem.style.margin = "15px";
@@ -1275,6 +1276,7 @@ function init() {
 					rocket.position = new THREE.Vector3(0, 1 - eccentricity, 0)
 						.multiplyScalar(scenario.semimajor_axis).applyQuaternion(rotation);
 					rocket.quaternion = rotation.clone();
+					rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, -Math.PI / 2));
 					rocket.angularVelocity = new THREE.Vector3();
 					throttleControl.setThrottle(0);
 					rocket.setOrbitingVelocity(scenario.semimajor_axis, rotation);
