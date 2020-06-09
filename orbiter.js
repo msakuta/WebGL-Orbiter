@@ -17,6 +17,7 @@ var messageControl;
 var mouseX = 0, mouseY = 0;
 var cameraControls;
 var grids;
+var scenarioSelectorControl;
 
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
@@ -99,6 +100,13 @@ CelestialBody.prototype.getWorldPosition = function(){
 	else
 		return this.position;
 };
+
+CelestialBody.prototype.setOrbitingVelocity = function(semimajor_axis, rotation){
+	this.velocity = new THREE.Vector3(1, 0, 0)
+		.multiplyScalar(Math.sqrt(this.parent.GM * (2 / this.position.length() - 1 / semimajor_axis)))
+		.applyQuaternion(rotation);
+}
+
 
 // Update orbital elements from position and velocity.
 // The whole discussion is found in chapter 4.4 in
@@ -513,7 +521,7 @@ function init() {
 
 		// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
 		// https://en.wikipedia.org/wiki/Orbital_speed
-		ret.velocity = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.sqrt(ret.parent.GM * (2 / ret.position.length() - 1 / semimajor_axis))).applyQuaternion(rotation);
+		ret.setOrbitingVelocity(semimajor_axis, rotation);
 		if(params && params.axialTilt && params.rotationPeriod){
 			ret.quaternion = AxisAngleQuaternion(1, 0, 0, params.axialTilt);
 			ret.angularVelocity = new THREE.Vector3(0, 0, 2 * Math.PI / params.rotationPeriod).applyQuaternion(ret.quaternion);
@@ -538,12 +546,12 @@ function init() {
 		{axialTilt: 23.4392811 * rad_per_deg,
 		rotationPeriod: ((23 * 60 + 56) * 60 + 4.10),
 		soi: 5e5});
-	var sat = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: 'rocket.obj', controllable: true});
-	sat.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
+	var rocket = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: 'rocket.obj', controllable: true});
+	rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
 	var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, 4904.8695 / AU / AU / AU, earth, 'images/moon.png', 1737.1, {soi: 1e5});
 	var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'images/mars.jpg', 3389.5, {soi: 3e5});
 	var jupiter = AddPlanet(5.204267, 0.048775, 1.305 * rad_per_deg, 100.492 * rad_per_deg, 275.066 * rad_per_deg, 0x7f7f3f, 126686534 / AU / AU / AU, sun, 'images/jupiter.jpg', 69911, {soi: 10e6});
-	select_obj = sat;
+	select_obj = rocket;
 	center_select = true;
 	camera.position.set(0.005, 0.003, 0.005);
 
@@ -906,16 +914,16 @@ function init() {
 	})();
 	container.appendChild( orbitalElementControl.domElement );
 
+	function rightTitleSetSize(title, icon){
+		var r = title.getBoundingClientRect();
+		title.style.top = (icon.getBoundingClientRect().height - r.height) + 'px';
+		title.style.left = (-r.width) + 'px';
+	}
+
 	statsControl = new (function(){
 		function setSize(){
 			element.style.left = (window.innerWidth - buttonWidth) + 'px';
-			titleSetSize();
-		}
-		function titleSetSize(){
-			title.style.left = '0px';
-			var r = title.getBoundingClientRect();
-			title.style.top = (buttonTop + buttonHeight - r.height) + 'px';
-			title.style.left = (window.innerWidth - r.width - buttonWidth) + 'px';
+			rightTitleSetSize(title, icon);
 		}
 		var buttonTop = 120;
 		var buttonHeight = 32;
@@ -941,7 +949,7 @@ function init() {
 		title.style.top = buttonTop + 'px';
 		title.style.background = 'rgba(0, 0, 0, 0.5)';
 		title.style.zIndex = 20;
-		container.appendChild(title); // Appending to element's children didn't work well
+		element.appendChild(title);
 
 		var valueElement = document.createElement('div');
 		element.appendChild(valueElement);
@@ -985,7 +993,7 @@ function init() {
 		icon.onmouseenter = function(event){
 			if(!visible)
 				title.style.display = 'block';
-			titleSetSize();
+			rightTitleSetSize(title, icon);
 		};
 		icon.onmouseleave = function(event){
 			if(!visible)
@@ -1024,12 +1032,7 @@ function init() {
 	settingsControl = new (function(){
 		function setSize(){
 			element.style.left = (window.innerWidth - buttonWidth) + 'px';
-			titleSetSize();
-		}
-		function titleSetSize(){
-			var r = title.getBoundingClientRect();
-			title.style.top = (icon.getBoundingClientRect().height - r.height) + 'px';
-			title.style.left = (-r.width) + 'px';
+			rightTitleSetSize(title, icon);
 		}
 		var buttonTop = 154;
 		var buttonHeight = 32;
@@ -1116,7 +1119,7 @@ function init() {
 		icon.onmouseenter = function(event){
 			if(!visible)
 				title.style.display = 'block';
-			titleSetSize();
+			rightTitleSetSize(title, icon);
 		};
 		icon.onmouseleave = function(event){
 			if(!visible)
@@ -1206,6 +1209,112 @@ function init() {
 		}
 	})
 	container.appendChild( messageControl.domElement );
+
+	scenarioSelectorControl = new (function(){
+		var buttonTop = 0;
+		var buttonHeight = 32;
+		var buttonWidth = 32;
+		this.domElement = document.createElement('div');
+		var element = this.domElement;
+		element.style.position = 'absolute';
+		element.style.textAlign = 'left';
+		element.style.top = buttonTop + 'px';
+		element.style.right = 0 + 'px';
+		element.style.zIndex = 7;
+		var icon = document.createElement('img');
+		icon.src = 'images/menuIcon.png';
+		icon.style.width = buttonWidth + 'px';
+		icon.style.height = buttonHeight + 'px';
+		var visible = false;
+		element.appendChild(icon);
+
+		var title = document.createElement('div');
+		title.innerHTML = 'Scenarios';
+		title.style.display = 'none';
+		title.style.position = 'absolute';
+		title.style.background = 'rgba(0, 0, 0, 0.5)';
+		title.style.zIndex = 20;
+		element.appendChild(title);
+
+		var valueElement = document.createElement('div');
+		// valueElement.style.display = "none";
+		// valueElement.style.position = "fixed";
+		valueElement.style.cssText = "display: none; position: fixed; left: 50%;"
+			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #ffff7f;"
+			+ "font-size: 25px; text-align: center";
+		var scenarios = [
+			{title: "Earth orbit", parent: earth, semimajor_axis: 10000 / AU},
+			{title: "Moon orbit", parent: moon, semimajor_axis: 3000 / AU},
+			{title: "Mars orbit", parent: mars, semimajor_axis: 5000 / AU},
+			{title: "Venus orbit", parent: venus, semimajor_axis: 10000 / AU, ascending_node: Math.PI},
+			{title: "Jupiter orbit", parent: jupiter, semimajor_axis: 100000 / AU},
+		];
+		var elem = document.createElement('div');
+		elem.style.margin = "15px";
+		elem.style.padding = "15px";
+		elem.innerHTML = "Scenario Selector";
+		valueElement.appendChild(elem);
+		for(var i = 0; i < scenarios.length; i++){
+			var elem = document.createElement('div');
+			elem.style.margin = "15px";
+			elem.style.padding = "15px";
+			elem.style.border = "1px solid #ffff00";
+			elem.innerHTML = scenarios[i].title;
+			elem.onclick = (function(scenario){
+				return function(){
+					var ascending_node = scenario.ascending_node || 0.;
+					var eccentricity = scenario.eccentricity || 0.;
+					var rotation = scenario.rotation || (function(){
+						var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2);
+						rotation.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI));
+						return rotation;
+					})();
+					var j = rocket.parent.children.indexOf(rocket);
+					if(0 <= j) rocket.parent.children.splice(j, 1);
+					rocket.parent = scenario.parent;
+					rocket.parent.children.push(rocket);
+					rocket.position = new THREE.Vector3(0, 1 - eccentricity, 0)
+						.multiplyScalar(scenario.semimajor_axis).applyQuaternion(rotation);
+					rocket.quaternion = rotation.clone();
+					rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, -Math.PI / 2));
+					rocket.angularVelocity = new THREE.Vector3();
+					throttleControl.setThrottle(0);
+					rocket.setOrbitingVelocity(scenario.semimajor_axis, rotation);
+					title.style.display = 'none';
+					visible = false;
+					valueElement.style.display = 'none';
+				}
+			})(scenarios[i]);
+			valueElement.appendChild(elem);
+		}
+		this.domElement.appendChild(valueElement);
+
+		icon.ondragstart = function(event){
+			event.preventDefault();
+		};
+		icon.onclick = function(event){
+			visible = !visible;
+			if(visible){
+				valueElement.style.display = 'block';
+				var rect = valueElement.getBoundingClientRect();
+				valueElement.style.marginLeft = -rect.width / 2 + "px";
+				valueElement.style.marginTop = -rect.height / 2 + "px";
+			}
+			else{
+				valueElement.style.display = 'none';
+			}
+		};
+		icon.onmouseenter = function(event){
+			if(!visible)
+				title.style.display = 'block';
+			rightTitleSetSize(title, icon);
+		};
+		icon.onmouseleave = function(event){
+			if(!visible)
+				title.style.display = 'none';
+		};
+	});
+	container.appendChild( scenarioSelectorControl.domElement );
 
 	window.addEventListener( 'resize', onWindowResize, false );
 	window.addEventListener( 'keydown', onKeyDown, false );

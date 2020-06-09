@@ -107,6 +107,19 @@ Note that you cannot turn or accelerate the vehicle unless you're in real-time s
 You'll need it to travel distances between planets.
 
 
+### Scenarios
+
+On top right corner of the screen is a little icon.
+
+![](images/menuIcon.png)
+
+Clicking it will show a list of scenarios.
+
+![Scenario selector](screenshots/scenarioSelector.jpg)
+
+Clicking one of these items will teleport the rocket to specific location in the solar system.
+
+
 ### Orbital Elements
 
 Just below the Speed control is a little icon for toggling orbital elements display.
