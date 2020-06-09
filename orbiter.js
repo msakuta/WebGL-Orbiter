@@ -1211,7 +1211,6 @@ function init() {
 	container.appendChild( messageControl.domElement );
 
 	scenarioSelectorControl = new (function(){
-		//document.createElement('div');
 		var buttonTop = 0;
 		var buttonHeight = 32;
 		var buttonWidth = 32;
@@ -1264,14 +1263,22 @@ function init() {
 				return function(){
 					var ascending_node = scenario.ascending_node || 0.;
 					var eccentricity = scenario.eccentricity || 0.;
-					var rotation = scenario.rotation || AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2);
+					var rotation = scenario.rotation || (function(){
+						var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2);
+						rotation.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI));
+						return rotation;
+					})();
 					var j = rocket.parent.children.indexOf(rocket);
 					if(0 <= j) rocket.parent.children.splice(j, 1);
 					rocket.parent = scenario.parent;
 					rocket.parent.children.push(rocket);
 					rocket.position = new THREE.Vector3(0, 1 - eccentricity, 0)
 						.multiplyScalar(scenario.semimajor_axis).applyQuaternion(rotation);
+					rocket.quaternion = rotation.clone();
+					rocket.angularVelocity = new THREE.Vector3();
+					throttleControl.setThrottle(0);
 					rocket.setOrbitingVelocity(scenario.semimajor_axis, rotation);
+					title.style.display = 'none';
 					visible = false;
 					valueElement.style.display = 'none';
 				}
