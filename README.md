@@ -64,6 +64,16 @@ Clicking on the throttle bar on the left will control the throttle.
 The navigation ball on the right indicates the orientation of the vehicle
 in relation to currently orbiting body.
 
+Pointing mouse cursor or holding touch on the navigation ball shows a set of
+arrows indicating rotation directions.
+
+![navball rotation](screenshots/navballRotation.jpg)
+
+Pressing keyboard keys corresponding to the rotation direction or pressing the arrows by the mouse or finger on touch screen will rotate the rocket in
+the designated direction.
+Note that the rotation has inertia; the longer you hold pressing, the faster
+the spin will be and takes longer time to stop.
+
 
 #### Prograde/retrograde icon
 
