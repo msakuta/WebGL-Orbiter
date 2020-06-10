@@ -33,12 +33,14 @@ var grid_enable = false;
 var units_km = true;
 var sync_rotate = false;
 
-var up = false;
-var down = false;
-var left = false;
-var right = false;
-var counterclockwise = false;
-var clockwise = false;
+var buttons = {
+	up: false,
+	down: false,
+	left: false,
+	right: false,
+	counterclockwise: false,
+	clockwise: false,
+};
 var accelerate = false;
 var decelerate = false;
 
@@ -773,6 +775,16 @@ function init() {
 			rootElement.style.top = (window.innerHeight - 2 * navballRadius) + 'px';
 			rootElement.style.left = (window.innerWidth / 2 - navballRadius) + 'px';
 		}
+
+		function absorbEvent_(event) {
+			var e = event || window.event;
+			e.preventDefault && e.preventDefault();
+			e.stopPropagation && e.stopPropagation();
+			e.cancelBubble = true;
+			e.returnValue = false;
+			return false;
+		}
+
 		function addArrow(src, key, left, top){
 			var button = document.createElement('img');
 			button.src = src;
@@ -782,15 +794,28 @@ function init() {
 			button.style.top = top + 'px';
 			button.style.left = left + 'px';
 			button.onmousedown = function(event){
-				window[key] = true;
+				buttons[key] = true;
 			};
 			button.onmouseup = function(event){
-				window[key] = false;
+				buttons[key] = false;
 				button.style.boxShadow = '';
 			}
 			button.ondragstart = function(event){
 				event.preventDefault();
 			};
+			button.ontouchstart = function(event){
+				buttons[key] = true;
+				event.preventDefault();
+				event.stopPropagation();
+			};
+			button.ontouchmove = absorbEvent_;
+			button.ontouchend = function(event){
+				buttons[key] = false;
+				button.style.boxShadow = '';
+				event.preventDefault();
+				event.stopPropagation();
+			};
+			button.ontouchcancel = absorbEvent_;
 			element.appendChild(button);
 		}
 		var buttonHeight = 32;
@@ -1027,8 +1052,6 @@ function init() {
 		}
 	})();
 	container.appendChild( statsControl.domElement );
-
-	var scope = this;
 
 	settingsControl = new (function(){
 		function setSize(){
@@ -1387,13 +1410,13 @@ function render() {
 				var angleAcceleration = 1e-0;
 				var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
 				if(select_obj === a && select_obj.controllable && timescale <= 1){
-					if(up) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(down) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(left) select_obj.angularVelocity.add(new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(right) select_obj.angularVelocity.add(new THREE.Vector3(0, -1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(counterclockwise) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(clockwise) select_obj.angularVelocity.add(new THREE.Vector3(-1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(!up && !down && !left && !right && !counterclockwise && !clockwise){
+					if(buttons.up) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+					if(buttons.down) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+					if(buttons.left) select_obj.angularVelocity.add(new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+					if(buttons.right) select_obj.angularVelocity.add(new THREE.Vector3(0, -1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+					if(buttons.counterclockwise) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+					if(buttons.clockwise) select_obj.angularVelocity.add(new THREE.Vector3(-1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+					if(!buttons.up && !buttons.down && !buttons.left && !buttons.right && !buttons.counterclockwise && !buttons.clockwise){
 						// Immediately stop micro-rotation if the body is controlled.
 						// This is done to make it still in larger timescale, since micro-rotation cannot be canceled
 						// by product of angularVelocity and quaternion which underflows by square.
