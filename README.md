@@ -55,11 +55,17 @@ This icon is shown on the apoapsis of current orbit.
 
 ### Navigation ball/Throttle bar
 
-![navball](screenshots/navball.jpg)
-
 On the bottom of the screen is the navigation ball and throttle bar.
 
-Clicking on the throttle bar on the left will control the throttle.
+![navball](screenshots/navball.jpg)
+
+#### Throttle bar
+
+* Clicking and dragging on the throttle bar on the left will control the throttle.
+* Clicking on the max button will make the throttle maximum (maximum acceleration).
+* Clicking on the stop button will halt the engine (zero acceleration).
+
+#### Navigation ball
 
 The navigation ball on the right indicates the orientation of the vehicle
 in relation to currently orbiting body.
