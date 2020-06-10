@@ -1667,27 +1667,27 @@ function onKeyDown( event ) {
 
 	if(select_obj && select_obj.controllable) switch( char ){
 		case 'w': // prograde
-			down = true;
+			buttons.up = true;
 //						prograde = true;
 			break;
 		case 's': // retrograde
-			up = true;
+			buttons.down = true;
 //						retrograde = true;
 			break;
 		case 'q': // normal
-			counterclockwise = true;
+			buttons.counterclockwise = true;
 //						normal = true;
 			break;
 		case 'e': // normal negative
-			clockwise = true;
+			buttons.clockwise = true;
 //						antinormal = true;
 			break;
 		case 'a': // orbit plane normal
-			left = true;
+			buttons.left = true;
 //						incline = true;
 			break;
 		case 'd': // orbit plane normal negative
-			right = true;
+			buttons.right = true;
 //						antiincline = true;
 			break;
 		case 'z':
@@ -1714,27 +1714,27 @@ function onKeyDown( event ) {
 function onKeyUp( event ) {
 	switch ( String.fromCharCode(event.which || event.keyCode).toLowerCase() ) {
 		case 'w': // prograde
-			down = false;
+			buttons.up = false;
 //						prograde = false;
 			break;
 		case 's':
-			up = false;
+			buttons.down = false;
 //						retrograde = false;
 			break;
 		case 'q': // prograde
-			counterclockwise = false;
+			buttons.counterclockwise = false;
 //						normal = false;
 			break;
 		case 'e':
-			clockwise = false;
+			buttons.clockwise = false;
 //						antinormal = false;
 			break;
 		case 'a': // orbit plane normal
-			left = false;
+			buttons.left = false;
 //						incline = false;
 			break;
 		case 'd': // orbit plane normal negative
-			right = false;
+			buttons.right = false;
 //						antiincline = false;
 			break;
 	}
