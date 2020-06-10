@@ -694,10 +694,14 @@ function init() {
 				messageControl.setText('You cannot accelerate while timewarping');
 				return;
 			}
-			var rect = element.getBoundingClientRect();
+			visualizePosition(pos);
+		}
+		function visualizePosition(pos){
+			var backRect = element.getBoundingClientRect();
+			var rect = throttleBack.getBoundingClientRect();
 			var handleRect = handle.getBoundingClientRect();
 			var max = rect.height - handleRect.height;
-			handle.style.top = (1 - pos) * max + 'px';
+			handle.style.top = (1 - pos) * max + (rect.top - backRect.top) + 'px';
 			if(select_obj.throttle === 0. && 0. < pos)
 				select_obj.ignitionCount++;
 			select_obj.throttle = pos;
@@ -708,7 +712,7 @@ function init() {
 			}
 		}
 		function movePosition(event){
-			var rect = element.getBoundingClientRect();
+			var rect = throttleBack.getBoundingClientRect();
 			var handleRect = handle.getBoundingClientRect();
 			var max = rect.height - handleRect.height;
 			var pos = Math.min(max, Math.max(0, (event.clientY - rect.top) - handleRect.height / 2));
@@ -724,33 +728,61 @@ function init() {
 		this.domElement.style.zIndex = 10;
 		var element = this.domElement;
 		var dragging = false;
-		var im = document.createElement('img');
-		im.src = 'images/throttle-back.png';
-		im.onmousedown = function(event){
+		var scope = this;
+		var throttleMax = document.createElement('img');
+		throttleMax.src = 'images/throttle-max.png';
+		throttleMax.style.position = "absolute";
+		throttleMax.style.left = '0px';
+		throttleMax.style.top = '0px';
+		throttleMax.onmousedown = function(event){
+			scope.setThrottle(1);
+		};
+		throttleMax.ondragstart = function(event){
+			event.preventDefault();
+		};
+		this.domElement.appendChild(throttleMax);
+		var throttleBack = document.createElement('img');
+		throttleBack.src = 'images/throttle-back.png';
+		throttleBack.style.position = "absolute";
+		throttleBack.style.left = '0px';
+		throttleBack.style.top = '25px';
+		throttleBack.onmousedown = function(event){
 			dragging = true;
 			movePosition(event);
 		};
-		im.onmousemove = function(event){
+		throttleBack.onmousemove = function(event){
 			if(dragging && event.buttons & 1)
 				movePosition(event);
 		};
-		im.onmouseup = function(event){
+		throttleBack.onmouseup = function(event){
 			dragging = false;
 		}
-		im.draggable = true;
-		im.ondragstart = function(event){
+		throttleBack.draggable = true;
+		throttleBack.ondragstart = function(event){
 			event.preventDefault();
 		};
-		this.domElement.appendChild(im);
+		this.domElement.appendChild(throttleBack);
+		var throttleMin = document.createElement('img');
+		throttleMin.src = 'images/throttle-min.png';
+		throttleMin.style.position = "absolute";
+		throttleMin.style.left = '0px';
+		throttleMin.style.top = '106px';
+		throttleMin.onmousedown = function(event){
+			scope.setThrottle(0);
+		};
+		throttleMin.ondragstart = function(event){
+			event.preventDefault();
+		};
+		this.domElement.appendChild(throttleMin);
 		var handle = document.createElement('img');
 		handle.src = 'images/throttle-handle.png';
 		handle.style.position = 'absolute';
 		handle.style.top = (guideHeight - 16) + 'px';
 		handle.style.left = '0px';
-		handle.onmousemove = im.onmousemove;
-		handle.onmousedown = im.onmousedown;
-		handle.onmouseup = im.onmouseup;
-		handle.ondragstart = im.ondragstart;
+		handle.onmousemove = throttleBack.onmousemove;
+		handle.onmousedown = throttleBack.onmousedown;
+		handle.onmouseup = throttleBack.onmouseup;
+		handle.ondragstart = throttleBack.ondragstart;
 		this.domElement.appendChild(handle);
 		this.increment = function(delta){
 			if(select_obj)
@@ -766,6 +798,9 @@ function init() {
 		window.addEventListener('resize', function(){
 			element.style.top = (window.innerHeight - guideHeight) + 'px';
 			element.style.left = (window.innerWidth / 2 - navballRadius - guideWidth) + 'px';
+		});
+		window.addEventListener('load', function(){
+			visualizePosition(select_obj.throttle);
 		});
 	})();
 	container.appendChild( throttleControl.domElement );

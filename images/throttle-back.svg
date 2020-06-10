@@ -15,15 +15,27 @@
    viewBox="0 0 32 128"
    id="svg2"
    version="1.1"
-   inkscape:version="0.91 r13725"
+   inkscape:version="0.92.1 r15371"
    sodipodi:docname="throttle-back.svg"
-   inkscape:export-filename="D:\projects\WebGL-Orbiter\images\throttle-back.png"
-   inkscape:export-xdpi="90"
-   inkscape:export-ydpi="90">
+   inkscape:export-filename="throttle-back.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96">
   <defs
      id="defs4">
     <linearGradient
-       id="linearGradient5130"
+       inkscape:collect="always"
+       id="button-face-0">
+      <stop
+         style="stop-color:#bc423a;stop-opacity:1"
+         offset="0"
+         id="stop6200" />
+      <stop
+         style="stop-color:#d76950;stop-opacity:1"
+         offset="1"
+         id="stop6202" />
+    </linearGradient>
+    <linearGradient
+       id="button-4"
        inkscape:collect="always">
       <stop
          id="stop5132"
@@ -36,14 +48,34 @@
     </linearGradient>
     <linearGradient
        inkscape:collect="always"
-       xlink:href="#linearGradient5130"
+       xlink:href="#button-4"
        id="linearGradient5128"
+       x1="128"
+       y1="897.3623"
+       x2="128"
+       y2="967.3623"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.14285714,0,0,1.1428573,-2.285714,-77.194915)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#button-face-0"
+       id="linearGradient6168"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.14285714,0,0,0.21428617,-2.285714,840.56983)"
        x1="128"
        y1="876.36218"
        x2="128"
-       y2="988.36218"
+       y2="988.36218" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#button-face-0"
+       id="linearGradient6172"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(0.14285714,0,0,1.1428573,-2.285714,-77.194915)" />
+       gradientTransform="matrix(0.11607142,0,0,0.16071372,1.1428574,890.5187)"
+       x1="205.53847"
+       y1="988.36279"
+       x2="24.615385"
+       y2="876.36237" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -52,9 +84,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5.6"
-     inkscape:cx="54.544298"
-     inkscape:cy="76.720463"
+     inkscape:zoom="7.2407734"
+     inkscape:cx="52.323404"
+     inkscape:cy="63.374681"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -89,34 +121,116 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(0,-924.36216)">
-    <rect
-       style="fill:url(#linearGradient5128);fill-opacity:1;stroke:#002c01;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       id="rect5112"
-       width="32"
-       height="128.00003"
-       x="0"
-       y="924.36218"
-       ry="0" />
-    <rect
-       style="fill:#3b3b3b;fill-opacity:1;stroke:#002c01;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       id="rect5112-7"
-       width="8.000001"
-       height="112.0001"
-       x="12"
-       y="932.36218"
-       ry="1.7500011" />
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:40px;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       x="-1015.4684"
-       y="9.3410997"
-       id="text5160"
-       sodipodi:linespacing="125%"
-       transform="matrix(0,-1,1,0,0,0)"><tspan
-         sodipodi:role="line"
-         id="tspan5162"
-         x="-1015.4684"
+    <g
+       id="g6220"
+       inkscape:export-filename="throttle-back.png"
+       inkscape:export-xdpi="95.999969"
+       inkscape:export-ydpi="95.999969">
+      <rect
+         ry="0"
+         y="948.36218"
+         x="0"
+         height="80.000023"
+         width="32"
+         id="rect5112"
+         style="fill:url(#linearGradient5128);fill-opacity:1;stroke:#002c01;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+      <rect
+         ry="1.7500011"
+         y="953.36218"
+         x="11"
+         height="69.999977"
+         width="10"
+         id="rect5112-7"
+         style="fill:#3b3b3b;fill-opacity:1;stroke:#002c01;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+      <text
+         transform="rotate(-90)"
+         id="text5160"
          y="9.3410997"
-         style="font-size:10px;-inkscape-font-specification:'sans-serif, Bold';font-family:sans-serif;font-weight:bold;font-style:normal;font-stretch:normal;font-variant:normal;text-anchor:start;text-align:start;writing-mode:lr;line-height:125%">THROTTLE</tspan></text>
+         x="-1015.4684"
+         style="font-style:normal;font-weight:normal;line-height:0%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         xml:space="preserve"><tspan
+           style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10px;line-height:125%;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';text-align:start;writing-mode:lr-tb;text-anchor:start"
+           y="9.3410997"
+           x="-1015.4684"
+           id="tspan5162"
+           sodipodi:role="line">THROTTLE</tspan></text>
+    </g>
+    <g
+       id="g6188"
+       inkscape:export-filename="throttle-min.png"
+       inkscape:export-xdpi="95.999969"
+       inkscape:export-ydpi="95.999969">
+      <rect
+         style="fill:url(#linearGradient6168);fill-opacity:1.0;stroke:#002c01;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+         id="rect6166"
+         width="32"
+         height="24.000053"
+         x="0"
+         y="1028.3622"
+         ry="0" />
+      <rect
+         ry="0"
+         y="1031.3622"
+         x="3"
+         height="17.999939"
+         width="26"
+         id="rect6170"
+         style="fill:url(#linearGradient6172);fill-opacity:1;stroke:#002c01;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path6174"
+         d="m 0,1028.3622 3,3"
+         style="fill:none;stroke:#002c00;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path6176"
+         d="m 3,1049.3622 -3,3"
+         style="fill:none;stroke:#002c00;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path6178"
+         d="m 29,1049.3622 3,3"
+         style="fill:none;stroke:#002c00;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path6180"
+         d="m 29,1031.3622 3,-3"
+         style="fill:none;stroke:#002c00;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    </g>
+    <text
+       id="text6208"
+       y="918.94305"
+       x="5.4171662"
+       style="font-style:normal;font-weight:normal;font-size:10.5624609px;line-height:0%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#560000;fill-opacity:1;stroke:none;stroke-width:0.88020509px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;"
+       xml:space="preserve"
+       transform="scale(0.88020508,1.1360989)"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:8.80205059px;line-height:125%;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';text-align:start;writing-mode:lr-tb;text-anchor:start;stroke-width:0.88020509px;fill:#560000;fill-opacity:1;"
+         y="918.94305"
+         x="5.4171662"
+         id="tspan6206"
+         sodipodi:role="line">STOP</tspan></text>
+    <use
+       x="0"
+       y="0"
+       xlink:href="#g6188"
+       id="use6210"
+       transform="translate(0,-104.00004)"
+       width="100%"
+       height="100%"
+       inkscape:export-filename="throttle-max.png"
+       inkscape:export-xdpi="95.999969"
+       inkscape:export-ydpi="95.999969" />
+    <text
+       transform="scale(0.95593248,1.046099)"
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:11.47119045px;line-height:0%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#560000;fill-opacity:1;stroke:none;stroke-width:0.95593256px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="4.564136"
+       y="898.45959"
+       id="text6214"><tspan
+         sodipodi:role="line"
+         id="tspan6212"
+         x="4.564136"
+         y="898.45959"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:9.55932522px;line-height:125%;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Bold';text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#560000;fill-opacity:1;stroke-width:0.95593256px">MAX</tspan></text>
   </g>
 </svg>
