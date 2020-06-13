@@ -1443,6 +1443,11 @@ function init() {
 					rocket.angularVelocity = new THREE.Vector3();
 					throttleControl.setThrottle(0);
 					rocket.setOrbitingVelocity(scenario.semimajor_axis, rotation);
+					rocket.totalDeltaV = 0.;
+					rocket.ignitionCount = 0;
+					simTime = new Date();
+					realTime = simTime;
+					startTime = simTime;
 					messageControl.setText('Scenario ' + scenario.title + ' Loaded!');
 					scope.title.style.display = 'none';
 					scope.visible = false;
