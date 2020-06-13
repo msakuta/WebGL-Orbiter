@@ -1461,6 +1461,14 @@ function init() {
 	});
 	container.appendChild( scenarioSelectorControl.domElement );
 
+	function serializeState(){
+		return {
+			simTime: simTime,
+			startTime: startTime,
+			bodies: sun.serializeTree(),
+		};
+	}
+
 	saveControl = new (function(){
 		var config = {
 			buttonTop: 34,
@@ -1469,14 +1477,6 @@ function init() {
 		};
 		var scope = this;
 		MenuControl.call(this, 'Save data', 'images/saveIcon.png', config);
-
-		function serializeState(){
-			return {
-				simTime: simTime,
-				startTime: startTime,
-				bodies: sun.serializeTree(),
-			};
-		}
 
 		var inputContainer = document.createElement('div');
 		inputContainer.style.border = "1px solid #7fff7f";
@@ -1559,6 +1559,19 @@ function init() {
 	});
 	container.appendChild( saveControl.domElement );
 
+	function loadState(state){
+		simTime = new Date(state.simTime);
+		startTime = new Date(state.startTime);
+		var bodies = state.bodies;
+		for(var i = 0; i < bodies.length; i++){
+			var body = bodies[i];
+			if(body.name in celestialBodies){
+				celestialBodies[body.name].deserialize(body);
+			}
+		}
+		throttleControl.setThrottle(rocket.throttle);
+	}
+
 	loadControl = new (function(){
 		var config = {
 			buttonTop: 34 * 2,
@@ -1600,16 +1613,7 @@ function init() {
 				elem.appendChild(deleteElem);
 				elem.onclick = (function(save){
 					return function(){
-						simTime = new Date(save.state.simTime);
-						startTime = new Date(save.state.startTime);
-						var bodies = save.state.bodies;
-						for(var i = 0; i < bodies.length; i++){
-							var body = bodies[i];
-							if(body.name in celestialBodies){
-								celestialBodies[body.name].deserialize(body);
-							}
-						}
-						throttleControl.setThrottle(rocket.throttle);
+						loadState(save.state);
 						messageControl.setText('Game State Loaded!');
 						scope.title.style.display = 'none';
 						scope.visible = false;
@@ -1634,6 +1638,17 @@ function init() {
 	window.addEventListener( 'resize', onWindowResize, false );
 	window.addEventListener( 'keydown', onKeyDown, false );
 	window.addEventListener( 'keyup', onKeyUp, false );
+	window.addEventListener( 'pageshow', function(){
+		var state = localStorage.getItem('WebGLOrbiterAutoSave');
+		if(state){
+			loadState(JSON.parse(state));
+		}
+		console.log('I am the 3rd one.');
+	});
+	window.addEventListener( 'beforeunload', function(){
+		localStorage.setItem('WebGLOrbiterAutoSave', JSON.stringify(serializeState()));
+		console.log('I am the 3rd one.');
+	});
 
 	// Start the clock after the initialization is finished, otherwise
 	// the very first frame of simulation can be long.
