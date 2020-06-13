@@ -18,6 +18,8 @@ var mouseX = 0, mouseY = 0;
 var cameraControls;
 var grids;
 var scenarioSelectorControl;
+var saveControl;
+var loadControl;
 
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
@@ -46,6 +48,8 @@ var decelerate = false;
 
 var sun;
 var light;
+
+var celestialBodies = {};
 
 var selectedOrbitMaterial;
 
@@ -79,6 +83,7 @@ function CelestialBody(parent, position, vertex, orbitColor, GM, name){
 	this.totalDeltaV = 0.;
 	this.ignitionCount = 0;
 	this.name = name;
+	celestialBodies[name] = this;
 }
 
 CelestialBody.prototype.init = function(){
@@ -110,6 +115,44 @@ CelestialBody.prototype.setOrbitingVelocity = function(semimajor_axis, rotation)
 		.applyQuaternion(rotation);
 }
 
+function deserializeVector3(json){
+	return new THREE.Vector3(json.x, json.y, json.z);
+}
+
+function deserializeQuaternion(json){
+	return new THREE.Quaternion(json._x, json._y, json._z, json._w);
+}
+
+CelestialBody.prototype.serialize = function(){
+	return {
+		name: this.name,
+		parent: this.parent.name,
+		position: this.position,
+		velocity: this.velocity,
+		quaternion: this.quaternion,
+		angularVelocity: this.angularVelocity,
+	};
+};
+
+CelestialBody.prototype.deserialize = function(json){
+	this.name = json.name;
+	this.setParent(celestialBodies[json.parent] || sun);
+	this.position = deserializeVector3(json.position);
+	this.velocity = deserializeVector3(json.velocity);
+	this.quaternion = deserializeQuaternion(json.quaternion);
+	this.angularVelocity = deserializeVector3(json.angularVelocity);
+};
+
+CelestialBody.prototype.setParent = function(newParent){
+	if(this.parent === newParent) return;
+	if(this.parent){
+		var j = this.parent.children.indexOf(this);
+		if(0 <= j) this.parent.children.splice(j, 1);
+	}
+	this.parent = newParent;
+	if(this.parent)
+		this.parent.children.push(this);
+}
 
 // Update orbital elements from position and velocity.
 // The whole discussion is found in chapter 4.4 in
@@ -1330,10 +1373,7 @@ function init() {
 						rotation.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI));
 						return rotation;
 					})();
-					var j = rocket.parent.children.indexOf(rocket);
-					if(0 <= j) rocket.parent.children.splice(j, 1);
-					rocket.parent = scenario.parent;
-					rocket.parent.children.push(rocket);
+					rocket.setParent(scenario.parent);
 					rocket.position = new THREE.Vector3(0, 1 - eccentricity, 0)
 						.multiplyScalar(scenario.semimajor_axis).applyQuaternion(rotation);
 					rocket.quaternion = rotation.clone();
@@ -1376,6 +1416,221 @@ function init() {
 		};
 	});
 	container.appendChild( scenarioSelectorControl.domElement );
+
+	saveControl = new (function(){
+		var buttonTop = 34;
+		var buttonHeight = 32;
+		var buttonWidth = 32;
+		var scope = this;
+		this.domElement = document.createElement('div');
+		var element = this.domElement;
+		element.style.position = 'absolute';
+		element.style.textAlign = 'left';
+		element.style.top = buttonTop + 'px';
+		element.style.right = 0 + 'px';
+		element.style.zIndex = 7;
+		var icon = document.createElement('img');
+		icon.src = 'images/saveIcon.png';
+		icon.style.width = buttonWidth + 'px';
+		icon.style.height = buttonHeight + 'px';
+		var visible = false;
+		element.appendChild(icon);
+
+		var title = document.createElement('div');
+		title.innerHTML = 'Save data';
+		title.style.display = 'none';
+		title.style.position = 'absolute';
+		title.style.background = 'rgba(0, 0, 0, 0.5)';
+		title.style.zIndex = 20;
+		element.appendChild(title);
+
+		var valueElement = document.createElement('div');
+		valueElement.style.cssText = "display: none; position: fixed; left: 50%;"
+			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #ffff7f;"
+			+ "font-size: 15px; text-align: center";
+
+		var titleElem = document.createElement('div');
+		titleElem.style.margin = "15px";
+		titleElem.style.padding = "15px";
+		titleElem.innerHTML = "Save Data";
+		valueElement.appendChild(titleElem);
+	
+		var inputContainer = document.createElement('div');
+		inputContainer.style.border = "1px solid #ffff00";
+		var inputTitle = document.createElement('div');
+		inputTitle.innerHTML = 'Save name';
+		var inputElement = document.createElement('input');
+		inputElement.setAttribute('type', 'text');
+		var inputButton = document.createElement('button');
+		inputButton.innerHTML = 'save'
+		inputButton.onclick = function(event){
+			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
+			saveData.push({title: inputElement.value, state: rocket.serialize()});
+			localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
+			title.style.display = 'none';
+			visible = false;
+			valueElement.style.display = 'none';
+		};
+		inputContainer.appendChild(inputTitle);
+		inputContainer.appendChild(inputElement);
+		inputContainer.appendChild(inputButton);
+		valueElement.appendChild(inputContainer);
+
+		var saveContainer = document.createElement('div');
+
+		function updateSaveDataList(){
+			while(0 < saveContainer.children.length) saveContainer.removeChild(saveContainer.children[0]);
+			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
+			for(var i = 0; i < saveData.length; i++){
+				var elem = document.createElement('div');
+				elem.style.margin = "15px";
+				elem.style.padding = "15px";
+				elem.style.border = "1px solid #ffff00";
+				elem.innerHTML = saveData[i].title;
+				elem.onclick = (function(save){
+					return function(){
+						save.state = rocket.serialize();
+						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
+						title.style.display = 'none';
+						visible = false;
+						valueElement.style.display = 'none';
+					}
+				})(saveData[i]);
+				saveContainer.appendChild(elem);
+			}
+		}
+		valueElement.appendChild(saveContainer);
+
+		this.domElement.appendChild(valueElement);
+
+		icon.ondragstart = function(event){
+			event.preventDefault();
+		};
+		icon.onclick = function(event){
+			scope.setVisible(!visible);
+		};
+		icon.onmouseenter = function(event){
+			if(!visible)
+				title.style.display = 'block';
+			rightTitleSetSize(title, icon);
+		};
+		icon.onmouseleave = function(event){
+			if(!visible)
+				title.style.display = 'none';
+		};
+		this.setVisible = function(v){
+			visible = v;
+			if(visible){
+				loadControl.setVisible(false); // Mutually exclusive
+				valueElement.style.display = 'block';
+				updateSaveDataList();
+				var rect = valueElement.getBoundingClientRect();
+				valueElement.style.marginLeft = -rect.width / 2 + "px";
+				valueElement.style.marginTop = -rect.height / 2 + "px";
+			}
+			else{
+				valueElement.style.display = 'none';
+			}
+		}
+	});
+	container.appendChild( saveControl.domElement );
+
+	loadControl = new (function(){
+		var buttonTop = 34 * 2;
+		var buttonHeight = 32;
+		var buttonWidth = 32;
+		var scope = this;
+		this.domElement = document.createElement('div');
+		var element = this.domElement;
+		element.style.position = 'absolute';
+		element.style.textAlign = 'left';
+		element.style.top = buttonTop + 'px';
+		element.style.right = 0 + 'px';
+		element.style.zIndex = 7;
+		var icon = document.createElement('img');
+		icon.src = 'images/loadIcon.png';
+		icon.style.width = buttonWidth + 'px';
+		icon.style.height = buttonHeight + 'px';
+		var visible = false;
+		element.appendChild(icon);
+
+		var title = document.createElement('div');
+		title.innerHTML = 'Load data';
+		title.style.display = 'none';
+		title.style.position = 'absolute';
+		title.style.background = 'rgba(0, 0, 0, 0.5)';
+		title.style.zIndex = 20;
+		element.appendChild(title);
+
+		var valueElement = document.createElement('div');
+		valueElement.style.cssText = "display: none; position: fixed; left: 50%;"
+			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #ff7fff;"
+			+ "font-size: 15px; text-align: center";
+
+		var titleElem = document.createElement('div');
+		titleElem.style.margin = "15px";
+		titleElem.style.padding = "15px";
+		titleElem.innerHTML = "Load Data";
+		valueElement.appendChild(titleElem);
+	
+		var saveContainer = document.createElement('div');
+
+		function updateSaveDataList(){
+			while(0 < saveContainer.children.length) saveContainer.removeChild(saveContainer.children[0]);
+			var saves = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
+			for(var i = 0; i < saves.length; i++){
+				var elem = document.createElement('div');
+				elem.style.margin = "15px";
+				elem.style.padding = "15px";
+				elem.style.border = "1px solid #ffff00";
+				elem.innerHTML = saves[i].title;
+				elem.onclick = (function(save){
+					return function(){
+						rocket.deserialize(save.state);
+						throttleControl.setThrottle(rocket.throttle);
+						title.style.display = 'none';
+						visible = false;
+						valueElement.style.display = 'none';
+					}
+				})(saves[i]);
+				saveContainer.appendChild(elem);
+			}
+		}
+		valueElement.appendChild(saveContainer);
+
+		this.domElement.appendChild(valueElement);
+
+		icon.ondragstart = function(event){
+			event.preventDefault();
+		};
+		icon.onclick = function(event){
+			scope.setVisible(!visible);
+		};
+		icon.onmouseenter = function(event){
+			if(!visible)
+				title.style.display = 'block';
+			rightTitleSetSize(title, icon);
+		};
+		icon.onmouseleave = function(event){
+			if(!visible)
+				title.style.display = 'none';
+		};
+		this.setVisible = function(v){
+			visible = v;
+			if(visible){
+				saveControl.setVisible(false); // Mutually exclusive
+				valueElement.style.display = 'block';
+				updateSaveDataList();
+				var rect = valueElement.getBoundingClientRect();
+				valueElement.style.marginLeft = -rect.width / 2 + "px";
+				valueElement.style.marginTop = -rect.height / 2 + "px";
+			}
+			else{
+				valueElement.style.display = 'none';
+			}
+		}
+	});
+	container.appendChild( loadControl.domElement );
 
 	window.addEventListener( 'resize', onWindowResize, false );
 	window.addEventListener( 'keydown', onKeyDown, false );
