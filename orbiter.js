@@ -1526,7 +1526,7 @@ function init() {
 				elem.appendChild(labelElem);
 				var deleteElem = document.createElement('img');
 				deleteElem.setAttribute('src', 'images/trashcan.png');
-				deleteElem.style.width = '32px';
+				deleteElem.style.width = '20px';
 				deleteElem.onclick = (function(i){
 					return function(e){
 						saveData.splice(i, 1);
@@ -1603,7 +1603,7 @@ function init() {
 				elem.appendChild(labelElem);
 				var deleteElem = document.createElement('img');
 				deleteElem.setAttribute('src', 'images/trashcan.png');
-				deleteElem.style.width = '32px';
+				deleteElem.style.width = '20px';
 				deleteElem.onclick = (function(i){
 					return function(e){
 						saveData.splice(i, 1);
