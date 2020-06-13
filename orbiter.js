@@ -63,7 +63,7 @@ function AxisAngleQuaternion(x, y, z, angle){
 }
 
 // CelestialBody class
-function CelestialBody(parent, position, vertex, orbitColor, GM){
+function CelestialBody(parent, position, vertex, orbitColor, GM, name){
 	this.position = position;
 	this.velocity = new THREE.Vector3();
 	this.quaternion = new THREE.Quaternion();
@@ -78,6 +78,7 @@ function CelestialBody(parent, position, vertex, orbitColor, GM){
 	this.throttle = 0.;
 	this.totalDeltaV = 0.;
 	this.ignitionCount = 0;
+	this.name = name;
 }
 
 CelestialBody.prototype.init = function(){
@@ -445,12 +446,12 @@ function init() {
 
 	// Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 	// It's a bit difficult to calculate in Newtonian dynamics simulation.
-	function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params){
+	function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name){
 		var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
 			.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - inclination))
 			.multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
 		var group = new THREE.Object3D();
-		var ret = new CelestialBody(parent || sun, new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), group.position, color, GM);
+		var ret = new CelestialBody(parent || sun, new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), group.position, color, GM, name);
 		ret.model = group;
 		ret.radius = radius;
 		scene.add( group );
@@ -538,21 +539,21 @@ function init() {
 		return ret;
 	}
 
-	sun = new CelestialBody(null, new THREE.Vector3(), null, 0xffffff, GMsun);
+	sun = new CelestialBody(null, new THREE.Vector3(), null, 0xffffff, GMsun, "sun");
 	sun.radius = Rsun;
 	sun.model = group;
-	var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, 'images/mercury.jpg', 2439.7, {soi: 2e5});
-	var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, 'images/venus.jpg', 6051.8, {soi: 5e5});
+	var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, 'images/mercury.jpg', 2439.7, {soi: 2e5}, "mercury");
+	var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, 'images/venus.jpg', 6051.8, {soi: 5e5}, "mars");
 	// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
 	var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, 'images/land_ocean_ice_cloud_2048.jpg', 6534,
 		{axialTilt: 23.4392811 * rad_per_deg,
 		rotationPeriod: ((23 * 60 + 56) * 60 + 4.10),
-		soi: 5e5});
-	var rocket = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: 'rocket.obj', controllable: true});
+		soi: 5e5}, "earth");
+	var rocket = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: 'rocket.obj', controllable: true}, "rocket");
 	rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
-	var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, 4904.8695 / AU / AU / AU, earth, 'images/moon.png', 1737.1, {soi: 1e5});
-	var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'images/mars.jpg', 3389.5, {soi: 3e5});
-	var jupiter = AddPlanet(5.204267, 0.048775, 1.305 * rad_per_deg, 100.492 * rad_per_deg, 275.066 * rad_per_deg, 0x7f7f3f, 126686534 / AU / AU / AU, sun, 'images/jupiter.jpg', 69911, {soi: 10e6});
+	var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, 4904.8695 / AU / AU / AU, earth, 'images/moon.png', 1737.1, {soi: 1e5}, "moon");
+	var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'images/mars.jpg', 3389.5, {soi: 3e5}, "mars");
+	var jupiter = AddPlanet(5.204267, 0.048775, 1.305 * rad_per_deg, 100.492 * rad_per_deg, 275.066 * rad_per_deg, 0x7f7f3f, 126686534 / AU / AU / AU, sun, 'images/jupiter.jpg', 69911, {soi: 10e6}, "jupiter");
 	select_obj = rocket;
 	center_select = true;
 	camera.position.set(0.005, 0.003, 0.005);
