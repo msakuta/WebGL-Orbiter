@@ -1374,7 +1374,7 @@ function init() {
 		var valueElement = document.createElement('div');
 		valueElement.style.cssText = "display: none; position: fixed; left: 50%;"
 			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #7fff7f;"
-			+ "font-size: 15px; text-align: center";
+			+ "font-size: 15px; text-align: center; font-family: Sans-Serif";
 		this.valueElement = valueElement;
 
 		var titleElem = document.createElement('div');
