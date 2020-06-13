@@ -1530,11 +1530,11 @@ function init() {
 		this.valueElement.appendChild(saveContainer);
 
 		this.setVisible = function(v){
-			MenuControl.prototype.setVisible.call(this, v);
-			if(this.visible){
+			if(v){
 				[scenarioSelectorControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
 				updateSaveDataList();
 			}
+			MenuControl.prototype.setVisible.call(this, v);
 		}
 	});
 	container.appendChild( saveControl.domElement );
@@ -1594,11 +1594,11 @@ function init() {
 		this.valueElement.appendChild(saveContainer);
 
 		this.setVisible = function(v){
-			MenuControl.prototype.setVisible.call(this, v);
-			if(scope.visible){
+			if(v){
 				[scenarioSelectorControl, saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
 				updateSaveDataList();
 			}
+			MenuControl.prototype.setVisible.call(this, v);
 		}
 	});
 	container.appendChild( loadControl.domElement );
