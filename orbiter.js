@@ -1470,6 +1470,14 @@ function init() {
 		var scope = this;
 		MenuControl.call(this, 'Save data', 'images/saveIcon.png', config);
 
+		function serializeState(){
+			return {
+				simTime: simTime,
+				startTime: startTime,
+				bodies: sun.serializeTree(),
+			};
+		}
+
 		var inputContainer = document.createElement('div');
 		inputContainer.style.border = "1px solid #7fff7f";
 		inputContainer.style.margin = "5px";
@@ -1482,7 +1490,7 @@ function init() {
 		inputButton.innerHTML = 'save'
 		inputButton.onclick = function(event){
 			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
-			saveData.push({title: inputElement.value, state: rocket.serialize()});
+			saveData.push({title: inputElement.value, state: serializeState()});
 			localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
 			messageControl.setText('Game State Saved!');
 			scope.title.style.display = 'none';
@@ -1528,11 +1536,7 @@ function init() {
 				elem.appendChild(deleteElem);
 				elem.onclick = (function(save){
 					return function(){
-						save.state = {
-							simTime,
-							startTime,
-							bodies: sun.serializeTree(),
-						}
+						save.state = serializeState();
 						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
 						messageControl.setText('Game State Saved!');
 						scope.title.style.display = 'none';
