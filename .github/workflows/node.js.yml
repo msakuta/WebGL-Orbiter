@@ -5,7 +5,7 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, webpack-ts-1 ]
   pull_request:
     branches: [ master ]
 
