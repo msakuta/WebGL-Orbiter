@@ -1446,19 +1446,22 @@ function init() {
 
 		var valueElement = document.createElement('div');
 		valueElement.style.cssText = "display: none; position: fixed; left: 50%;"
-			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #ffff7f;"
+			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #7fff7f;"
 			+ "font-size: 15px; text-align: center";
 
 		var titleElem = document.createElement('div');
 		titleElem.style.margin = "15px";
 		titleElem.style.padding = "15px";
+		titleElem.style.fontSize = '25px';
 		titleElem.innerHTML = "Save Data";
 		valueElement.appendChild(titleElem);
 	
 		var inputContainer = document.createElement('div');
-		inputContainer.style.border = "1px solid #ffff00";
+		inputContainer.style.border = "1px solid #7fff7f";
+		inputContainer.style.margin = "5px";
+		inputContainer.style.padding = "5px";
 		var inputTitle = document.createElement('div');
-		inputTitle.innerHTML = 'Save name';
+		inputTitle.innerHTML = 'New Save Name';
 		var inputElement = document.createElement('input');
 		inputElement.setAttribute('type', 'text');
 		var inputButton = document.createElement('button');
@@ -1472,6 +1475,9 @@ function init() {
 			visible = false;
 			valueElement.style.display = 'none';
 		};
+		inputElement.onkeydown = function(e){
+			e.stopPropagation();
+		}
 		inputContainer.appendChild(inputTitle);
 		inputContainer.appendChild(inputElement);
 		inputContainer.appendChild(inputButton);
@@ -1484,10 +1490,28 @@ function init() {
 			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
 			for(var i = 0; i < saveData.length; i++){
 				var elem = document.createElement('div');
-				elem.style.margin = "15px";
-				elem.style.padding = "15px";
-				elem.style.border = "1px solid #ffff00";
-				elem.innerHTML = saveData[i].title;
+				elem.style.margin = "5px";
+				elem.style.padding = "5px";
+				elem.style.border = "1px solid #00ff00";
+				var labelElem = document.createElement('div');
+				labelElem.innerHTML = saveData[i].title;
+				labelElem.style.cssText = "width: 100%; margin-right: -32px; display: inline-block; text-align: overflow: auto;";
+				elem.appendChild(labelElem);
+				var deleteElem = document.createElement('img');
+				deleteElem.setAttribute('src', 'images/trashcan.png');
+				deleteElem.style.width = '32px';
+				deleteElem.onclick = (function(i){
+					return function(e){
+						saveData.splice(i, 1);
+						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
+						messageControl.setText('Game State Deleted!');
+						title.style.display = 'none';
+						visible = false;
+						valueElement.style.display = 'none';
+						e.stopPropagation();
+					}
+				})(i);
+				elem.appendChild(deleteElem);
 				elem.onclick = (function(save){
 					return function(){
 						save.state = rocket.serialize();
@@ -1572,6 +1596,7 @@ function init() {
 		var titleElem = document.createElement('div');
 		titleElem.style.margin = "15px";
 		titleElem.style.padding = "15px";
+		titleElem.style.fontSize = '25px';
 		titleElem.innerHTML = "Load Data";
 		valueElement.appendChild(titleElem);
 	
@@ -1579,13 +1604,31 @@ function init() {
 
 		function updateSaveDataList(){
 			while(0 < saveContainer.children.length) saveContainer.removeChild(saveContainer.children[0]);
-			var saves = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
-			for(var i = 0; i < saves.length; i++){
+			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
+			for(var i = 0; i < saveData.length; i++){
 				var elem = document.createElement('div');
-				elem.style.margin = "15px";
-				elem.style.padding = "15px";
+				elem.style.margin = "5px";
+				elem.style.padding = "5px";
 				elem.style.border = "1px solid #ffff00";
-				elem.innerHTML = saves[i].title;
+				var labelElem = document.createElement('div');
+				labelElem.innerHTML = saveData[i].title;
+				labelElem.style.cssText = "width: 100%; margin-right: -32px; display: inline-block; text-align: overflow: auto;";
+				elem.appendChild(labelElem);
+				var deleteElem = document.createElement('img');
+				deleteElem.setAttribute('src', 'images/trashcan.png');
+				deleteElem.style.width = '32px';
+				deleteElem.onclick = (function(i){
+					return function(e){
+						saveData.splice(i, 1);
+						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
+						messageControl.setText('Game State Deleted!');
+						title.style.display = 'none';
+						visible = false;
+						valueElement.style.display = 'none';
+						e.stopPropagation();
+					}
+				})(i);
+				elem.appendChild(deleteElem);
 				elem.onclick = (function(save){
 					return function(){
 						rocket.deserialize(save.state);
@@ -1595,7 +1638,7 @@ function init() {
 						visible = false;
 						valueElement.style.display = 'none';
 					}
-				})(saves[i]);
+				})(saveData[i]);
 				saveContainer.appendChild(elem);
 			}
 		}
