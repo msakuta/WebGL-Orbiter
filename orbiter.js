@@ -1384,6 +1384,17 @@ function init() {
 		titleElem.innerHTML = config.innerTitle || titleString;
 		this.valueElement.appendChild(titleElem);
 
+		this.closeIcon = document.createElement('img');
+		this.closeIcon.src = 'images/closeIcon.png';
+		this.closeIcon.style.cssText = 'position: absolute; top: 0px; right: 0px; border: inset 1px #7f7f7f;';
+		this.closeIcon.ondragstart = function(event){
+			event.preventDefault();
+		};
+		this.closeIcon.onclick = function(event){
+			scope.setVisible(false);
+		};
+		this.valueElement.appendChild(this.closeIcon);
+
 		this.domElement.appendChild(this.valueElement);
 	};
 
