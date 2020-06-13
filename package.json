@@ -1,0 +1,27 @@
+{
+  "name": "WebGL-Orbiter",
+  "version": "1.0.0",
+  "description": "An orbit simulator for the solar system in real scale with Newtonian dynamics,\r which can be manipulated like amazing game Kerbal Space Program.",
+  "private": true,
+  "dependencies": {
+    "ts-loader": "^7.0.5",
+    "typescript": "^3.9.5",
+    "webpack-cli": "^3.3.11",
+    "webpack": "^4.43.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msakuta/WebGL-Orbiter.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/msakuta/WebGL-Orbiter/issues"
+  },
+  "homepage": "https://github.com/msakuta/WebGL-Orbiter#readme"
+}
