@@ -1,6 +1,7 @@
 import * as THREE from 'three/build/three.module.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import blastUrl from './images/blast.png';
 import forwardActiveUrl from './images/forward.png';
