@@ -1467,6 +1467,7 @@ function init() {
 			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
 			saveData.push({title: inputElement.value, state: rocket.serialize()});
 			localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
+			messageControl.setText('Game State Saved!');
 			title.style.display = 'none';
 			visible = false;
 			valueElement.style.display = 'none';
@@ -1491,6 +1492,7 @@ function init() {
 					return function(){
 						save.state = rocket.serialize();
 						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
+						messageControl.setText('Game State Saved!');
 						title.style.display = 'none';
 						visible = false;
 						valueElement.style.display = 'none';
@@ -1588,6 +1590,7 @@ function init() {
 					return function(){
 						rocket.deserialize(save.state);
 						throttleControl.setThrottle(rocket.throttle);
+						messageControl.setText('Game State Loaded!');
 						title.style.display = 'none';
 						visible = false;
 						valueElement.style.display = 'none';
