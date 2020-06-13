@@ -9,7 +9,9 @@
     "webpack-cli": "^3.3.11",
     "webpack": "^4.43.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "file-loader": "^6.0.0"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -1,3 +1,40 @@
+import blastUrl from './images/blast.png';
+import forwardActiveUrl from './images/forward.png';
+import forwardInactiveUrl from './images/forward-inactive.png';
+import orbitIconUrl from './images/orbitIcon.png';
+import apoapsisUrl from './images/apoapsis.png';
+import periapsisUrl from './images/periapsis.png';
+import perlinUrl from './images/perlin.jpg';
+import progradeUrl from './images/prograde.png';
+import retrogradeUrl from './images/retrograde.png';
+import rotateUpUrl from './images/rotate-up.png';
+import rotateDownUrl from './images/rotate-down.png';
+import rotateLeftUrl from './images/rotate-left.png';
+import rotateRightUrl from './images/rotate-right.png';
+import rotateCwUrl from './images/rotate-cw.png';
+import rotateCcwUrl from './images/rotate-ccw.png';
+import closeIconUrl from './images/closeIcon.png';
+import menuIconUrl from './images/menuIcon.png';
+import loadIconUrl from './images/loadIcon.png';
+import saveIconUrl from './images/saveIcon.png';
+import statsIconUrl from './images/statsIcon.png';
+import settingsIconUrl from './images/settingsIcon.png';
+import trashcanUrl from './images/trashcan.png';
+import navballUrl from './images/navball.png';
+import watermarkUrl from './images/watermark.png';
+import backgroundUrl from './images/hipparcoscyl1.jpg';
+import moonUrl from './images/moon.png';
+import mercuryUrl from './images/mercury.jpg';
+import marsUrl from './images/mars.jpg';
+import venusUrl from './images/venus.jpg';
+import jupiterUrl from './images/jupiter.jpg';
+import earthUrl from './images/land_ocean_ice_cloud_2048.jpg';
+import throttleMaxUrl from './images/throttle-max.png';
+import throttleMinUrl from './images/throttle-min.png';
+import throttleBackUrl from './images/throttle-back.png';
+import throttleHandleUrl from './images/throttle-handle.png';
+import rocketModelUrl from './rocket.obj';
+
 ;(function(){
 'use strict'
 var container, stats;
@@ -379,7 +416,7 @@ function init() {
 	background = new THREE.Scene();
 	background.rotation.x = Math.PI / 2;
 	var loader = new THREE.TextureLoader();
-	loader.load( 'images/hipparcoscyl1.jpg', function ( texture ) {
+	loader.load( backgroundUrl, function ( texture ) {
 
 		var geometry = new THREE.SphereGeometry( 2, 20, 20 );
 
@@ -401,7 +438,7 @@ function init() {
 
 	overlay = new THREE.Scene();
 	var loader = new THREE.TextureLoader();
-	loader.load( 'images/navball.png', function ( texture ) {
+	loader.load( navballUrl, function ( texture ) {
 
 		var geometry = new THREE.SphereGeometry( navballRadius, 20, 20 );
 
@@ -410,7 +447,7 @@ function init() {
 		overlay.add(navballMesh);
 
 		var spriteMaterial = new THREE.SpriteMaterial({
-			map: THREE.ImageUtils.loadTexture( "images/watermark.png" ),
+			map: THREE.ImageUtils.loadTexture( watermarkUrl ),
 			depthTest: false,
 			depthWrite: false,
 			transparent: true,
@@ -423,7 +460,7 @@ function init() {
 	var spriteGeometry = new THREE.PlaneGeometry( 40, 40 );
     prograde = new THREE.Mesh(spriteGeometry,
 		new THREE.MeshBasicMaterial({
-			map: THREE.ImageUtils.loadTexture( "images/prograde.png" ),
+			map: THREE.ImageUtils.loadTexture( progradeUrl ),
 			color: 0xffffff,
 			side: THREE.DoubleSide,
 			depthTest: false,
@@ -434,7 +471,7 @@ function init() {
     overlay.add(prograde);
 	retrograde = new THREE.Mesh(spriteGeometry,
 		new THREE.MeshBasicMaterial({
-			map: THREE.ImageUtils.loadTexture( "images/retrograde.png" ),
+			map: THREE.ImageUtils.loadTexture( retrogradeUrl ),
 			color: 0xffffff,
 			side: THREE.DoubleSide,
 			depthTest: false,
@@ -514,7 +551,7 @@ function init() {
 
 		if(texture){
 			var loader = new THREE.TextureLoader();
-			loader.load( texture || 'images/land_ocean_ice_cloud_2048.jpg', function ( texture ) {
+			loader.load( texture || earthUrl, function ( texture ) {
 
 				var geometry = new THREE.SphereGeometry( 1, 20, 20 );
 
@@ -540,7 +577,7 @@ function init() {
 			blastGroup.position.x = -60 / AU;
 			ret.blastModel = blastGroup;
 			var spriteMaterial = new THREE.SpriteMaterial({
-				map: THREE.ImageUtils.loadTexture( "images/blast.png" ),
+				map: THREE.ImageUtils.loadTexture( blastUrl ),
 				blending: THREE.AdditiveBlending,
 				depthWrite: false,
 				transparent: true,
@@ -565,14 +602,14 @@ function init() {
 		ret.soi = params && params.soi ? params.soi / AU : 0;
 
 		ret.apoapsis = new THREE.Sprite(new THREE.SpriteMaterial({
-			map: THREE.ImageUtils.loadTexture('images/apoapsis.png'),
+			map: THREE.ImageUtils.loadTexture(apoapsisUrl),
 			transparent: true,
 		}));
 		ret.apoapsis.scale.set(16,16,16);
 		overlay.add(ret.apoapsis);
 
 		ret.periapsis = new THREE.Sprite(new THREE.SpriteMaterial({
-			map: THREE.ImageUtils.loadTexture('images/periapsis.png'),
+			map: THREE.ImageUtils.loadTexture(periapsisUrl),
 			transparent: true,
 		}));
 		ret.periapsis.scale.set(16,16,16);
@@ -598,18 +635,18 @@ function init() {
 	sun = new CelestialBody(null, new THREE.Vector3(), null, 0xffffff, GMsun, "sun");
 	sun.radius = Rsun;
 	sun.model = group;
-	var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, 'images/mercury.jpg', 2439.7, {soi: 2e5}, "mercury");
-	var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, 'images/venus.jpg', 6051.8, {soi: 5e5}, "mars");
+	var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, mercuryUrl, 2439.7, {soi: 2e5}, "mercury");
+	var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, venusUrl, 6051.8, {soi: 5e5}, "mars");
 	// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
-	var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, 'images/land_ocean_ice_cloud_2048.jpg', 6534,
+	var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, earthUrl, 6534,
 		{axialTilt: 23.4392811 * rad_per_deg,
 		rotationPeriod: ((23 * 60 + 56) * 60 + 4.10),
 		soi: 5e5}, "earth");
-	var rocket = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: 'rocket.obj', controllable: true}, "rocket");
+	var rocket = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: rocketModelUrl, controllable: true}, "rocket");
 	rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
-	var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, 4904.8695 / AU / AU / AU, earth, 'images/moon.png', 1737.1, {soi: 1e5}, "moon");
-	var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, 'images/mars.jpg', 3389.5, {soi: 3e5}, "mars");
-	var jupiter = AddPlanet(5.204267, 0.048775, 1.305 * rad_per_deg, 100.492 * rad_per_deg, 275.066 * rad_per_deg, 0x7f7f3f, 126686534 / AU / AU / AU, sun, 'images/jupiter.jpg', 69911, {soi: 10e6}, "jupiter");
+	var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, 4904.8695 / AU / AU / AU, earth, moonUrl, 1737.1, {soi: 1e5}, "moon");
+	var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, marsUrl, 3389.5, {soi: 3e5}, "mars");
+	var jupiter = AddPlanet(5.204267, 0.048775, 1.305 * rad_per_deg, 100.492 * rad_per_deg, 275.066 * rad_per_deg, 0x7f7f3f, 126686534 / AU / AU / AU, sun, jupiterUrl, 69911, {soi: 10e6}, "jupiter");
 	select_obj = rocket;
 	center_select = true;
 	camera.position.set(0.005, 0.003, 0.005);
@@ -626,7 +663,7 @@ function init() {
 
 	// Perlin noise is applied as detail texture.
 	// It's asynchrnonous because it's shared by multiple asteroids.
-	var asteroidTexture = THREE.ImageUtils.loadTexture('images/perlin.jpg');
+	var asteroidTexture = THREE.ImageUtils.loadTexture(perlinUrl);
 	asteroidTexture.wrapS = THREE.RepeatWrapping;
 	asteroidTexture.wrapT = THREE.RepeatWrapping;
 	asteroidTexture.repeat.set(4, 4);
@@ -697,7 +734,7 @@ function init() {
 				return;
 			}
 			for(var i = 0; i < forwards.length; i++)
-				forwards[i].src = i <= number ? 'images/forward.png' : 'images/forward-inactive.png';
+				forwards[i].src = i <= number ? forwardActiveUrl : forwardInactiveUrl;
 			text.innerHTML = 'Timescale: x' + series[number];
 			timescale = series[number];
 			timeIndex = number;
@@ -712,7 +749,7 @@ function init() {
 		var timeIndex = 0;
 		for(var i = 0; i < series.length; i++){
 			var forward = document.createElement('img');
-			forward.src = i <= timeIndex ? 'images/forward.png' : 'images/forward-inactive.png';
+			forward.src = i <= timeIndex ? forwardActiveUrl : forwardInactiveUrl;
 			forward.style.width = '15px';
 			forward.style.height = '20px';
 			forward.number = i;
@@ -787,7 +824,7 @@ function init() {
 		var dragging = false;
 		var scope = this;
 		var throttleMax = document.createElement('img');
-		throttleMax.src = 'images/throttle-max.png';
+		throttleMax.src = throttleMaxUrl;
 		throttleMax.style.position = "absolute";
 		throttleMax.style.left = '0px';
 		throttleMax.style.top = '0px';
@@ -799,7 +836,7 @@ function init() {
 		};
 		this.domElement.appendChild(throttleMax);
 		var throttleBack = document.createElement('img');
-		throttleBack.src = 'images/throttle-back.png';
+		throttleBack.src = throttleBackUrl;
 		throttleBack.style.position = "absolute";
 		throttleBack.style.left = '0px';
 		throttleBack.style.top = '25px';
@@ -820,7 +857,7 @@ function init() {
 		};
 		this.domElement.appendChild(throttleBack);
 		var throttleMin = document.createElement('img');
-		throttleMin.src = 'images/throttle-min.png';
+		throttleMin.src = throttleMinUrl;
 		throttleMin.style.position = "absolute";
 		throttleMin.style.left = '0px';
 		throttleMin.style.top = '106px';
@@ -832,7 +869,7 @@ function init() {
 		};
 		this.domElement.appendChild(throttleMin);
 		var handle = document.createElement('img');
-		handle.src = 'images/throttle-handle.png';
+		handle.src = throttleHandleUrl;
 		handle.style.position = 'absolute';
 		handle.style.top = (guideHeight - 16) + 'px';
 		handle.style.left = '0px';
@@ -933,12 +970,12 @@ function init() {
 			element.style.display = 'none';
 			up = down = left = right = false;
 		};
-		addArrow('images/rotate-up.png', 'up', navballRadius - buttonWidth / 2, 0);
-		addArrow('images/rotate-down.png', 'down', navballRadius - buttonWidth / 2, 2 * navballRadius - buttonHeight);
-		addArrow('images/rotate-left.png', 'left', 0, navballRadius - buttonHeight / 2);
-		addArrow('images/rotate-right.png', 'right', 2 * navballRadius - buttonWidth, navballRadius - buttonHeight / 2);
-		addArrow('images/rotate-cw.png', 'clockwise', 2 * navballRadius - buttonWidth, 0);
-		addArrow('images/rotate-ccw.png', 'counterclockwise', 0, 0);
+		addArrow(rotateUpUrl, 'up', navballRadius - buttonWidth / 2, 0);
+		addArrow(rotateDownUrl, 'down', navballRadius - buttonWidth / 2, 2 * navballRadius - buttonHeight);
+		addArrow(rotateLeftUrl, 'left', 0, navballRadius - buttonHeight / 2);
+		addArrow(rotateRightUrl, 'right', 2 * navballRadius - buttonWidth, navballRadius - buttonHeight / 2);
+		addArrow(rotateCwUrl, 'clockwise', 2 * navballRadius - buttonWidth, 0);
+		addArrow(rotateCcwUrl, 'counterclockwise', 0, 0);
 		window.addEventListener('resize', setSize);
 	})();
 	container.appendChild( rotationControl.domElement );
@@ -989,7 +1026,7 @@ function init() {
 		element.style.zIndex = 7;
 		var visible = false;
 		var icon = document.createElement('img');
-		icon.src = 'images/orbitIcon.png';
+		icon.src = orbitIconUrl;
 		element.appendChild(icon);
 
 		var title = document.createElement('div');
@@ -1056,7 +1093,7 @@ function init() {
 		element.style.zIndex = 7;
 		var visible = false;
 		var icon = document.createElement('img');
-		icon.src = 'images/statsIcon.png';
+		icon.src = statsIconUrl;
 		icon.style.width = buttonWidth + 'px';
 		icon.style.height = buttonHeight + 'px';
 		element.appendChild(icon);
@@ -1163,7 +1200,7 @@ function init() {
 		element.style.zIndex = 7;
 		var visible = false;
 		var icon = document.createElement('img');
-		icon.src = 'images/settingsIcon.png';
+		icon.src = settingsIconUrl;
 		icon.style.width = buttonWidth + 'px';
 		icon.style.height = buttonHeight + 'px';
 		element.appendChild(icon);
@@ -1385,7 +1422,7 @@ function init() {
 		this.valueElement.appendChild(titleElem);
 
 		this.closeIcon = document.createElement('img');
-		this.closeIcon.src = 'images/closeIcon.png';
+		this.closeIcon.src = closeIconUrl;
 		this.closeIcon.style.cssText = 'position: absolute; top: 0px; right: 0px; border: inset 1px #7f7f7f;';
 		this.closeIcon.ondragstart = function(event){
 			event.preventDefault();
@@ -1421,7 +1458,7 @@ function init() {
 			innerTitle: "Scenario Selector",
 		};
 		var scope = this;
-		MenuControl.call(this, 'Scenarios', 'images/menuIcon.png', config);
+		MenuControl.call(this, 'Scenarios', menuIconUrl, config);
 
 		this.valueElement.style.border = "5px ridge #ffff7f";
 		var scenarios = [
@@ -1492,7 +1529,7 @@ function init() {
 			buttonWidth: 32,
 		};
 		var scope = this;
-		MenuControl.call(this, 'Save data', 'images/saveIcon.png', config);
+		MenuControl.call(this, 'Save data', saveIconUrl, config);
 
 		var inputContainer = document.createElement('div');
 		inputContainer.style.border = "1px solid #7fff7f";
@@ -1536,7 +1573,7 @@ function init() {
 				labelElem.style.cssText = "width: 100%; margin-right: -32px; display: inline-block; text-align: overflow: auto;";
 				elem.appendChild(labelElem);
 				var deleteElem = document.createElement('img');
-				deleteElem.setAttribute('src', 'images/trashcan.png');
+				deleteElem.setAttribute('src', trashcanUrl);
 				deleteElem.style.width = '20px';
 				deleteElem.onclick = (function(i){
 					return function(e){
@@ -1594,7 +1631,7 @@ function init() {
 			buttonHeight: 32,
 			buttonWidth: 32,
 		};
-		MenuControl.call(this, 'Load data', 'images/loadIcon.png', config);
+		MenuControl.call(this, 'Load data', loadIconUrl, config);
 		var scope = this;
 		this.valueElement.style.border = "5px ridge #ff7fff";
 
@@ -1613,7 +1650,7 @@ function init() {
 				labelElem.style.cssText = "width: 100%; margin-right: -32px; display: inline-block; text-align: overflow: auto;";
 				elem.appendChild(labelElem);
 				var deleteElem = document.createElement('img');
-				deleteElem.setAttribute('src', 'images/trashcan.png');
+				deleteElem.setAttribute('src', trashcanUrl);
 				deleteElem.style.width = '20px';
 				deleteElem.onclick = (function(i){
 					return function(e){
@@ -1659,11 +1696,9 @@ function init() {
 		if(state){
 			loadState(JSON.parse(state));
 		}
-		console.log('I am the 3rd one.');
 	});
 	window.addEventListener( 'beforeunload', function(){
 		localStorage.setItem('WebGLOrbiterAutoSave', JSON.stringify(serializeState()));
-		console.log('I am the 3rd one.');
 	});
 
 	// Start the clock after the initialization is finished, otherwise
