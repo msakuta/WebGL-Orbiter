@@ -1,5 +1,5 @@
 
-![](https://github.com/msakuta/WebGL-Orbiter/workflows/Node.js+CI/badge.svg)
+![](https://github.com/msakuta/WebGL-Orbiter/workflows/Node.js%20CI/badge.svg)
 
 # WebGL-Orbiter
 

@@ -5,7 +5,7 @@ name: Node.js deploy
 
 on:
   push:
-    branches: [ master, webpack-ts-1 ]
+    branches: [ master ]
 
 jobs:
   build:
