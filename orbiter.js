@@ -1022,8 +1022,9 @@ function init() {
 
 	function rightTitleSetSize(title, icon){
 		var r = title.getBoundingClientRect();
-		title.style.top = (icon.getBoundingClientRect().height - r.height) + 'px';
-		title.style.left = (-r.width) + 'px';
+		var iconRect = icon.getBoundingClientRect()
+		title.style.top = (iconRect.height - r.height) + 'px';
+		title.style.right = iconRect.width + 'px';
 	}
 
 	statsControl = new (function(){
@@ -1417,45 +1418,72 @@ function init() {
 	});
 	container.appendChild( scenarioSelectorControl.domElement );
 
-	saveControl = new (function(){
-		var buttonTop = 34;
-		var buttonHeight = 32;
-		var buttonWidth = 32;
-		var scope = this;
+	function MenuControl(titleString, iconSrc, config){
 		this.domElement = document.createElement('div');
 		var element = this.domElement;
 		element.style.position = 'absolute';
 		element.style.textAlign = 'left';
-		element.style.top = buttonTop + 'px';
+		element.style.top = config.buttonTop + 'px';
 		element.style.right = 0 + 'px';
 		element.style.zIndex = 7;
-		var icon = document.createElement('img');
-		icon.src = 'images/saveIcon.png';
-		icon.style.width = buttonWidth + 'px';
-		icon.style.height = buttonHeight + 'px';
-		var visible = false;
-		element.appendChild(icon);
+		this.icon = document.createElement('img');
+		this.icon.src = iconSrc;
+		this.icon.style.width = config.buttonWidth + 'px';
+		this.icon.style.height = config.buttonHeight + 'px';
+		var scope = this;
+		this.icon.ondragstart = function(event){
+			event.preventDefault();
+		};
+		this.icon.onclick = function(event){
+			scope.setVisible(!scope.visible);
+		};
+		this.icon.onmouseenter = function(event){
+			if(!scope.visible)
+				scope.title.style.display = 'block';
+			rightTitleSetSize(scope.title, scope.icon);
+		};
+		this.icon.onmouseleave = function(event){
+			if(!scope.visible)
+				scope.title.style.display = 'none';
+		};
+		element.appendChild(this.icon);
 
 		var title = document.createElement('div');
-		title.innerHTML = 'Save data';
+		title.innerHTML = titleString;
 		title.style.display = 'none';
 		title.style.position = 'absolute';
 		title.style.background = 'rgba(0, 0, 0, 0.5)';
 		title.style.zIndex = 20;
 		element.appendChild(title);
+		this.title = title;
+
+		this.visible = false;
 
 		var valueElement = document.createElement('div');
 		valueElement.style.cssText = "display: none; position: fixed; left: 50%;"
 			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #7fff7f;"
 			+ "font-size: 15px; text-align: center";
+		this.valueElement = valueElement;
 
 		var titleElem = document.createElement('div');
 		titleElem.style.margin = "15px";
 		titleElem.style.padding = "15px";
 		titleElem.style.fontSize = '25px';
-		titleElem.innerHTML = "Save Data";
-		valueElement.appendChild(titleElem);
-	
+		titleElem.innerHTML = titleString;
+		this.valueElement.appendChild(titleElem);
+
+		this.domElement.appendChild(this.valueElement);
+	}
+
+	saveControl = new (function(){
+		var config = {
+			buttonTop: 34,
+			buttonHeight: 32,
+			buttonWidth: 32,
+		};
+		var scope = this;
+		MenuControl.call(this, 'Save data', 'images/saveIcon.png', config);
+
 		var inputContainer = document.createElement('div');
 		inputContainer.style.border = "1px solid #7fff7f";
 		inputContainer.style.margin = "5px";
@@ -1471,9 +1499,9 @@ function init() {
 			saveData.push({title: inputElement.value, state: rocket.serialize()});
 			localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
 			messageControl.setText('Game State Saved!');
-			title.style.display = 'none';
-			visible = false;
-			valueElement.style.display = 'none';
+			scope.title.style.display = 'none';
+			scope.visible = false;
+			scope.valueElement.style.display = 'none';
 		};
 		inputElement.onkeydown = function(e){
 			e.stopPropagation();
@@ -1481,7 +1509,7 @@ function init() {
 		inputContainer.appendChild(inputTitle);
 		inputContainer.appendChild(inputElement);
 		inputContainer.appendChild(inputButton);
-		valueElement.appendChild(inputContainer);
+		this.valueElement.appendChild(inputContainer);
 
 		var saveContainer = document.createElement('div');
 
@@ -1505,9 +1533,9 @@ function init() {
 						saveData.splice(i, 1);
 						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
 						messageControl.setText('Game State Deleted!');
-						title.style.display = 'none';
-						visible = false;
-						valueElement.style.display = 'none';
+						scope.title.style.display = 'none';
+						scope.visible = false;
+						scope.valueElement.style.display = 'none';
 						e.stopPropagation();
 					}
 				})(i);
@@ -1517,89 +1545,43 @@ function init() {
 						save.state = rocket.serialize();
 						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
 						messageControl.setText('Game State Saved!');
-						title.style.display = 'none';
-						visible = false;
-						valueElement.style.display = 'none';
+						scope.title.style.display = 'none';
+						scope.visible = false;
+						scope.valueElement.style.display = 'none';
 					}
 				})(saveData[i]);
 				saveContainer.appendChild(elem);
 			}
 		}
-		valueElement.appendChild(saveContainer);
+		this.valueElement.appendChild(saveContainer);
 
-		this.domElement.appendChild(valueElement);
-
-		icon.ondragstart = function(event){
-			event.preventDefault();
-		};
-		icon.onclick = function(event){
-			scope.setVisible(!visible);
-		};
-		icon.onmouseenter = function(event){
-			if(!visible)
-				title.style.display = 'block';
-			rightTitleSetSize(title, icon);
-		};
-		icon.onmouseleave = function(event){
-			if(!visible)
-				title.style.display = 'none';
-		};
 		this.setVisible = function(v){
-			visible = v;
-			if(visible){
+			this.visible = v;
+			if(this.visible){
 				loadControl.setVisible(false); // Mutually exclusive
-				valueElement.style.display = 'block';
+				this.valueElement.style.display = 'block';
 				updateSaveDataList();
-				var rect = valueElement.getBoundingClientRect();
-				valueElement.style.marginLeft = -rect.width / 2 + "px";
-				valueElement.style.marginTop = -rect.height / 2 + "px";
+				var rect = this.valueElement.getBoundingClientRect();
+				this.valueElement.style.marginLeft = -rect.width / 2 + "px";
+				this.valueElement.style.marginTop = -rect.height / 2 + "px";
 			}
 			else{
-				valueElement.style.display = 'none';
+				this.valueElement.style.display = 'none';
 			}
 		}
 	});
 	container.appendChild( saveControl.domElement );
 
 	loadControl = new (function(){
-		var buttonTop = 34 * 2;
-		var buttonHeight = 32;
-		var buttonWidth = 32;
+		var config = {
+			buttonTop: 34 * 2,
+			buttonHeight: 32,
+			buttonWidth: 32,
+		};
+		MenuControl.call(this, 'Load data', 'images/loadIcon.png', config);
 		var scope = this;
-		this.domElement = document.createElement('div');
-		var element = this.domElement;
-		element.style.position = 'absolute';
-		element.style.textAlign = 'left';
-		element.style.top = buttonTop + 'px';
-		element.style.right = 0 + 'px';
-		element.style.zIndex = 7;
-		var icon = document.createElement('img');
-		icon.src = 'images/loadIcon.png';
-		icon.style.width = buttonWidth + 'px';
-		icon.style.height = buttonHeight + 'px';
-		var visible = false;
-		element.appendChild(icon);
+		this.valueElement.style.border = "5px ridge #ff7fff";
 
-		var title = document.createElement('div');
-		title.innerHTML = 'Load data';
-		title.style.display = 'none';
-		title.style.position = 'absolute';
-		title.style.background = 'rgba(0, 0, 0, 0.5)';
-		title.style.zIndex = 20;
-		element.appendChild(title);
-
-		var valueElement = document.createElement('div');
-		valueElement.style.cssText = "display: none; position: fixed; left: 50%;"
-			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #ff7fff;"
-			+ "font-size: 15px; text-align: center";
-
-		var titleElem = document.createElement('div');
-		titleElem.style.margin = "15px";
-		titleElem.style.padding = "15px";
-		titleElem.style.fontSize = '25px';
-		titleElem.innerHTML = "Load Data";
-		valueElement.appendChild(titleElem);
-	
 		var saveContainer = document.createElement('div');
 
 		function updateSaveDataList(){
@@ -1622,9 +1604,9 @@ function init() {
 						saveData.splice(i, 1);
 						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
 						messageControl.setText('Game State Deleted!');
-						title.style.display = 'none';
-						visible = false;
-						valueElement.style.display = 'none';
+						scope.title.style.display = 'none';
+						scope.visible = false;
+						scope.valueElement.style.display = 'none';
 						e.stopPropagation();
 					}
 				})(i);
@@ -1634,45 +1616,28 @@ function init() {
 						rocket.deserialize(save.state);
 						throttleControl.setThrottle(rocket.throttle);
 						messageControl.setText('Game State Loaded!');
-						title.style.display = 'none';
-						visible = false;
-						valueElement.style.display = 'none';
+						scope.title.style.display = 'none';
+						scope.visible = false;
+						scope.valueElement.style.display = 'none';
 					}
 				})(saveData[i]);
 				saveContainer.appendChild(elem);
 			}
 		}
-		valueElement.appendChild(saveContainer);
+		this.valueElement.appendChild(saveContainer);
 
-		this.domElement.appendChild(valueElement);
-
-		icon.ondragstart = function(event){
-			event.preventDefault();
-		};
-		icon.onclick = function(event){
-			scope.setVisible(!visible);
-		};
-		icon.onmouseenter = function(event){
-			if(!visible)
-				title.style.display = 'block';
-			rightTitleSetSize(title, icon);
-		};
-		icon.onmouseleave = function(event){
-			if(!visible)
-				title.style.display = 'none';
-		};
 		this.setVisible = function(v){
-			visible = v;
-			if(visible){
+			scope.visible = v;
+			if(scope.visible){
 				saveControl.setVisible(false); // Mutually exclusive
-				valueElement.style.display = 'block';
+				scope.valueElement.style.display = 'block';
 				updateSaveDataList();
-				var rect = valueElement.getBoundingClientRect();
-				valueElement.style.marginLeft = -rect.width / 2 + "px";
-				valueElement.style.marginTop = -rect.height / 2 + "px";
+				var rect = scope.valueElement.getBoundingClientRect();
+				scope.valueElement.style.marginLeft = -rect.width / 2 + "px";
+				scope.valueElement.style.marginTop = -rect.height / 2 + "px";
 			}
 			else{
-				valueElement.style.display = 'none';
+				scope.valueElement.style.display = 'none';
 			}
 		}
 	});
