@@ -1,3 +1,6 @@
+
+![](https://github.com/msakuta/WebGL-Orbiter/workflows/Node.js+CI/badge.svg)
+
 # WebGL-Orbiter
 
 An orbit simulator for the solar system in real scale with Newtonian dynamics,
