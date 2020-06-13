@@ -12,6 +12,7 @@
   "devDependencies": {
     "file-loader": "^6.0.0",
     "three": "^0.117.1",
+    "url-loader": "^4.1.0",
     "webpack-dev-server": "^3.11.0"
   },
   "scripts": {

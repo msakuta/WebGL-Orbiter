@@ -237,7 +237,7 @@ CelestialBody.prototype.update = function(){
 	function calcApsePosition(peri, apsis){
 		var worldPos = e.clone().normalize().multiplyScalar(peri * scope.semimajor_axis * (1 - peri * scope.eccentricity)).sub(scope.position);
 		var cameraPos = worldPos.multiplyScalar(viewScale).applyMatrix4(camera.matrixWorldInverse);
-		var persPos = cameraPos.applyProjection(camera.projectionMatrix);
+		var persPos = cameraPos.applyMatrix4(camera.projectionMatrix);
 		persPos.x *= windowHalfX;
 		persPos.y *= windowHalfY;
 		persPos.y -= peri * 8;
@@ -424,7 +424,7 @@ function init() {
 
 		var geometry = new THREE.SphereGeometry( 2, 20, 20 );
 
-		var material = new THREE.MeshBasicMaterial( { map: texture, overdraw: 0.5, depthTest: false, depthWrite: false, side: THREE.BackSide } );
+		var material = new THREE.MeshBasicMaterial( { map: texture, depthTest: false, depthWrite: false, side: THREE.BackSide } );
 		material.depthWrite = false;
 		var mesh = new THREE.Mesh(geometry, material);
 		background.add(mesh);
@@ -446,12 +446,12 @@ function init() {
 
 		var geometry = new THREE.SphereGeometry( navballRadius, 20, 20 );
 
-		var material = new THREE.MeshBasicMaterial( { map: texture, overdraw: 0.5, depthTest: false, depthWrite: false } );
+		var material = new THREE.MeshBasicMaterial( { map: texture, depthTest: false, depthWrite: false } );
 		navballMesh = new THREE.Mesh(geometry, material);
 		overlay.add(navballMesh);
 
 		var spriteMaterial = new THREE.SpriteMaterial({
-			map: THREE.ImageUtils.loadTexture( watermarkUrl ),
+			map: new THREE.TextureLoader().load( watermarkUrl ),
 			depthTest: false,
 			depthWrite: false,
 			transparent: true,
@@ -464,7 +464,7 @@ function init() {
 	var spriteGeometry = new THREE.PlaneGeometry( 40, 40 );
     prograde = new THREE.Mesh(spriteGeometry,
 		new THREE.MeshBasicMaterial({
-			map: THREE.ImageUtils.loadTexture( progradeUrl ),
+			map: new THREE.TextureLoader().load( progradeUrl ),
 			color: 0xffffff,
 			side: THREE.DoubleSide,
 			depthTest: false,
@@ -475,7 +475,7 @@ function init() {
     overlay.add(prograde);
 	retrograde = new THREE.Mesh(spriteGeometry,
 		new THREE.MeshBasicMaterial({
-			map: THREE.ImageUtils.loadTexture( retrogradeUrl ),
+			map: new THREE.TextureLoader().load( retrogradeUrl ),
 			color: 0xffffff,
 			side: THREE.DoubleSide,
 			depthTest: false,
@@ -490,7 +490,7 @@ function init() {
 	group = new THREE.Object3D();
 	scene.add( group );
 
-	var material = new THREE.ParticleSystemMaterial( { size: 0.1 } );
+	var material = new THREE.PointsMaterial( { size: 0.1 } );
 
 	// Sun
 	var Rsun = 695800.;
@@ -538,8 +538,7 @@ function init() {
 	var orbitGeometry = new THREE.Geometry();
 	var curve = new THREE.EllipseCurve(0, 0, 1, 1,
 		0, Math.PI * 2, false, 90);
-	var path = new THREE.Path( curve.getPoints( 256 ) );
-	var orbitGeometry = path.createPointsGeometry( 256 );
+	var orbitGeometry = new THREE.Geometry().setFromPoints( curve.getPoints(256) );
 
 	// Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 	// It's a bit difficult to calculate in Newtonian dynamics simulation.
@@ -559,7 +558,7 @@ function init() {
 
 				var geometry = new THREE.SphereGeometry( 1, 20, 20 );
 
-				var material = new THREE.MeshLambertMaterial( { map: texture, color: 0xffffff, shading: THREE.FlatShading, overdraw: 0.5 } );
+				var material = new THREE.MeshLambertMaterial( { map: texture, color: 0xffffff, flatShading: false } );
 				var mesh = new THREE.Mesh( geometry, material );
 				var radiusInAu = viewScale * (radius || 6534) / AU;
 				mesh.scale.set(radiusInAu, radiusInAu, radiusInAu);
@@ -581,7 +580,7 @@ function init() {
 			blastGroup.position.x = -60 / AU;
 			ret.blastModel = blastGroup;
 			var spriteMaterial = new THREE.SpriteMaterial({
-				map: THREE.ImageUtils.loadTexture( blastUrl ),
+				map: new THREE.TextureLoader().load( blastUrl ),
 				blending: THREE.AdditiveBlending,
 				depthWrite: false,
 				transparent: true,
@@ -606,14 +605,14 @@ function init() {
 		ret.soi = params && params.soi ? params.soi / AU : 0;
 
 		ret.apoapsis = new THREE.Sprite(new THREE.SpriteMaterial({
-			map: THREE.ImageUtils.loadTexture(apoapsisUrl),
+			map: new THREE.TextureLoader().load(apoapsisUrl),
 			transparent: true,
 		}));
 		ret.apoapsis.scale.set(16,16,16);
 		overlay.add(ret.apoapsis);
 
 		ret.periapsis = new THREE.Sprite(new THREE.SpriteMaterial({
-			map: THREE.ImageUtils.loadTexture(periapsisUrl),
+			map: new THREE.TextureLoader().load(periapsisUrl),
 			transparent: true,
 		}));
 		ret.periapsis.scale.set(16,16,16);
@@ -667,13 +666,13 @@ function init() {
 
 	// Perlin noise is applied as detail texture.
 	// It's asynchrnonous because it's shared by multiple asteroids.
-	var asteroidTexture = THREE.ImageUtils.loadTexture(perlinUrl);
+	var asteroidTexture = new THREE.TextureLoader().load(perlinUrl);
 	asteroidTexture.wrapS = THREE.RepeatWrapping;
 	asteroidTexture.wrapT = THREE.RepeatWrapping;
 	asteroidTexture.repeat.set(4, 4);
 	var asteroidMaterial = new THREE.MeshLambertMaterial( {
 		map: asteroidTexture,
-		color: 0xffaf7f, shading: THREE.SmoothShading, overdraw: 0.5
+		color: 0xffaf7f, flatShading: false
 	} );
 
 	// Randomly generate asteroids
