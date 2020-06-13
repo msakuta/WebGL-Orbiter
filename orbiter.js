@@ -18,6 +18,8 @@ var mouseX = 0, mouseY = 0;
 var cameraControls;
 var grids;
 var scenarioSelectorControl;
+var saveControl;
+var loadControl;
 
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
@@ -46,6 +48,8 @@ var decelerate = false;
 
 var sun;
 var light;
+
+var celestialBodies = {};
 
 var selectedOrbitMaterial;
 
@@ -79,6 +83,7 @@ function CelestialBody(parent, position, vertex, orbitColor, GM, name){
 	this.totalDeltaV = 0.;
 	this.ignitionCount = 0;
 	this.name = name;
+	celestialBodies[name] = this;
 }
 
 CelestialBody.prototype.init = function(){
@@ -110,6 +115,56 @@ CelestialBody.prototype.setOrbitingVelocity = function(semimajor_axis, rotation)
 		.applyQuaternion(rotation);
 }
 
+function deserializeVector3(json){
+	return new THREE.Vector3(json.x, json.y, json.z);
+}
+
+function deserializeQuaternion(json){
+	return new THREE.Quaternion(json._x, json._y, json._z, json._w);
+}
+
+CelestialBody.prototype.serialize = function(){
+	return {
+		name: this.name,
+		parent: this.parent ? this.parent.name : null,
+		position: this.position,
+		velocity: this.velocity,
+		quaternion: this.quaternion,
+		angularVelocity: this.angularVelocity,
+		totalDeltaV: this.totalDeltaV || undefined,
+		ignitionCount: this.ignitionCount || undefined,
+	};
+};
+
+CelestialBody.prototype.serializeTree = function(){
+	var ret = [];
+	ret.push(this.serialize());
+	for(var i = 0; i < this.children.length; i++)
+		ret = ret.concat(this.children[i].serializeTree());
+	return ret;
+}
+
+CelestialBody.prototype.deserialize = function(json){
+	this.name = json.name;
+	this.setParent(celestialBodies[json.parent]);
+	this.position = deserializeVector3(json.position);
+	this.velocity = deserializeVector3(json.velocity);
+	this.quaternion = deserializeQuaternion(json.quaternion);
+	this.angularVelocity = deserializeVector3(json.angularVelocity);
+	this.totalDeltaV = json.totalDeltaV || 0;
+	this.ignitionCount = json.ignitionCount || 0;
+};
+
+CelestialBody.prototype.setParent = function(newParent){
+	if(this.parent === newParent) return;
+	if(this.parent){
+		var j = this.parent.children.indexOf(this);
+		if(0 <= j) this.parent.children.splice(j, 1);
+	}
+	this.parent = newParent;
+	if(this.parent)
+		this.parent.children.push(this);
+}
 
 // Update orbital elements from position and velocity.
 // The whole discussion is found in chapter 4.4 in
@@ -581,7 +636,7 @@ function init() {
 	} );
 
 	// Randomly generate asteroids
-	for ( i = 0; i < 10; i ++ ) {
+	for ( i = 0; i < 3; i ++ ) {
 
 		var angle = Math.random() * Math.PI * 2;
 		var position = new THREE.Vector3();
@@ -591,7 +646,7 @@ function init() {
 		position.applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
 		position.multiplyScalar(2.5);
-		var asteroid = new CelestialBody(sun, position);
+		var asteroid = new CelestialBody(sun, position, undefined, undefined, undefined, "asteroid" + i);
 		asteroid.velocity = new THREE.Vector3((Math.random() - 0.5) * 0.3 - 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
 			.multiplyScalar(Math.sqrt(GMsun / position.length())).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
@@ -979,8 +1034,9 @@ function init() {
 
 	function rightTitleSetSize(title, icon){
 		var r = title.getBoundingClientRect();
-		title.style.top = (icon.getBoundingClientRect().height - r.height) + 'px';
-		title.style.left = (-r.width) + 'px';
+		var iconRect = icon.getBoundingClientRect()
+		title.style.top = (iconRect.height - r.height) + 'px';
+		title.style.right = iconRect.width + 'px';
 	}
 
 	statsControl = new (function(){
@@ -1271,38 +1327,103 @@ function init() {
 	})
 	container.appendChild( messageControl.domElement );
 
-	scenarioSelectorControl = new (function(){
-		var buttonTop = 0;
-		var buttonHeight = 32;
-		var buttonWidth = 32;
+	function MenuControl(titleString, iconSrc, config){
 		this.domElement = document.createElement('div');
 		var element = this.domElement;
 		element.style.position = 'absolute';
 		element.style.textAlign = 'left';
-		element.style.top = buttonTop + 'px';
+		element.style.top = config.buttonTop + 'px';
 		element.style.right = 0 + 'px';
 		element.style.zIndex = 7;
-		var icon = document.createElement('img');
-		icon.src = 'images/menuIcon.png';
-		icon.style.width = buttonWidth + 'px';
-		icon.style.height = buttonHeight + 'px';
-		var visible = false;
-		element.appendChild(icon);
+		this.icon = document.createElement('img');
+		this.icon.src = iconSrc;
+		this.icon.style.width = config.buttonWidth + 'px';
+		this.icon.style.height = config.buttonHeight + 'px';
+		var scope = this;
+		this.iconMouseOver = false;
+		this.icon.ondragstart = function(event){
+			event.preventDefault();
+		};
+		this.icon.onclick = function(event){
+			scope.setVisible(!scope.visible);
+		};
+		this.icon.onmouseenter = function(event){
+			if(!scope.visible)
+				scope.title.style.display = 'block';
+			rightTitleSetSize(scope.title, scope.icon);
+			scope.iconMouseOver = true;
+		};
+		this.icon.onmouseleave = function(event){
+			if(!scope.visible)
+				scope.title.style.display = 'none';
+			scope.iconMouseOver = false;
+		};
+		element.appendChild(this.icon);
 
 		var title = document.createElement('div');
-		title.innerHTML = 'Scenarios';
+		title.innerHTML = titleString;
 		title.style.display = 'none';
 		title.style.position = 'absolute';
 		title.style.background = 'rgba(0, 0, 0, 0.5)';
 		title.style.zIndex = 20;
 		element.appendChild(title);
+		this.title = title;
+
+		this.visible = false;
 
 		var valueElement = document.createElement('div');
-		// valueElement.style.display = "none";
-		// valueElement.style.position = "fixed";
 		valueElement.style.cssText = "display: none; position: fixed; left: 50%;"
-			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #ffff7f;"
-			+ "font-size: 25px; text-align: center";
+			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #7fff7f;"
+			+ "font-size: 15px; text-align: center; font-family: Sans-Serif";
+		this.valueElement = valueElement;
+
+		var titleElem = document.createElement('div');
+		titleElem.style.margin = "15px";
+		titleElem.style.padding = "15px";
+		titleElem.style.fontSize = '25px';
+		titleElem.innerHTML = config.innerTitle || titleString;
+		this.valueElement.appendChild(titleElem);
+
+		this.closeIcon = document.createElement('img');
+		this.closeIcon.src = 'images/closeIcon.png';
+		this.closeIcon.style.cssText = 'position: absolute; top: 0px; right: 0px; border: inset 1px #7f7f7f;';
+		this.closeIcon.ondragstart = function(event){
+			event.preventDefault();
+		};
+		this.closeIcon.onclick = function(event){
+			scope.setVisible(false);
+		};
+		this.valueElement.appendChild(this.closeIcon);
+
+		this.domElement.appendChild(this.valueElement);
+	};
+
+	MenuControl.prototype.setVisible = function(v){
+		this.visible = v;
+		if(this.visible){
+			this.valueElement.style.display = 'block';
+			var rect = this.valueElement.getBoundingClientRect();
+			this.valueElement.style.marginLeft = -rect.width / 2 + "px";
+			this.valueElement.style.marginTop = -rect.height / 2 + "px";
+		}
+		else{
+			this.valueElement.style.display = 'none';
+			if(!this.iconMouseOver)
+				this.title.style.display = 'none';
+		}
+	};
+
+	scenarioSelectorControl = new (function(){
+		var config = {
+			buttonTop: 0,
+			buttonHeight: 32,
+			buttonWidth: 32,
+			innerTitle: "Scenario Selector",
+		};
+		var scope = this;
+		MenuControl.call(this, 'Scenarios', 'images/menuIcon.png', config);
+
+		this.valueElement.style.border = "5px ridge #ffff7f";
 		var scenarios = [
 			{title: "Earth orbit", parent: earth, semimajor_axis: 10000 / AU},
 			{title: "Moon orbit", parent: moon, semimajor_axis: 3000 / AU},
@@ -1310,11 +1431,6 @@ function init() {
 			{title: "Venus orbit", parent: venus, semimajor_axis: 10000 / AU, ascending_node: Math.PI},
 			{title: "Jupiter orbit", parent: jupiter, semimajor_axis: 100000 / AU},
 		];
-		var elem = document.createElement('div');
-		elem.style.margin = "15px";
-		elem.style.padding = "15px";
-		elem.innerHTML = "Scenario Selector";
-		valueElement.appendChild(elem);
 		for(var i = 0; i < scenarios.length; i++){
 			var elem = document.createElement('div');
 			elem.style.margin = "15px";
@@ -1330,10 +1446,7 @@ function init() {
 						rotation.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI));
 						return rotation;
 					})();
-					var j = rocket.parent.children.indexOf(rocket);
-					if(0 <= j) rocket.parent.children.splice(j, 1);
-					rocket.parent = scenario.parent;
-					rocket.parent.children.push(rocket);
+					rocket.setParent(scenario.parent);
 					rocket.position = new THREE.Vector3(0, 1 - eccentricity, 0)
 						.multiplyScalar(scenario.semimajor_axis).applyQuaternion(rotation);
 					rocket.quaternion = rotation.clone();
@@ -1341,45 +1454,217 @@ function init() {
 					rocket.angularVelocity = new THREE.Vector3();
 					throttleControl.setThrottle(0);
 					rocket.setOrbitingVelocity(scenario.semimajor_axis, rotation);
-					title.style.display = 'none';
-					visible = false;
-					valueElement.style.display = 'none';
+					rocket.totalDeltaV = 0.;
+					rocket.ignitionCount = 0;
+					simTime = new Date();
+					realTime = simTime;
+					startTime = simTime;
+					messageControl.setText('Scenario ' + scenario.title + ' Loaded!');
+					scope.title.style.display = 'none';
+					scope.visible = false;
+					scope.valueElement.style.display = 'none';
 				}
 			})(scenarios[i]);
-			valueElement.appendChild(elem);
+			this.valueElement.appendChild(elem);
 		}
-		this.domElement.appendChild(valueElement);
 
-		icon.ondragstart = function(event){
-			event.preventDefault();
-		};
-		icon.onclick = function(event){
-			visible = !visible;
-			if(visible){
-				valueElement.style.display = 'block';
-				var rect = valueElement.getBoundingClientRect();
-				valueElement.style.marginLeft = -rect.width / 2 + "px";
-				valueElement.style.marginTop = -rect.height / 2 + "px";
+		this.setVisible = function(v){
+			MenuControl.prototype.setVisible.call(this, v);
+			if(this.visible){
+				[saveControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
 			}
-			else{
-				valueElement.style.display = 'none';
-			}
-		};
-		icon.onmouseenter = function(event){
-			if(!visible)
-				title.style.display = 'block';
-			rightTitleSetSize(title, icon);
-		};
-		icon.onmouseleave = function(event){
-			if(!visible)
-				title.style.display = 'none';
-		};
+		}
 	});
 	container.appendChild( scenarioSelectorControl.domElement );
+
+	function serializeState(){
+		return {
+			simTime: simTime,
+			startTime: startTime,
+			bodies: sun.serializeTree(),
+		};
+	}
+
+	saveControl = new (function(){
+		var config = {
+			buttonTop: 34,
+			buttonHeight: 32,
+			buttonWidth: 32,
+		};
+		var scope = this;
+		MenuControl.call(this, 'Save data', 'images/saveIcon.png', config);
+
+		var inputContainer = document.createElement('div');
+		inputContainer.style.border = "1px solid #7fff7f";
+		inputContainer.style.margin = "5px";
+		inputContainer.style.padding = "5px";
+		var inputTitle = document.createElement('div');
+		inputTitle.innerHTML = 'New Save Name';
+		var inputElement = document.createElement('input');
+		inputElement.setAttribute('type', 'text');
+		var inputButton = document.createElement('button');
+		inputButton.innerHTML = 'save'
+		inputButton.onclick = function(event){
+			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
+			saveData.push({title: inputElement.value, state: serializeState()});
+			localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
+			messageControl.setText('Game State Saved!');
+			scope.title.style.display = 'none';
+			scope.visible = false;
+			scope.valueElement.style.display = 'none';
+		};
+		inputElement.onkeydown = function(e){
+			e.stopPropagation();
+		}
+		inputContainer.appendChild(inputTitle);
+		inputContainer.appendChild(inputElement);
+		inputContainer.appendChild(inputButton);
+		this.valueElement.appendChild(inputContainer);
+
+		var saveContainer = document.createElement('div');
+
+		function updateSaveDataList(){
+			while(0 < saveContainer.children.length) saveContainer.removeChild(saveContainer.children[0]);
+			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
+			for(var i = 0; i < saveData.length; i++){
+				var elem = document.createElement('div');
+				elem.style.margin = "5px";
+				elem.style.padding = "5px";
+				elem.style.border = "1px solid #00ff00";
+				var labelElem = document.createElement('div');
+				labelElem.innerHTML = saveData[i].title;
+				labelElem.style.cssText = "width: 100%; margin-right: -32px; display: inline-block; text-align: overflow: auto;";
+				elem.appendChild(labelElem);
+				var deleteElem = document.createElement('img');
+				deleteElem.setAttribute('src', 'images/trashcan.png');
+				deleteElem.style.width = '20px';
+				deleteElem.onclick = (function(i){
+					return function(e){
+						saveData.splice(i, 1);
+						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
+						messageControl.setText('Game State Deleted!');
+						scope.title.style.display = 'none';
+						scope.visible = false;
+						scope.valueElement.style.display = 'none';
+						e.stopPropagation();
+					}
+				})(i);
+				elem.appendChild(deleteElem);
+				elem.onclick = (function(save){
+					return function(){
+						save.state = serializeState();
+						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
+						messageControl.setText('Game State Saved!');
+						scope.title.style.display = 'none';
+						scope.visible = false;
+						scope.valueElement.style.display = 'none';
+					}
+				})(saveData[i]);
+				saveContainer.appendChild(elem);
+			}
+		}
+		this.valueElement.appendChild(saveContainer);
+
+		this.setVisible = function(v){
+			if(v){
+				[scenarioSelectorControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
+				updateSaveDataList();
+			}
+			MenuControl.prototype.setVisible.call(this, v);
+		}
+	});
+	container.appendChild( saveControl.domElement );
+
+	function loadState(state){
+		simTime = new Date(state.simTime);
+		startTime = new Date(state.startTime);
+		var bodies = state.bodies;
+		for(var i = 0; i < bodies.length; i++){
+			var body = bodies[i];
+			if(body.name in celestialBodies){
+				celestialBodies[body.name].deserialize(body);
+			}
+		}
+		throttleControl.setThrottle(rocket.throttle);
+	}
+
+	loadControl = new (function(){
+		var config = {
+			buttonTop: 34 * 2,
+			buttonHeight: 32,
+			buttonWidth: 32,
+		};
+		MenuControl.call(this, 'Load data', 'images/loadIcon.png', config);
+		var scope = this;
+		this.valueElement.style.border = "5px ridge #ff7fff";
+
+		var saveContainer = document.createElement('div');
+
+		function updateSaveDataList(){
+			while(0 < saveContainer.children.length) saveContainer.removeChild(saveContainer.children[0]);
+			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
+			for(var i = 0; i < saveData.length; i++){
+				var elem = document.createElement('div');
+				elem.style.margin = "5px";
+				elem.style.padding = "5px";
+				elem.style.border = "1px solid #ff00ff";
+				var labelElem = document.createElement('div');
+				labelElem.innerHTML = saveData[i].title;
+				labelElem.style.cssText = "width: 100%; margin-right: -32px; display: inline-block; text-align: overflow: auto;";
+				elem.appendChild(labelElem);
+				var deleteElem = document.createElement('img');
+				deleteElem.setAttribute('src', 'images/trashcan.png');
+				deleteElem.style.width = '20px';
+				deleteElem.onclick = (function(i){
+					return function(e){
+						saveData.splice(i, 1);
+						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
+						messageControl.setText('Game State Deleted!');
+						scope.title.style.display = 'none';
+						scope.visible = false;
+						scope.valueElement.style.display = 'none';
+						e.stopPropagation();
+					}
+				})(i);
+				elem.appendChild(deleteElem);
+				elem.onclick = (function(save){
+					return function(){
+						loadState(save.state);
+						messageControl.setText('Game State Loaded!');
+						scope.title.style.display = 'none';
+						scope.visible = false;
+						scope.valueElement.style.display = 'none';
+					}
+				})(saveData[i]);
+				saveContainer.appendChild(elem);
+			}
+		}
+		this.valueElement.appendChild(saveContainer);
+
+		this.setVisible = function(v){
+			if(v){
+				[scenarioSelectorControl, saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
+				updateSaveDataList();
+			}
+			MenuControl.prototype.setVisible.call(this, v);
+		}
+	});
+	container.appendChild( loadControl.domElement );
 
 	window.addEventListener( 'resize', onWindowResize, false );
 	window.addEventListener( 'keydown', onKeyDown, false );
 	window.addEventListener( 'keyup', onKeyUp, false );
+	window.addEventListener( 'pageshow', function(){
+		var state = localStorage.getItem('WebGLOrbiterAutoSave');
+		if(state){
+			loadState(JSON.parse(state));
+		}
+		console.log('I am the 3rd one.');
+	});
+	window.addEventListener( 'beforeunload', function(){
+		localStorage.setItem('WebGLOrbiterAutoSave', JSON.stringify(serializeState()));
+		console.log('I am the 3rd one.');
+	});
 
 	// Start the clock after the initialization is finished, otherwise
 	// the very first frame of simulation can be long.
