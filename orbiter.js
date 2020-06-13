@@ -1315,109 +1315,6 @@ function init() {
 	})
 	container.appendChild( messageControl.domElement );
 
-	scenarioSelectorControl = new (function(){
-		var buttonTop = 0;
-		var buttonHeight = 32;
-		var buttonWidth = 32;
-		this.domElement = document.createElement('div');
-		var element = this.domElement;
-		element.style.position = 'absolute';
-		element.style.textAlign = 'left';
-		element.style.top = buttonTop + 'px';
-		element.style.right = 0 + 'px';
-		element.style.zIndex = 7;
-		var icon = document.createElement('img');
-		icon.src = 'images/menuIcon.png';
-		icon.style.width = buttonWidth + 'px';
-		icon.style.height = buttonHeight + 'px';
-		var visible = false;
-		element.appendChild(icon);
-
-		var title = document.createElement('div');
-		title.innerHTML = 'Scenarios';
-		title.style.display = 'none';
-		title.style.position = 'absolute';
-		title.style.background = 'rgba(0, 0, 0, 0.5)';
-		title.style.zIndex = 20;
-		element.appendChild(title);
-
-		var valueElement = document.createElement('div');
-		// valueElement.style.display = "none";
-		// valueElement.style.position = "fixed";
-		valueElement.style.cssText = "display: none; position: fixed; left: 50%;"
-			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #ffff7f;"
-			+ "font-size: 25px; text-align: center";
-		var scenarios = [
-			{title: "Earth orbit", parent: earth, semimajor_axis: 10000 / AU},
-			{title: "Moon orbit", parent: moon, semimajor_axis: 3000 / AU},
-			{title: "Mars orbit", parent: mars, semimajor_axis: 5000 / AU},
-			{title: "Venus orbit", parent: venus, semimajor_axis: 10000 / AU, ascending_node: Math.PI},
-			{title: "Jupiter orbit", parent: jupiter, semimajor_axis: 100000 / AU},
-		];
-		var elem = document.createElement('div');
-		elem.style.margin = "15px";
-		elem.style.padding = "15px";
-		elem.innerHTML = "Scenario Selector";
-		valueElement.appendChild(elem);
-		for(var i = 0; i < scenarios.length; i++){
-			var elem = document.createElement('div');
-			elem.style.margin = "15px";
-			elem.style.padding = "15px";
-			elem.style.border = "1px solid #ffff00";
-			elem.innerHTML = scenarios[i].title;
-			elem.onclick = (function(scenario){
-				return function(){
-					var ascending_node = scenario.ascending_node || 0.;
-					var eccentricity = scenario.eccentricity || 0.;
-					var rotation = scenario.rotation || (function(){
-						var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2);
-						rotation.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI));
-						return rotation;
-					})();
-					rocket.setParent(scenario.parent);
-					rocket.position = new THREE.Vector3(0, 1 - eccentricity, 0)
-						.multiplyScalar(scenario.semimajor_axis).applyQuaternion(rotation);
-					rocket.quaternion = rotation.clone();
-					rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, -Math.PI / 2));
-					rocket.angularVelocity = new THREE.Vector3();
-					throttleControl.setThrottle(0);
-					rocket.setOrbitingVelocity(scenario.semimajor_axis, rotation);
-					title.style.display = 'none';
-					visible = false;
-					valueElement.style.display = 'none';
-				}
-			})(scenarios[i]);
-			valueElement.appendChild(elem);
-		}
-		this.domElement.appendChild(valueElement);
-
-		icon.ondragstart = function(event){
-			event.preventDefault();
-		};
-		icon.onclick = function(event){
-			visible = !visible;
-			if(visible){
-				valueElement.style.display = 'block';
-				var rect = valueElement.getBoundingClientRect();
-				valueElement.style.marginLeft = -rect.width / 2 + "px";
-				valueElement.style.marginTop = -rect.height / 2 + "px";
-			}
-			else{
-				valueElement.style.display = 'none';
-			}
-		};
-		icon.onmouseenter = function(event){
-			if(!visible)
-				title.style.display = 'block';
-			rightTitleSetSize(title, icon);
-		};
-		icon.onmouseleave = function(event){
-			if(!visible)
-				title.style.display = 'none';
-		};
-	});
-	container.appendChild( scenarioSelectorControl.domElement );
-
 	function MenuControl(titleString, iconSrc, config){
 		this.domElement = document.createElement('div');
 		var element = this.domElement;
@@ -1431,6 +1328,7 @@ function init() {
 		this.icon.style.width = config.buttonWidth + 'px';
 		this.icon.style.height = config.buttonHeight + 'px';
 		var scope = this;
+		this.iconMouseOver = false;
 		this.icon.ondragstart = function(event){
 			event.preventDefault();
 		};
@@ -1441,10 +1339,12 @@ function init() {
 			if(!scope.visible)
 				scope.title.style.display = 'block';
 			rightTitleSetSize(scope.title, scope.icon);
+			scope.iconMouseOver = true;
 		};
 		this.icon.onmouseleave = function(event){
 			if(!scope.visible)
 				scope.title.style.display = 'none';
+			scope.iconMouseOver = false;
 		};
 		element.appendChild(this.icon);
 
@@ -1469,11 +1369,85 @@ function init() {
 		titleElem.style.margin = "15px";
 		titleElem.style.padding = "15px";
 		titleElem.style.fontSize = '25px';
-		titleElem.innerHTML = titleString;
+		titleElem.innerHTML = config.innerTitle || titleString;
 		this.valueElement.appendChild(titleElem);
 
 		this.domElement.appendChild(this.valueElement);
-	}
+	};
+
+	MenuControl.prototype.setVisible = function(v){
+		this.visible = v;
+		if(this.visible){
+			this.valueElement.style.display = 'block';
+			var rect = this.valueElement.getBoundingClientRect();
+			this.valueElement.style.marginLeft = -rect.width / 2 + "px";
+			this.valueElement.style.marginTop = -rect.height / 2 + "px";
+		}
+		else{
+			this.valueElement.style.display = 'none';
+			if(!this.iconMouseOver)
+				this.title.style.display = 'none';
+		}
+	};
+
+	scenarioSelectorControl = new (function(){
+		var config = {
+			buttonTop: 0,
+			buttonHeight: 32,
+			buttonWidth: 32,
+			innerTitle: "Scenario Selector",
+		};
+		var scope = this;
+		MenuControl.call(this, 'Scenarios', 'images/menuIcon.png', config);
+
+		this.valueElement.style.border = "5px ridge #ffff7f";
+		var scenarios = [
+			{title: "Earth orbit", parent: earth, semimajor_axis: 10000 / AU},
+			{title: "Moon orbit", parent: moon, semimajor_axis: 3000 / AU},
+			{title: "Mars orbit", parent: mars, semimajor_axis: 5000 / AU},
+			{title: "Venus orbit", parent: venus, semimajor_axis: 10000 / AU, ascending_node: Math.PI},
+			{title: "Jupiter orbit", parent: jupiter, semimajor_axis: 100000 / AU},
+		];
+		for(var i = 0; i < scenarios.length; i++){
+			var elem = document.createElement('div');
+			elem.style.margin = "15px";
+			elem.style.padding = "15px";
+			elem.style.border = "1px solid #ffff00";
+			elem.innerHTML = scenarios[i].title;
+			elem.onclick = (function(scenario){
+				return function(){
+					var ascending_node = scenario.ascending_node || 0.;
+					var eccentricity = scenario.eccentricity || 0.;
+					var rotation = scenario.rotation || (function(){
+						var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2);
+						rotation.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI));
+						return rotation;
+					})();
+					rocket.setParent(scenario.parent);
+					rocket.position = new THREE.Vector3(0, 1 - eccentricity, 0)
+						.multiplyScalar(scenario.semimajor_axis).applyQuaternion(rotation);
+					rocket.quaternion = rotation.clone();
+					rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, -Math.PI / 2));
+					rocket.angularVelocity = new THREE.Vector3();
+					throttleControl.setThrottle(0);
+					rocket.setOrbitingVelocity(scenario.semimajor_axis, rotation);
+					messageControl.setText('Scenario ' + scenario.title + ' Loaded!');
+					scope.title.style.display = 'none';
+					scope.visible = false;
+					scope.valueElement.style.display = 'none';
+				}
+			})(scenarios[i]);
+			this.valueElement.appendChild(elem);
+		}
+
+		this.setVisible = function(v){
+			MenuControl.prototype.setVisible.call(this, v);
+			if(this.visible){
+				[saveControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
+			}
+		}
+	});
+	container.appendChild( scenarioSelectorControl.domElement );
 
 	saveControl = new (function(){
 		var config = {
@@ -1556,17 +1530,10 @@ function init() {
 		this.valueElement.appendChild(saveContainer);
 
 		this.setVisible = function(v){
-			this.visible = v;
+			MenuControl.prototype.setVisible.call(this, v);
 			if(this.visible){
-				loadControl.setVisible(false); // Mutually exclusive
-				this.valueElement.style.display = 'block';
+				[scenarioSelectorControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
 				updateSaveDataList();
-				var rect = this.valueElement.getBoundingClientRect();
-				this.valueElement.style.marginLeft = -rect.width / 2 + "px";
-				this.valueElement.style.marginTop = -rect.height / 2 + "px";
-			}
-			else{
-				this.valueElement.style.display = 'none';
 			}
 		}
 	});
@@ -1627,17 +1594,10 @@ function init() {
 		this.valueElement.appendChild(saveContainer);
 
 		this.setVisible = function(v){
-			scope.visible = v;
+			MenuControl.prototype.setVisible.call(this, v);
 			if(scope.visible){
-				saveControl.setVisible(false); // Mutually exclusive
-				scope.valueElement.style.display = 'block';
+				[scenarioSelectorControl, saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
 				updateSaveDataList();
-				var rect = scope.valueElement.getBoundingClientRect();
-				scope.valueElement.style.marginLeft = -rect.width / 2 + "px";
-				scope.valueElement.style.marginTop = -rect.height / 2 + "px";
-			}
-			else{
-				scope.valueElement.style.display = 'none';
 			}
 		}
 	});
