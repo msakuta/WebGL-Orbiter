@@ -126,21 +126,33 @@ function deserializeQuaternion(json){
 CelestialBody.prototype.serialize = function(){
 	return {
 		name: this.name,
-		parent: this.parent.name,
+		parent: this.parent ? this.parent.name : null,
 		position: this.position,
 		velocity: this.velocity,
 		quaternion: this.quaternion,
 		angularVelocity: this.angularVelocity,
+		totalDeltaV: this.totalDeltaV || undefined,
+		ignitionCount: this.ignitionCount || undefined,
 	};
 };
 
+CelestialBody.prototype.serializeTree = function(){
+	var ret = [];
+	ret.push(this.serialize());
+	for(var i = 0; i < this.children.length; i++)
+		ret = ret.concat(this.children[i].serializeTree());
+	return ret;
+}
+
 CelestialBody.prototype.deserialize = function(json){
 	this.name = json.name;
-	this.setParent(celestialBodies[json.parent] || sun);
+	this.setParent(celestialBodies[json.parent]);
 	this.position = deserializeVector3(json.position);
 	this.velocity = deserializeVector3(json.velocity);
 	this.quaternion = deserializeQuaternion(json.quaternion);
 	this.angularVelocity = deserializeVector3(json.angularVelocity);
+	this.totalDeltaV = json.totalDeltaV || 0;
+	this.ignitionCount = json.ignitionCount || 0;
 };
 
 CelestialBody.prototype.setParent = function(newParent){
@@ -624,7 +636,7 @@ function init() {
 	} );
 
 	// Randomly generate asteroids
-	for ( i = 0; i < 10; i ++ ) {
+	for ( i = 0; i < 3; i ++ ) {
 
 		var angle = Math.random() * Math.PI * 2;
 		var position = new THREE.Vector3();
@@ -634,7 +646,7 @@ function init() {
 		position.applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
 		position.multiplyScalar(2.5);
-		var asteroid = new CelestialBody(sun, position);
+		var asteroid = new CelestialBody(sun, position, undefined, undefined, undefined, "asteroid" + i);
 		asteroid.velocity = new THREE.Vector3((Math.random() - 0.5) * 0.3 - 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
 			.multiplyScalar(Math.sqrt(GMsun / position.length())).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
@@ -1516,7 +1528,11 @@ function init() {
 				elem.appendChild(deleteElem);
 				elem.onclick = (function(save){
 					return function(){
-						save.state = rocket.serialize();
+						save.state = {
+							simTime,
+							startTime,
+							bodies: sun.serializeTree(),
+						}
 						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
 						messageControl.setText('Game State Saved!');
 						scope.title.style.display = 'none';
@@ -1580,7 +1596,15 @@ function init() {
 				elem.appendChild(deleteElem);
 				elem.onclick = (function(save){
 					return function(){
-						rocket.deserialize(save.state);
+						simTime = new Date(save.state.simTime);
+						startTime = new Date(save.state.startTime);
+						var bodies = save.state.bodies;
+						for(var i = 0; i < bodies.length; i++){
+							var body = bodies[i];
+							if(body.name in celestialBodies){
+								celestialBodies[body.name].deserialize(body);
+							}
+						}
 						throttleControl.setThrottle(rocket.throttle);
 						messageControl.setText('Game State Loaded!');
 						scope.title.style.display = 'none';
