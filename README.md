@@ -36,6 +36,16 @@ http://msakuta.github.io/WebGL-Orbiter/orbiter.html
 * 'H' key toggles camera chase mode
 * 'G' key toggles grids
 
+
+## Autosave feature
+
+The simulation state is automatically saved to your browser's localStorage.
+When you exit the application and load it again, you will continue from where
+you left off.
+If you want to reset state, choose "Earth orbit" from the scenarios.
+
+
+
 ## User Interface
 
 
@@ -129,11 +139,41 @@ On top right corner of the screen is a little icon.
 
 ![](images/menuIcon.png)
 
-Clicking it will show a list of scenarios.
+Clicking it will show a list of predefined scenarios.
 
 ![Scenario selector](screenshots/scenarioSelector.jpg)
 
 Clicking one of these items will teleport the rocket to specific location in the solar system.
+
+
+### Save State
+
+On the 2nd from right top corner is an icon for saving simulation state.
+
+![](images/saveIcon.png)
+
+Clicking it will show a list of saved states.
+
+Saved states are like scenarios but you can create whenever and as many as you would like to.
+
+You can either type a new save name or overwrite existing one by clicking on its name.
+You can delete a saved state by clicking on the trash can icon ![trashcan](images/trashcan.png).
+
+![](screenshots/saveData.jpg)
+
+
+### Load State
+
+On the 3rd from right top corner is an icon for loading simulation state.
+
+![](images/loadIcon.png)
+
+Clicking on it will show a list of saved states.
+
+You can click on one of the items to load it.
+You can delete a saved state by clicking on the trash can icon ![trashcan](images/trashcan.png).
+
+![](screenshots/loadData.jpg)
 
 
 ### Orbital Elements
@@ -162,7 +202,7 @@ If you're not familiar with orbital mechanics, [Wikipedia](https://en.wikipedia.
 
 ### Statistics
 
-On the right top corner is an icon for statistics.
+On the 4th from right top corner is an icon for statistics.
 
 ![](images/statsIcon.png)
 

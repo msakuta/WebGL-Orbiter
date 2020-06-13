@@ -1596,7 +1596,7 @@ function init() {
 				var elem = document.createElement('div');
 				elem.style.margin = "5px";
 				elem.style.padding = "5px";
-				elem.style.border = "1px solid #ffff00";
+				elem.style.border = "1px solid #ff00ff";
 				var labelElem = document.createElement('div');
 				labelElem.innerHTML = saveData[i].title;
 				labelElem.style.cssText = "width: 100%; margin-right: -32px; display: inline-block; text-align: overflow: auto;";
