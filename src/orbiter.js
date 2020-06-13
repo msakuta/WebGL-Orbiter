@@ -1,3 +1,7 @@
+import * as THREE from 'three/build/three.module.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
 import blastUrl from './images/blast.png';
 import forwardActiveUrl from './images/forward.png';
 import forwardInactiveUrl from './images/forward-inactive.png';
@@ -51,7 +55,6 @@ var statsControl;
 var settingsControl;
 var altitudeControl;
 var messageControl;
-var mouseX = 0, mouseY = 0;
 var cameraControls;
 var grids;
 var scenarioSelectorControl;
@@ -565,7 +568,7 @@ function init() {
 			} );
 		}
 		else if(params.modelName){
-			var loader = new THREE.OBJLoader();
+			var loader = new OBJLoader();
 			loader.load( params.modelName, function ( object ) {
 				var radiusInAu = 100 * (radius || 6534) / AU;
 				object.scale.set(radiusInAu, radiusInAu, radiusInAu);
@@ -712,7 +715,7 @@ function init() {
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	renderer.autoClear = false;
 
-	cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
+	cameraControls = new OrbitControls(camera, renderer.domElement);
 	cameraControls.target.set( 0, 0, 0);
 	cameraControls.noPan = true;
 	cameraControls.maxDistance = 4000;

@@ -4,6 +4,9 @@ module.exports = {
 //   entry: './src/index.ts',
   entry: './src/orbiter.js',
   devtool: 'inline-source-map',
+  devServer: {
+    contentBase: './dist',
+  },
   module: {
     rules: [
       {
