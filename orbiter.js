@@ -192,9 +192,10 @@ CelestialBody.prototype.update = function(){
 		// This is necessary to draw orbit with zero inclination and nonzero eccentricity.
 		if(N.lengthSq() <= epsilon || e.lengthSq() <= epsilon)
 			this.argument_of_perihelion = Math.atan2(-e.y, e.x);
-		else
+		else{
 			this.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
-		if(e.z < 0) this.argument_of_perihelion = 2 * Math.PI - this.argument_of_perihelion;
+			if(e.z < 0) this.argument_of_perihelion = 2 * Math.PI - this.argument_of_perihelion;
+		}
 
 		// Total rotation of the orbit
 		var rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, this.argument_of_perihelion));
