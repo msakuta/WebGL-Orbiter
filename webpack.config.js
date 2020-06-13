@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
 //   entry: './src/index.ts',
-  entry: './orbiter.js',
+  entry: './src/orbiter.js',
   devtool: 'inline-source-map',
   module: {
     rules: [
