@@ -687,7 +687,7 @@ function init() {
 		};
 		this.domElement.onmouseleave = function(event){
 			element.style.display = 'none';
-			up = down = left = right = false;
+			buttons.up = buttons.down = buttons.left = buttons.right = false;
 		};
 		addArrow(rotateUpUrl, 'up', navballRadius - buttonWidth / 2, 0);
 		addArrow(rotateDownUrl, 'down', navballRadius - buttonWidth / 2, 2 * navballRadius - buttonHeight);
@@ -1569,9 +1569,19 @@ function render() {
 
 		simulateBody(sun);
 	}
+
+	// Convert length of unit au into a fixed-length string considering user unit selection.
+	// Also appends unit string for clarity.
+	function unitConvLength(au){
+		if(units_km)
+			return (au * AU).toPrecision(10) + ' km';
+		else
+			return au.toFixed(10) + ' AU';
+	}
+
 	sun.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfX,
 		units_km,
-		function(o){
+		function(o, headingApoapsis){
 			orbitalElementControl.setText(
 				'<table class="table1">'
 				+ ' <tr><td>e</td><td>' + o.eccentricity.toFixed(10) + '</td></tr>'
@@ -1579,8 +1589,8 @@ function render() {
 				+ ' <tr><td>i</td><td>' + (o.inclination / Math.PI).toFixed(10) + '</td></tr>'
 				+ ' <tr><td>Omega</td><td>' + (o.ascending_node / Math.PI).toFixed(10) + '</td></tr>'
 				+ ' <tr><td>w</td><td>' + (o.argument_of_perihelion / Math.PI).toFixed(10) + '</td></tr>'
-				+ ' <tr><td>Periapsis</td><td>' + unitConvLength(scope.semimajor_axis * (1 - scope.eccentricity)) + '</td></tr>'
-				+ ' <tr><td>Apoapsis</td><td>' + unitConvLength(scope.semimajor_axis * (1 + scope.eccentricity)) + '</td></tr>'
+				+ ' <tr><td>Periapsis</td><td>' + unitConvLength(o.semimajor_axis * (1 - o.eccentricity)) + '</td></tr>'
+				+ ' <tr><td>Apoapsis</td><td>' + unitConvLength(o.semimajor_axis * (1 + o.eccentricity)) + '</td></tr>'
 				+ ' <tr><td>head</td><td>' + headingApoapsis.toFixed(5) + '</td></tr>'
 	//							+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + '<br>' + this.angularVelocity.y.toFixed(10) + ',' + '<br>' + this.angularVelocity.z.toFixed(10)
 				+'</table>'

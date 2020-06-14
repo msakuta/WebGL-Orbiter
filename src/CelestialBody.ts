@@ -151,7 +151,7 @@ export class CelestialBody{
     // https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
     update(center_select: boolean, viewScale: number, nlips_enable: boolean,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
-        units_km: boolean, updateOrbitalElements: (o: CelestialBody) => void,
+        units_km: boolean, updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
         scene: THREE.Scene, select_obj?: CelestialBody)
     {
         let scope = this;
@@ -193,15 +193,6 @@ export class CelestialBody{
                 apsis.visible = false;
         }
 
-        // Convert length of unit au into a fixed-length string considering user unit selection.
-        // Also appends unit string for clarity.
-        function unitConvLength(au: number){
-            if(units_km)
-                return (au * AU).toPrecision(10) + ' km';
-            else
-                return au.toFixed(10) + ' AU';
-        }
-
         if(this.vertex)
             this.vertex.copy(visualPosition(this));
 
@@ -210,6 +201,8 @@ export class CelestialBody{
             this.model.scale.set(1,1,1).multiplyScalar(nlipsFactor(this));
             this.model.quaternion.copy(this.quaternion);
         }
+
+        var headingApoapsis = 0;
 
         if(this.parent){
             // Angular momentum vectors
@@ -234,7 +227,7 @@ export class CelestialBody{
             // Rotation to perifocal frame
             var planeRot = AxisAngleQuaternion(0, 0, 1, this.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - this.inclination));
 
-            var headingApoapsis = -this.position.dot(this.velocity)/Math.abs(this.position.dot(this.velocity));
+            headingApoapsis = -this.position.dot(this.velocity)/Math.abs(this.position.dot(this.velocity));
 
             // Avoid zero division and still get the correct answer when N == 0.
             // This is necessary to draw orbit with zero inclination and nonzero eccentricity.
@@ -331,6 +324,9 @@ export class CelestialBody{
                     this.periapsis.visible = false;
             }
         }
+
+        if(select_obj === this)
+            updateOrbitalElements(this, headingApoapsis);
 
         for(var i = 0; i < this.children.length; i++){
             var a = this.children[i];
