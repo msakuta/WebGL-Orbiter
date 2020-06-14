@@ -6,6 +6,7 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 import "./main.css";
 
 import { CelestialBody } from './CelestialBody';
+import { Settings, SettingsControl } from './SettingsControl';
 
 import blastUrl from './images/blast.png';
 import forwardActiveUrl from './images/forward.png';
@@ -27,7 +28,6 @@ import menuIconUrl from './images/menuIcon.png';
 import loadIconUrl from './images/loadIcon.png';
 import saveIconUrl from './images/saveIcon.png';
 import statsIconUrl from './images/statsIcon.png';
-import settingsIconUrl from './images/settingsIcon.png';
 import trashcanUrl from './images/trashcan.png';
 import navballUrl from './images/navball.png';
 import watermarkUrl from './images/watermark.png';
@@ -75,10 +75,7 @@ var realTime;
 var center_select = false;
 var select_idx = 0;
 var select_obj = null;
-var nlips_enable = true;
-var grid_enable = false;
-var units_km = true;
-var sync_rotate = false;
+var settings = new Settings();
 
 var buttons = {
 	up: false,
@@ -343,8 +340,8 @@ function init() {
 		ret.orbit = orbitMesh;
 		scene.add(orbitMesh);
 		ret.init();
-		ret.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfY,
-			units_km, (_) => {}, scene);
+		ret.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
+			settings.units_km, (_) => {}, scene);
 		return ret;
 	}
 
@@ -419,8 +416,8 @@ function init() {
 		scene.add(orbitMesh);
 
 		asteroid.init();
-		asteroid.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfY,
-			units_km, (_) => {}, scene);
+		asteroid.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
+			settings.units_km, (_) => {}, scene);
 
 	}
 
@@ -900,113 +897,7 @@ function init() {
 	})();
 	container.appendChild( statsControl.domElement );
 
-	settingsControl = new (function(){
-		function setSize(){
-			element.style.left = (window.innerWidth - buttonWidth) + 'px';
-			rightTitleSetSize(title, icon);
-		}
-		var buttonTop = 154;
-		var buttonHeight = 32;
-		var buttonWidth = 32;
-		this.domElement = document.createElement('div');
-		var element = this.domElement;
-		element.style.position = 'absolute';
-		element.style.textAlign = 'left';
-		element.style.top = buttonTop + 'px';
-		element.style.left = 0 + 'px';
-		element.style.zIndex = 7;
-		var visible = false;
-		var icon = document.createElement('img');
-		icon.src = settingsIconUrl;
-		icon.style.width = buttonWidth + 'px';
-		icon.style.height = buttonHeight + 'px';
-		element.appendChild(icon);
-
-		var title = document.createElement('div');
-		title.innerHTML = 'Settings';
-		title.style.display = 'none';
-		title.style.position = 'absolute';
-		title.style.background = 'rgba(0, 0, 0, 0.5)';
-		title.style.zIndex = 20;
-		element.appendChild(title);
-
-		var valueElement = document.createElement('div');
-		element.appendChild(valueElement);
-		valueElement.style.display = 'none';
-		valueElement.style.position = 'absolute';
-		valueElement.style.background = 'rgba(0, 0, 0, 0.5)';
-		valueElement.style.border = '3px ridge #7f3f3f';
-		valueElement.style.padding = '3px';
-		// The settings variables are function local variables, so we can't just pass this pointer
-		// and parameter name and do something like `this[name] = !this[name]`.
-		var toggleFuncs = [
-			function(){grid_enable = !grid_enable},
-			function(){sync_rotate = !sync_rotate},
-			function(){nlips_enable = !nlips_enable},
-			function(){units_km = !units_km}
-		];
-		var checkElements = [];
-		for(var i = 0; i < toggleFuncs.length; i++){
-			var lineElement = document.createElement('div');
-			var checkbox = document.createElement('input');
-			checkbox.type = 'checkbox';
-			checkbox.onclick = toggleFuncs[i];
-			var id = 'settings_check_' + i;
-			checkbox.setAttribute('id', id);
-			lineElement.appendChild(checkbox);
-			checkElements.push(checkbox);
-			var label = document.createElement('label');
-			label.setAttribute('for', id);
-			label.innerHTML = [
-				'Show&nbsp;grid&nbsp;(G)',
-				'Chase&nbsp;camera&nbsp;(H)',
-				'Nonlinear&nbsp;scale&nbsp;(N)',
-				'Units in KM&nbsp;(K)'][i];
-			lineElement.appendChild(label);
-			lineElement.style.fontWeight = 'bold';
-			lineElement.style.paddingRight = '1em';
-			lineElement.style.whiteSpace = 'nowrap';
-			valueElement.appendChild(lineElement);
-		}
-
-		setSize();
-
-		// Register event handlers
-		window.addEventListener('resize', setSize);
-		icon.ondragstart = function(event){
-			event.preventDefault();
-		};
-		icon.onclick = function(event){
-			visible = !visible;
-			if(visible){
-				valueElement.style.display = 'block';
-				element.style.background = 'rgba(0, 0, 0, 0.5)';
-			}
-			else{
-				valueElement.style.display = 'none';
-				element.style.background = 'rgba(0, 0, 0, 0)';
-			}
-		};
-		icon.onmouseenter = function(event){
-			if(!visible)
-				title.style.display = 'block';
-			rightTitleSetSize(title, icon);
-		};
-		icon.onmouseleave = function(event){
-			if(!visible)
-				title.style.display = 'none';
-		};
-
-		this.setText = function(text){
-			if(!visible)
-				return;
-			checkElements[0].checked = grid_enable;
-			checkElements[1].checked = sync_rotate;
-			checkElements[2].checked = nlips_enable;
-			checkElements[3].checked = units_km;
-			valueElement.style.marginLeft = (buttonWidth - valueElement.getBoundingClientRect().width) + 'px';
-		}
-	})();
+	settingsControl = new SettingsControl(settings);
 	container.appendChild( settingsControl.domElement );
 
 	altitudeControl = new (function(){
@@ -1487,14 +1378,14 @@ function render() {
 	// Convert length of unit au into a fixed-length string considering user unit selection.
 	// Also appends unit string for clarity.
 	function unitConvLength(au){
-		if(units_km)
+		if(settings.units_km)
 			return (au * AU).toPrecision(10) + ' km';
 		else
 			return au.toFixed(10) + ' AU';
 	}
 
-	sun.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfY,
-		units_km,
+	sun.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
+		settings.units_km,
 		function(o, headingApoapsis){
 			orbitalElementControl.setText(
 				'<table class="table1">'
@@ -1518,14 +1409,14 @@ function render() {
 	// offset sun position
 	light.position.copy(sun.model.position);
 
-	grids.visible = grid_enable;
+	grids.visible = settings.grid_enable;
 
 //				camera.up.copy(new THREE.Vector3(0,0,1)); // This did't work with OrbitControls
 	cameraControls.update();
 
 	var oldPosition = camera.position.clone();
 	var oldQuaternion = camera.quaternion.clone();
-	if(sync_rotate && select_obj){
+	if(settings.sync_rotate && select_obj){
 		camera.quaternion.copy(
 			select_obj.quaternion.clone()
 			.multiply(AxisAngleQuaternion(0, 1, 0, -1*Math.PI / 2)));
@@ -1633,19 +1524,19 @@ function onKeyDown( event ) {
 			break;
 
 		case 'n': // toggle NLIPS
-			nlips_enable = !nlips_enable;
+			settings.nlips_enable = !settings.nlips_enable;
 			break;
 
 		case 'g':
-			grid_enable = !grid_enable;
+			settings.grid_enable = !settings.grid_enable;
 			break;
 
 		case 'h':
-			sync_rotate = !sync_rotate;
+			settings.sync_rotate = !settings.sync_rotate;
 			break;
 
 		case 'k':
-			units_km = !units_km;
+			settings.units_km = !settings.units_km;
 			break;
 	}
 
