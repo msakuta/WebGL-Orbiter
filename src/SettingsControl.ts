@@ -1,8 +1,8 @@
 import settingsIconUrl from './images/settingsIcon.png';
 
 function rightTitleSetSize(title: HTMLElement, icon: HTMLElement){
-    var r = title.getBoundingClientRect();
-    var iconRect = icon.getBoundingClientRect()
+    const r = title.getBoundingClientRect();
+    const iconRect = icon.getBoundingClientRect()
     title.style.top = (iconRect.height - r.height) + 'px';
     title.style.right = iconRect.width + 'px';
 }
@@ -44,13 +44,13 @@ export class SettingsControl{
         element.style.top = this.config.buttonTop + 'px';
         element.style.left = 0 + 'px';
         element.style.zIndex = '7';
-        var icon = document.createElement('img');
+        const icon = document.createElement('img');
         icon.src = settingsIconUrl;
         icon.style.width = this.config.buttonWidth + 'px';
         icon.style.height = this.config.buttonHeight + 'px';
         element.appendChild(icon);
 
-        var title = document.createElement('div');
+        const title = document.createElement('div');
         title.innerHTML = 'Settings';
         title.style.display = 'none';
         title.style.position = 'absolute';
@@ -68,15 +68,15 @@ export class SettingsControl{
         const names = Object.keys(this.settings);
         for(const i in names){
             const name = names[i];
-            var lineElement = document.createElement('div');
-            var checkbox = document.createElement('input');
+            const lineElement = document.createElement('div');
+            const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.onclick = ((a: any, field) => (event: MouseEvent) => a[field] = !a[field])(this.settings, name);
-            var id = 'settings_check_' + i;
+            const id = 'settings_check_' + i;
             checkbox.setAttribute('id', id);
             lineElement.appendChild(checkbox);
             this.checkElements.push(checkbox);
-            var label = document.createElement('label');
+            const label = document.createElement('label');
             label.setAttribute('for', id);
             label.innerHTML = [
                 'Show&nbsp;grid&nbsp;(G)',

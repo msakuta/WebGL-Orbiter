@@ -19,7 +19,7 @@ function deserializeQuaternion(json: any){
 }
 
 function AxisAngleQuaternion(x: number, y: number, z: number, angle: number){
-	var q = new THREE.Quaternion();
+	const q = new THREE.Quaternion();
 	q.setFromAxisAngle(new THREE.Vector3(x, y, z), angle);
 	return q;
 }
@@ -92,9 +92,9 @@ export class CelestialBody{
     get_eccentric_anomaly(time: number){
         // Calculates eccentric anomaly from mean anomaly in first order approximation
         // see http://en.wikipedia.org/wiki/Eccentric_anomaly
-        var td = time - this.epoch;
-        var period = 2 * Math.PI * Math.sqrt(Math.pow(this.semimajor_axis * AU, 3) / this.parent.GM);
-        var now_anomaly = this.mean_anomaly + td * 2 * Math.PI / period;
+        const td = time - this.epoch;
+        const period = 2 * Math.PI * Math.sqrt(Math.pow(this.semimajor_axis * AU, 3) / this.parent.GM);
+        const now_anomaly = this.mean_anomaly + td * 2 * Math.PI / period;
         return now_anomaly + this.eccentricity * Math.sin(now_anomaly);
     }
 
@@ -125,9 +125,9 @@ export class CelestialBody{
     }
 
     serializeTree(): Array<any>{
-        var ret = [];
+        let ret = [];
         ret.push(this.serialize());
-        for(var i = 0; i < this.children.length; i++)
+        for(let i = 0; i < this.children.length; i++)
             ret = ret.concat(this.children[i].serializeTree());
         return ret;
     }
@@ -146,7 +146,7 @@ export class CelestialBody{
     setParent(newParent?: CelestialBody){
         if(this.parent === newParent) return;
         if(this.parent){
-            var j = this.parent.children.indexOf(this);
+            const j = this.parent.children.indexOf(this);
             if(0 <= j) this.parent.children.splice(j, 1);
         }
         this.parent = newParent;
@@ -164,7 +164,7 @@ export class CelestialBody{
     {
         let scope = this;
         function visualPosition(o: CelestialBody){
-            var position = o.getWorldPosition();
+            const position = o.getWorldPosition();
             if(select_obj && center_select)
                 position.sub(select_obj.getWorldPosition());
             position.multiplyScalar(viewScale);
@@ -177,19 +177,21 @@ export class CelestialBody{
         function nlipsFactor(o: CelestialBody){
             if(!nlips_enable)
                 return 1;
-            var g_nlips_factor = 1e6;
-            var d = visualPosition(o).distanceTo(camera.position) / viewScale;
-            var f = d / o.radius * g_nlips_factor + 1;
+            const g_nlips_factor = 1e6;
+            const d = visualPosition(o).distanceTo(camera.position) / viewScale;
+            const f = d / o.radius * g_nlips_factor + 1;
             return f;
         }
+
+        let e = new THREE.Vector3(0,0,0);
 
         /// Calculate position of periapsis and apoapsis on the screen
         /// for placing overlay icons.
         /// peri = -1 if periapsis, otherwise 1
         function calcApsePosition(peri: number, apsis: THREE.Sprite){
-            var worldPos = e.clone().normalize().multiplyScalar(peri * scope.semimajor_axis * (1 - peri * scope.eccentricity)).sub(scope.position);
-            var cameraPos = worldPos.multiplyScalar(viewScale).applyMatrix4(camera.matrixWorldInverse);
-            var persPos = cameraPos.applyMatrix4(camera.projectionMatrix);
+            const worldPos = e.clone().normalize().multiplyScalar(peri * scope.semimajor_axis * (1 - peri * scope.eccentricity)).sub(scope.position);
+            const cameraPos = worldPos.multiplyScalar(viewScale).applyMatrix4(camera.matrixWorldInverse);
+            const persPos = cameraPos.applyMatrix4(camera.projectionMatrix);
             persPos.x *= windowHalfX;
             persPos.y *= windowHalfY;
             persPos.y -= peri * 8;
@@ -210,17 +212,17 @@ export class CelestialBody{
             this.model.quaternion.copy(this.quaternion);
         }
 
-        var headingApoapsis = 0;
+        let headingApoapsis = 0;
 
         if(this.parent){
             // Angular momentum vectors
-            var ang = this.velocity.clone().cross(this.position);
-            var r = this.position.length();
-            var v = this.velocity.length();
+            const ang = this.velocity.clone().cross(this.position);
+            const r = this.position.length();
+            const v = this.velocity.length();
             // Node vector
-            var N = (new THREE.Vector3(0, 0, 1)).cross(ang);
+            const N = (new THREE.Vector3(0, 0, 1)).cross(ang);
             // Eccentricity vector
-            var e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velocity.clone().multiplyScalar(this.position.dot(this.velocity) / this.parent.GM));
+            e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velocity.clone().multiplyScalar(this.position.dot(this.velocity) / this.parent.GM));
             this.eccentricity = e.length();
             this.inclination = Math.acos(-ang.z / ang.length());
             // Avoid zero division
@@ -233,7 +235,7 @@ export class CelestialBody{
             this.semimajor_axis = 1 / (2 / r - v * v / this.parent.GM);
 
             // Rotation to perifocal frame
-            var planeRot = AxisAngleQuaternion(0, 0, 1, this.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - this.inclination));
+            const planeRot = AxisAngleQuaternion(0, 0, 1, this.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - this.inclination));
 
             headingApoapsis = -this.position.dot(this.velocity)/Math.abs(this.position.dot(this.velocity));
 
@@ -247,7 +249,7 @@ export class CelestialBody{
             }
 
             // Total rotation of the orbit
-            var rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, this.argument_of_perihelion));
+            const rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, this.argument_of_perihelion));
 
             // Show orbit information
             if(this === select_obj){
@@ -267,13 +269,13 @@ export class CelestialBody{
 
                 // Calculate the vertices every frame since the hyperbola changes shape
                 // depending on orbital elements.
-                var thetaInf = Math.acos(-1 / this.eccentricity);
+                const thetaInf = Math.acos(-1 / this.eccentricity);
                 this.hyperbolicGeometry.vertices.length = 0;
-                var h2 = ang.lengthSq();
-                for(var i = -19; i < 20; i++){
+                const h2 = ang.lengthSq();
+                for(let i = -19; i < 20; i++){
                     // Transform by square root to make far side of the hyperbola less "polygonic"
-                    var isign = i < 0 ? -1 : 1;
-                    var theta = thetaInf * isign * Math.sqrt(Math.abs(i) / 20);
+                    const isign = i < 0 ? -1 : 1;
+                    const theta = thetaInf * isign * Math.sqrt(Math.abs(i) / 20);
                     this.hyperbolicGeometry.vertices.push(
                         new THREE.Vector3( Math.sin(theta), Math.cos(theta), 0 )
                         .multiplyScalar(h2 / this.parent.GM / (1 + this.eccentricity * Math.cos(theta))) );
@@ -336,8 +338,8 @@ export class CelestialBody{
         if(select_obj === this)
             updateOrbitalElements(this, headingApoapsis);
 
-        for(var i = 0; i < this.children.length; i++){
-            var a = this.children[i];
+        for(let i = 0; i < this.children.length; i++){
+            const a = this.children[i];
             a.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfY,
                 units_km, updateOrbitalElements, scene, select_obj);
         }
@@ -370,20 +372,20 @@ export class CelestialBody{
                             select_obj.angularVelocity.set(0, 0, 0);
                     }
                     if(0 < select_obj.throttle){
-                        var deltaV = acceleration * select_obj.throttle * deltaTime / div;
+                        const deltaV = acceleration * select_obj.throttle * deltaTime / div;
                         select_obj.velocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(deltaV));
                         select_obj.totalDeltaV += deltaV;
                     }
                 }
-                var dvelo = accel.clone().multiplyScalar(0.5);
-                var vec0 = a.position.clone().add(a.velocity.clone().multiplyScalar(deltaTime / div / 2.));
-                var accel1 = vec0.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / vec0.lengthSq());
-                var velo1 = a.velocity.clone().add(dvelo);
+                const dvelo = accel.clone().multiplyScalar(0.5);
+                const vec0 = a.position.clone().add(a.velocity.clone().multiplyScalar(deltaTime / div / 2.));
+                const accel1 = vec0.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / vec0.lengthSq());
+                const velo1 = a.velocity.clone().add(dvelo);
 
                 a.velocity.add(accel1);
                 a.position.add(velo1.multiplyScalar(deltaTime / div));
                 if(0 < a.angularVelocity.lengthSq()){
-                    var axis = a.angularVelocity.clone().normalize();
+                    const axis = a.angularVelocity.clone().normalize();
                     // We have to multiply in this order!
                     a.quaternion.multiplyQuaternions(AxisAngleQuaternion(axis.x, axis.y, axis.z, a.angularVelocity.length() * deltaTime / div), a.quaternion);
                 }
@@ -394,17 +396,17 @@ export class CelestialBody{
                 if(a.parent.parent && a.parent.soi && a.parent.soi * 1.01 < a.position.length()){
                     a.position.add(this.position);
                     a.velocity.add(this.velocity);
-                    var j = children.indexOf(a);
+                    const j = children.indexOf(a);
                     if(0 <= j)
                         children.splice(j, 1);
                     a.parent = this.parent;
                     a.parent.children.push(a);
                     continue; // Continue but not increment i
                 }
-                var skip = false;
+                let skip = false;
                 // Check if we are entering sphere of influence of another sibling.
-                for(var j = 0; j < children.length; j++){
-                    var aj = children[j];
+                for(let j = 0; j < children.length; j++){
+                    const aj = children[j];
                     if(aj === a)
                         continue;
                     if(!aj.soi)
@@ -412,7 +414,7 @@ export class CelestialBody{
                     if(aj.position.distanceTo(a.position) < aj.soi * .99){
                         a.position.sub(aj.position);
                         a.velocity.sub(aj.velocity);
-                        var k = children.indexOf(a);
+                        const k = children.indexOf(a);
                         if(0 <= k)
                             children.splice(k, 1);
                         a.parent = aj;
