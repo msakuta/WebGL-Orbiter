@@ -1,0 +1,29 @@
+body {
+    color: #f0f0f0;
+    font-family:Monospace;
+    font-size:13px;
+    text-align:center;
+
+    background-color: #000000;
+    margin: 0px;
+    overflow: hidden;
+}
+
+#info {
+    position: absolute;
+    top: 0px; width: 100%;
+    padding: 5px;
+}
+
+a {
+
+    color: #0080ff;
+}
+
+.table1 {
+    border: 1px solid #606060;
+    border-collapse: collapse;
+}
+.table1 th, .table1 td {
+    border: 1px solid #606060;
+}

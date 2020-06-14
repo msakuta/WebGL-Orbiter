@@ -1,9 +1,17 @@
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
 //   entry: './src/index.ts',
   entry: './src/orbiter.js',
   devtool: 'inline-source-map',
+  plugins: [
+    new HtmlWebpackPlugin({
+      title: 'Orbital simulation with three.js',
+    }),
+    new CleanWebpackPlugin(),
+  ],
   devServer: {
     contentBase: './dist',
   },
@@ -23,6 +31,13 @@ module.exports = {
               limit: 8192,
             },
           },
+        ],
+      },
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          'css-loader',
         ],
       },
     ],

@@ -3,6 +3,8 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
+import "./main.css";
+
 import blastUrl from './images/blast.png';
 import forwardActiveUrl from './images/forward.png';
 import forwardInactiveUrl from './images/forward-inactive.png';
@@ -410,7 +412,18 @@ CelestialBody.prototype.update = function(){
 
 function init() {
 
-	container = document.getElementById( 'container' );
+	container = document.createElement( 'div' );
+	document.body.appendChild(container);
+
+	var headerTitle = document.createElement('div');
+	headerTitle.id = 'info';
+	headerTitle.innerHTML = 'Orbital rocket simulation demo - powered by <a href="http://threejs.org" target="_blank">three.js</a>';
+	document.body.appendChild(headerTitle);
+
+	var metaViewport = document.createElement('meta');
+	metaViewport.setAttribute('name', 'viewport');
+	metaViewport.setAttribute('content', "width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0");
+	document.head.appendChild(metaViewport);
 
 	camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
 	camera.position.y = 300;
@@ -717,7 +730,7 @@ function init() {
 
 	cameraControls = new OrbitControls(camera, renderer.domElement);
 	cameraControls.target.set( 0, 0, 0);
-	cameraControls.noPan = true;
+	cameraControls.enablePan = false;
 	cameraControls.maxDistance = 4000;
 	cameraControls.minDistance = 1 / AU;
 	cameraControls.zoomSpeed = 5.;
