@@ -1,19 +1,16 @@
 import * as THREE from 'three/build/three.module.js';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import "./main.css";
 
-import { CelestialBody } from './CelestialBody';
+import { CelestialBody, addPlanet } from './CelestialBody';
 import { Settings, SettingsControl } from './SettingsControl';
 
-import blastUrl from './images/blast.png';
+
 import forwardActiveUrl from './images/forward.png';
 import forwardInactiveUrl from './images/forward-inactive.png';
 import orbitIconUrl from './images/orbitIcon.png';
-import apoapsisUrl from './images/apoapsis.png';
-import periapsisUrl from './images/periapsis.png';
 import perlinUrl from './images/perlin.jpg';
 import progradeUrl from './images/prograde.png';
 import retrogradeUrl from './images/retrograde.png';
@@ -249,100 +246,9 @@ function init() {
 		0, Math.PI * 2, false, 90);
 	var orbitGeometry = new THREE.Geometry().setFromPoints( curve.getPoints(256) );
 
-	// Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
-	// It's a bit difficult to calculate in Newtonian dynamics simulation.
 	function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name){
-		var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
-			.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - inclination))
-			.multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
-		var group = new THREE.Object3D();
-		var ret = new CelestialBody(parent || sun, new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), group.position, color, GM, name);
-		ret.model = group;
-		ret.radius = radius;
-		scene.add( group );
-
-		if(texture){
-			var loader = new THREE.TextureLoader();
-			loader.load( texture || earthUrl, function ( texture ) {
-
-				var geometry = new THREE.SphereGeometry( 1, 20, 20 );
-
-				var material = new THREE.MeshLambertMaterial( { map: texture, color: 0xffffff, flatShading: false } );
-				var mesh = new THREE.Mesh( geometry, material );
-				var radiusInAu = viewScale * (radius || 6534) / AU;
-				mesh.scale.set(radiusInAu, radiusInAu, radiusInAu);
-				mesh.rotation.x = Math.PI / 2;
-				group.add( mesh );
-
-			} );
-		}
-		else if(params.modelName){
-			var loader = new OBJLoader();
-			loader.load( params.modelName, function ( object ) {
-				var radiusInAu = 100 * (radius || 6534) / AU;
-				object.scale.set(radiusInAu, radiusInAu, radiusInAu);
-				group.add( object );
-			} );
-			var blastGroup = new THREE.Object3D();
-			group.add(blastGroup);
-			blastGroup.visible = false;
-			blastGroup.position.x = -60 / AU;
-			ret.blastModel = blastGroup;
-			var spriteMaterial = new THREE.SpriteMaterial({
-				map: new THREE.TextureLoader().load( blastUrl ),
-				blending: THREE.AdditiveBlending,
-				depthWrite: false,
-				transparent: true,
-			});
-			var blast = new THREE.Sprite(spriteMaterial);
-			blast.position.x = -30 / AU;
-			blast.scale.multiplyScalar(100 / AU);
-			blastGroup.add(blast);
-			var blast2 = new THREE.Sprite(spriteMaterial);
-			blast2.position.x = -60 / AU;
-			blast2.scale.multiplyScalar(50 / AU);
-			blastGroup.add(blast2);
-			var blast2 = new THREE.Sprite(spriteMaterial);
-			blast2.position.x = -80 / AU;
-			blast2.scale.multiplyScalar(30 / AU);
-			blastGroup.add(blast2);
-		}
-
-		if(params && params.controllable)
-			ret.controllable = params.controllable;
-
-		ret.soi = params && params.soi ? params.soi / AU : 0;
-
-		ret.apoapsis = new THREE.Sprite(new THREE.SpriteMaterial({
-			map: new THREE.TextureLoader().load(apoapsisUrl),
-			transparent: true,
-		}));
-		ret.apoapsis.scale.set(16,16,16);
-		overlay.add(ret.apoapsis);
-
-		ret.periapsis = new THREE.Sprite(new THREE.SpriteMaterial({
-			map: new THREE.TextureLoader().load(periapsisUrl),
-			transparent: true,
-		}));
-		ret.periapsis.scale.set(16,16,16);
-		overlay.add(ret.periapsis);
-
-		// Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
-		// https://en.wikipedia.org/wiki/Orbital_speed
-		ret.setOrbitingVelocity(semimajor_axis, rotation);
-		if(params && params.axialTilt && params.rotationPeriod){
-			ret.quaternion = AxisAngleQuaternion(1, 0, 0, params.axialTilt);
-			ret.angularVelocity = new THREE.Vector3(0, 0, 2 * Math.PI / params.rotationPeriod).applyQuaternion(ret.quaternion);
-		}
-		if(params && params.angularVelocity) ret.angularVelocity = params.angularVelocity;
-		if(params && params.quaternion) ret.quaternion = params.quaternion;
-		var orbitMesh = new THREE.Line(orbitGeometry, ret.orbitMaterial);
-		ret.orbit = orbitMesh;
-		scene.add(orbitMesh);
-		ret.init();
-		ret.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
-			settings.units_km, (_) => {}, scene);
-		return ret;
+		return addPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name,
+			scene, viewScale, overlay, orbitGeometry, center_select, settings, camera, windowHalfX, windowHalfY);
 	}
 
 	sun = new CelestialBody(null, new THREE.Vector3(), null, 0xffffff, GMsun, "sun");

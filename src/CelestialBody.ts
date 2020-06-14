@@ -1,4 +1,9 @@
 import * as THREE from 'three/src/Three';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import blastUrl from './images/blast.png';
+import apoapsisUrl from './images/apoapsis.png';
+import periapsisUrl from './images/periapsis.png';
+import { Settings } from './SettingsControl';
 
 const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
@@ -38,6 +43,7 @@ export class CelestialBody{
     hyperbolicGeometry?: THREE.Geometry = null;
     hyperbolicMesh?: THREE.Line = null;
     orbit?: THREE.Line = null;
+    blastModel?: THREE.Object3D = null;
 
     // Orbital elements
     semimajor_axis: number;
@@ -424,3 +430,103 @@ export class CelestialBody{
     }
 }
 
+
+// Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
+// It's a bit difficult to calculate in Newtonian dynamics simulation.
+export function addPlanet(semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number,
+    color: string, GM: number, parent: CelestialBody | null, texture: string, radius: number, params: any, name: string, scene: THREE.Scene,
+    viewScale: number, overlay: THREE.Scene, orbitGeometry: THREE.Geometry, center_select: boolean, settings: Settings, camera: THREE.Camera,
+    windowHalfX: number, windowHalfY: number)
+{
+    const rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
+        .multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - inclination))
+        .multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
+    const group = new THREE.Object3D();
+    const ret = new CelestialBody(parent, new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), group.position, color, GM, name);
+    ret.model = group;
+    ret.radius = radius;
+    scene.add( group );
+
+    if(texture){
+        const loader = new THREE.TextureLoader();
+        loader.load( texture, function ( texture ) {
+
+            const geometry = new THREE.SphereGeometry( 1, 20, 20 );
+
+            const material = new THREE.MeshLambertMaterial( { map: texture, color: 0xffffff, flatShading: false } );
+            const mesh = new THREE.Mesh( geometry, material );
+            const radiusInAu = viewScale * (radius || 6534) / AU;
+            mesh.scale.set(radiusInAu, radiusInAu, radiusInAu);
+            mesh.rotation.x = Math.PI / 2;
+            group.add( mesh );
+
+        } );
+    }
+    else if(params.modelName){
+        const loader = new OBJLoader();
+        loader.load( params.modelName, function ( object ) {
+            const radiusInAu = 100 * (radius || 6534) / AU;
+            object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+            group.add( object );
+        } );
+        const blastGroup = new THREE.Object3D();
+        group.add(blastGroup);
+        blastGroup.visible = false;
+        blastGroup.position.x = -60 / AU;
+        ret.blastModel = blastGroup;
+        const spriteMaterial = new THREE.SpriteMaterial({
+            map: new THREE.TextureLoader().load( blastUrl ),
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true,
+        });
+        const blast = new THREE.Sprite(spriteMaterial);
+        blast.position.x = -30 / AU;
+        blast.scale.multiplyScalar(100 / AU);
+        blastGroup.add(blast);
+        const blast2 = new THREE.Sprite(spriteMaterial);
+        blast2.position.x = -60 / AU;
+        blast2.scale.multiplyScalar(50 / AU);
+        blastGroup.add(blast2);
+        const blast3 = new THREE.Sprite(spriteMaterial);
+        blast3.position.x = -80 / AU;
+        blast3.scale.multiplyScalar(30 / AU);
+        blastGroup.add(blast3);
+    }
+
+    if(params && params.controllable)
+        ret.controllable = params.controllable;
+
+    ret.soi = params && params.soi ? params.soi / AU : 0;
+
+    ret.apoapsis = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: new THREE.TextureLoader().load(apoapsisUrl),
+        transparent: true,
+    }));
+    ret.apoapsis.scale.set(16,16,16);
+    overlay.add(ret.apoapsis);
+
+    ret.periapsis = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: new THREE.TextureLoader().load(periapsisUrl),
+        transparent: true,
+    }));
+    ret.periapsis.scale.set(16,16,16);
+    overlay.add(ret.periapsis);
+
+    // Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
+    // https://en.wikipedia.org/wiki/Orbital_speed
+    ret.setOrbitingVelocity(semimajor_axis, rotation);
+    if(params && params.axialTilt && params.rotationPeriod){
+        ret.quaternion = AxisAngleQuaternion(1, 0, 0, params.axialTilt);
+        ret.angularVelocity = new THREE.Vector3(0, 0, 2 * Math.PI / params.rotationPeriod).applyQuaternion(ret.quaternion);
+    }
+    if(params && params.angularVelocity) ret.angularVelocity = params.angularVelocity;
+    if(params && params.quaternion) ret.quaternion = params.quaternion;
+    const orbitMesh = new THREE.Line(orbitGeometry, ret.orbitMaterial);
+    ret.orbit = orbitMesh;
+    scene.add(orbitMesh);
+    ret.init();
+    ret.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
+        settings.units_km, (_) => {}, scene);
+    return ret;
+}
