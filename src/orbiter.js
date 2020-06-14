@@ -6,10 +6,9 @@ import "./main.css";
 
 import { CelestialBody, addPlanet } from './CelestialBody';
 import { Settings, SettingsControl } from './SettingsControl';
+import { TimeScaleControl } from './TimeScaleControl';
 
 
-import forwardActiveUrl from './images/forward.png';
-import forwardInactiveUrl from './images/forward-inactive.png';
 import orbitIconUrl from './images/orbitIcon.png';
 import perlinUrl from './images/perlin.jpg';
 import progradeUrl from './images/prograde.png';
@@ -347,59 +346,15 @@ function init() {
 	stats.domElement.style.top = '0px';
 	container.appendChild( stats.domElement );
 
-	timescaleControl = new (function(){
-		function clickForward(number){
+	timescaleControl = new TimeScaleControl(
+		(scale) => {
 			if(select_obj && 0 < select_obj.throttle){
 				messageControl.setText('You cannot timewarp while accelerating');
-				return;
+				return false;
 			}
-			for(var i = 0; i < forwards.length; i++)
-				forwards[i].src = i <= number ? forwardActiveUrl : forwardInactiveUrl;
-			text.innerHTML = 'Timescale: x' + series[number];
-			timescale = series[number];
-			timeIndex = number;
-		}
-		this.domElement = document.createElement('div');
-		this.domElement.style.position = 'absolute';
-		this.domElement.style.top = '50px';
-		this.domElement.style.background = '#7f7f7f';
-		this.domElement.style.zIndex = 10;
-		var forwards = [];
-		var series = [1, 5, 10, 100, 1e3, 1e4, 1e5, 1e6];
-		var timeIndex = 0;
-		for(var i = 0; i < series.length; i++){
-			var forward = document.createElement('img');
-			forward.src = i <= timeIndex ? forwardActiveUrl : forwardInactiveUrl;
-			forward.style.width = '15px';
-			forward.style.height = '20px';
-			forward.number = i;
-			forward.addEventListener('click', function(e){clickForward(this.number)});
-			this.domElement.appendChild(forward);
-			forwards.push(forward);
-		}
-		var text = document.createElement('div');
-		text.innerHTML = 'Timescale: x1';
-		this.domElement.appendChild(text);
-		var date = document.createElement('div');
-		this.domElement.appendChild(date);
-		this.setDate = function(text){
-			date.innerHTML = text;
-		}
-		this.increment = function(){
-			if(select_obj && 0 < select_obj.throttle){
-				messageControl.setText('You cannot timewarp while accelerating');
-				return;
-			}
-			if(timeIndex + 1 < series.length)
-				timeIndex++;
-			clickForward(timeIndex);
-		}
-		this.decrement = function(){
-			if(0 <= timeIndex - 1)
-				timeIndex--;
-			clickForward(timeIndex);
-		}
-	})();
+			timescale = scale;
+			return true;
+	});
 	container.appendChild( timescaleControl.domElement );
 
 	throttleControl = new (function(){
