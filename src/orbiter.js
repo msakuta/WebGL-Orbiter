@@ -10,13 +10,13 @@ import { TimeScaleControl } from './TimeScaleControl';
 import { ThrottleControl } from './ThrottleControl';
 import { navballRadius, RotationControl } from './RotationControl';
 import { zerofill, StatsControl } from './StatsControl';
+import { MenuControl } from './MenuControl';
 
 
 import orbitIconUrl from './images/orbitIcon.png';
 import perlinUrl from './images/perlin.jpg';
 import progradeUrl from './images/prograde.png';
 import retrogradeUrl from './images/retrograde.png';
-import closeIconUrl from './images/closeIcon.png';
 import menuIconUrl from './images/menuIcon.png';
 import loadIconUrl from './images/loadIcon.png';
 import saveIconUrl from './images/saveIcon.png';
@@ -537,91 +537,8 @@ function init() {
 	})
 	container.appendChild( messageControl.domElement );
 
-	function MenuControl(titleString, iconSrc, config){
-		this.domElement = document.createElement('div');
-		var element = this.domElement;
-		element.style.position = 'absolute';
-		element.style.textAlign = 'left';
-		element.style.top = config.buttonTop + 'px';
-		element.style.right = 0 + 'px';
-		element.style.zIndex = 7;
-		this.icon = document.createElement('img');
-		this.icon.src = iconSrc;
-		this.icon.style.width = config.buttonWidth + 'px';
-		this.icon.style.height = config.buttonHeight + 'px';
-		var scope = this;
-		this.iconMouseOver = false;
-		this.icon.ondragstart = function(event){
-			event.preventDefault();
-		};
-		this.icon.onclick = function(event){
-			scope.setVisible(!scope.visible);
-		};
-		this.icon.onmouseenter = function(event){
-			if(!scope.visible)
-				scope.title.style.display = 'block';
-			rightTitleSetSize(scope.title, scope.icon);
-			scope.iconMouseOver = true;
-		};
-		this.icon.onmouseleave = function(event){
-			if(!scope.visible)
-				scope.title.style.display = 'none';
-			scope.iconMouseOver = false;
-		};
-		element.appendChild(this.icon);
 
-		var title = document.createElement('div');
-		title.innerHTML = titleString;
-		title.style.display = 'none';
-		title.style.position = 'absolute';
-		title.style.background = 'rgba(0, 0, 0, 0.5)';
-		title.style.zIndex = 20;
-		element.appendChild(title);
-		this.title = title;
 
-		this.visible = false;
-
-		var valueElement = document.createElement('div');
-		valueElement.style.cssText = "display: none; position: fixed; left: 50%;"
-			+ "width: 300px; top: 50%; background-color: rgba(0,0,0,0.85); border: 5px ridge #7fff7f;"
-			+ "font-size: 15px; text-align: center; font-family: Sans-Serif";
-		this.valueElement = valueElement;
-
-		var titleElem = document.createElement('div');
-		titleElem.style.margin = "15px";
-		titleElem.style.padding = "15px";
-		titleElem.style.fontSize = '25px';
-		titleElem.innerHTML = config.innerTitle || titleString;
-		this.valueElement.appendChild(titleElem);
-
-		this.closeIcon = document.createElement('img');
-		this.closeIcon.src = closeIconUrl;
-		this.closeIcon.style.cssText = 'position: absolute; top: 0px; right: 0px; border: inset 1px #7f7f7f;';
-		this.closeIcon.ondragstart = function(event){
-			event.preventDefault();
-		};
-		this.closeIcon.onclick = function(event){
-			scope.setVisible(false);
-		};
-		this.valueElement.appendChild(this.closeIcon);
-
-		this.domElement.appendChild(this.valueElement);
-	};
-
-	MenuControl.prototype.setVisible = function(v){
-		this.visible = v;
-		if(this.visible){
-			this.valueElement.style.display = 'block';
-			var rect = this.valueElement.getBoundingClientRect();
-			this.valueElement.style.marginLeft = -rect.width / 2 + "px";
-			this.valueElement.style.marginTop = -rect.height / 2 + "px";
-		}
-		else{
-			this.valueElement.style.display = 'none';
-			if(!this.iconMouseOver)
-				this.title.style.display = 'none';
-		}
-	};
 
 	scenarioSelectorControl = new (function(){
 		var config = {
