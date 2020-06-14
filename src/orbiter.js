@@ -7,6 +7,8 @@ import "./main.css";
 import { CelestialBody, addPlanet } from './CelestialBody';
 import { Settings, SettingsControl } from './SettingsControl';
 import { TimeScaleControl } from './TimeScaleControl';
+import { ThrottleControl } from './ThrottleControl';
+import { navballRadius } from './NavBallControl';
 
 
 import orbitIconUrl from './images/orbitIcon.png';
@@ -34,10 +36,6 @@ import marsUrl from './images/mars.jpg';
 import venusUrl from './images/venus.jpg';
 import jupiterUrl from './images/jupiter.jpg';
 import earthUrl from './images/land_ocean_ice_cloud_2048.jpg';
-import throttleMaxUrl from './images/throttle-max.png';
-import throttleMinUrl from './images/throttle-min.png';
-import throttleBackUrl from './images/throttle-back.png';
-import throttleHandleUrl from './images/throttle-handle.png';
 import rocketModelUrl from './rocket.obj';
 
 ;(function(){
@@ -94,7 +92,6 @@ var GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (
 var epsilon = 1e-40; // Doesn't the machine epsilon depend on browsers!??
 var timescale = 1e0; // This is not a constant; it can be changed by the user
 var rad_per_deg = Math.PI / 180; // Radians per degrees
-var navballRadius = 64;
 
 function AxisAngleQuaternion(x, y, z, angle){
 	var q = new THREE.Quaternion();
@@ -357,121 +354,17 @@ function init() {
 	});
 	container.appendChild( timescaleControl.domElement );
 
-	throttleControl = new (function(){
-		function updatePosition(pos){
-			if(1 < timescale && 0 < pos){
-				messageControl.setText('You cannot accelerate while timewarping');
-				return;
-			}
-			visualizePosition(pos);
+	throttleControl = new ThrottleControl(windowHalfX, (pos) => {
+		if(1 < timescale && 0 < pos){
+			messageControl.setText('You cannot accelerate while timewarping');
+			return false;
 		}
-		function visualizePosition(pos){
-			var backRect = element.getBoundingClientRect();
-			var rect = throttleBack.getBoundingClientRect();
-			var handleRect = handle.getBoundingClientRect();
-			var max = rect.height - handleRect.height;
-			handle.style.top = (1 - pos) * max + (rect.top - backRect.top) + 'px';
-			if(select_obj.throttle === 0. && 0. < pos)
-				select_obj.ignitionCount++;
-			select_obj.throttle = pos;
-			if(select_obj && select_obj.blastModel){
-				select_obj.blastModel.visible = 0 < select_obj.throttle;
-				var size = (select_obj.throttle + 0.1) / 1.1;
-				select_obj.blastModel.scale.set(size, size, size);
-			}
+		if(!select_obj || !select_obj.controllable){
+			messageControl.setText('You need to select a controllable object to set throttle');
+			return false;
 		}
-		function movePosition(event){
-			var rect = throttleBack.getBoundingClientRect();
-			var handleRect = handle.getBoundingClientRect();
-			var max = rect.height - handleRect.height;
-			var pos = Math.min(max, Math.max(0, (event.clientY - rect.top) - handleRect.height / 2));
-			updatePosition(1 - pos / max);
-		}
-		var guideHeight = 128;
-		var guideWidth = 32;
-		this.domElement = document.createElement('div');
-		this.domElement.style.position = 'absolute';
-		this.domElement.style.top = (window.innerHeight - guideHeight) + 'px';
-		this.domElement.style.left = (windowHalfX - navballRadius - guideWidth) + 'px';
-		this.domElement.style.background = '#7f7f7f';
-		this.domElement.style.zIndex = 10;
-		var element = this.domElement;
-		var dragging = false;
-		var scope = this;
-		var throttleMax = document.createElement('img');
-		throttleMax.src = throttleMaxUrl;
-		throttleMax.style.position = "absolute";
-		throttleMax.style.left = '0px';
-		throttleMax.style.top = '0px';
-		throttleMax.onmousedown = function(event){
-			scope.setThrottle(1);
-		};
-		throttleMax.ondragstart = function(event){
-			event.preventDefault();
-		};
-		this.domElement.appendChild(throttleMax);
-		var throttleBack = document.createElement('img');
-		throttleBack.src = throttleBackUrl;
-		throttleBack.style.position = "absolute";
-		throttleBack.style.left = '0px';
-		throttleBack.style.top = '25px';
-		throttleBack.onmousedown = function(event){
-			dragging = true;
-			movePosition(event);
-		};
-		throttleBack.onmousemove = function(event){
-			if(dragging && event.buttons & 1)
-				movePosition(event);
-		};
-		throttleBack.onmouseup = function(event){
-			dragging = false;
-		}
-		throttleBack.draggable = true;
-		throttleBack.ondragstart = function(event){
-			event.preventDefault();
-		};
-		this.domElement.appendChild(throttleBack);
-		var throttleMin = document.createElement('img');
-		throttleMin.src = throttleMinUrl;
-		throttleMin.style.position = "absolute";
-		throttleMin.style.left = '0px';
-		throttleMin.style.top = '106px';
-		throttleMin.onmousedown = function(event){
-			scope.setThrottle(0);
-		};
-		throttleMin.ondragstart = function(event){
-			event.preventDefault();
-		};
-		this.domElement.appendChild(throttleMin);
-		var handle = document.createElement('img');
-		handle.src = throttleHandleUrl;
-		handle.style.position = 'absolute';
-		handle.style.top = (guideHeight - 16) + 'px';
-		handle.style.left = '0px';
-		handle.onmousemove = throttleBack.onmousemove;
-		handle.onmousedown = throttleBack.onmousedown;
-		handle.onmouseup = throttleBack.onmouseup;
-		handle.ondragstart = throttleBack.ondragstart;
-		this.domElement.appendChild(handle);
-		this.increment = function(delta){
-			if(select_obj)
-				updatePosition(Math.min(1, select_obj.throttle + delta));
-		}
-		this.decrement = function(delta){
-			if(select_obj)
-				updatePosition(Math.max(0, select_obj.throttle - delta));
-		}
-		this.setThrottle = function(value){
-			updatePosition(value);
-		}
-		window.addEventListener('resize', function(){
-			element.style.top = (window.innerHeight - guideHeight) + 'px';
-			element.style.left = (window.innerWidth / 2 - navballRadius - guideWidth) + 'px';
-		});
-		window.addEventListener('load', function(){
-			visualizePosition(select_obj.throttle);
-		});
-	})();
+		return true;
+	}, () => select_obj);
 	container.appendChild( throttleControl.domElement );
 
 	var rotationControl = new (function(){
