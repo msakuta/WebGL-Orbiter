@@ -1337,8 +1337,8 @@ function init() {
 		var bodies = state.bodies;
 		for(var i = 0; i < bodies.length; i++){
 			var body = bodies[i];
-			if(body.name in celestialBodies){
-				celestialBodies[body.name].deserialize(body);
+			if(CelestialBody.celestialBodies.has(body.name)){
+				CelestialBody.celestialBodies.get(body.name).deserialize(body);
 			}
 		}
 		throttleControl.setThrottle(rocket.throttle);
