@@ -6,6 +6,8 @@ import throttleMinUrl from './images/throttle-min.png';
 import throttleBackUrl from './images/throttle-back.png';
 import throttleHandleUrl from './images/throttle-handle.png';
 
+const guideHeight = 128;
+const guideWidth = 32;
 
 export class ThrottleControl{
     protected element: HTMLElement;
@@ -18,18 +20,15 @@ export class ThrottleControl{
     constructor(windowHalfX: number, allowThrottleCallback: (thr: number) => boolean, getSelectObj: () => CelestialBody){
         this.allowThrottleCallback = allowThrottleCallback;
         this.getSelectObj = getSelectObj;
-        var guideHeight = 128;
-        var guideWidth = 32;
         this.element = document.createElement('div');
         this.element.style.position = 'absolute';
         this.element.style.top = (window.innerHeight - guideHeight) + 'px';
         this.element.style.left = (windowHalfX - navballRadius - guideWidth) + 'px';
         this.element.style.background = '#7f7f7f';
         this.element.style.zIndex = '10';
-        var element = this.domElement;
-        var dragging = false;
-        var scope = this;
-        var throttleMax = document.createElement('img');
+        const element = this.domElement;
+        let dragging = false;
+        const throttleMax = document.createElement('img');
         throttleMax.src = throttleMaxUrl;
         throttleMax.style.position = "absolute";
         throttleMax.style.left = '0px';
@@ -58,7 +57,7 @@ export class ThrottleControl{
             event.preventDefault();
         };
         this.domElement.appendChild(this.throttleBack);
-        var throttleMin = document.createElement('img');
+        const throttleMin = document.createElement('img');
         throttleMin.src = throttleMinUrl;
         throttleMin.style.position = "absolute";
         throttleMin.style.left = '0px';
@@ -84,10 +83,10 @@ export class ThrottleControl{
     }
 
     protected movePosition(event: MouseEvent){
-        var rect = this.throttleBack.getBoundingClientRect();
-        var handleRect = this.handle.getBoundingClientRect();
-        var max = rect.height - handleRect.height;
-        var pos = Math.min(max, Math.max(0, (event.clientY - rect.top) - handleRect.height / 2));
+        const rect = this.throttleBack.getBoundingClientRect();
+        const handleRect = this.handle.getBoundingClientRect();
+        const max = rect.height - handleRect.height;
+        const pos = Math.min(max, Math.max(0, (event.clientY - rect.top) - handleRect.height / 2));
         this.setThrottle(1 - pos / max);
     }
 
@@ -102,7 +101,7 @@ export class ThrottleControl{
         select_obj.throttle = pos;
         if(select_obj && select_obj.blastModel){
             select_obj.blastModel.visible = 0 < select_obj.throttle;
-            var size = (select_obj.throttle + 0.1) / 1.1;
+            const size = (select_obj.throttle + 0.1) / 1.1;
             select_obj.blastModel.scale.set(size, size, size);
         }
         this.visualizePosition();
@@ -112,10 +111,10 @@ export class ThrottleControl{
         const select_obj = this.getSelectObj();
         if(!select_obj)
             return;
-        var backRect = this.element.getBoundingClientRect();
-        var rect = this.throttleBack.getBoundingClientRect();
-        var handleRect = this.handle.getBoundingClientRect();
-        var max = rect.height - handleRect.height;
+        const backRect = this.element.getBoundingClientRect();
+        const rect = this.throttleBack.getBoundingClientRect();
+        const handleRect = this.handle.getBoundingClientRect();
+        const max = rect.height - handleRect.height;
         this.handle.style.top = (1 - select_obj.throttle) * max + (rect.top - backRect.top) + 'px';
     }
 
