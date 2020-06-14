@@ -94,8 +94,6 @@ var decelerate = false;
 var sun;
 var light;
 
-var celestialBodies = {};
-
 var selectedOrbitMaterial;
 
 var AU = 149597871; // Astronomical unit in kilometers
@@ -1477,97 +1475,13 @@ function render() {
 
 	var acceleration = 5e-10;
 	var div = 100; // We should pick subdivide simulation step count by angular speed!
-	function simulateBody(parent){
-		var children = parent.children;
-		for(var i = 0; i < children.length;){
-			var a = children[i];
-			var sl = a.position.lengthSq();
-			if(sl !== 0){
-				var angleAcceleration = 1e-0;
-				var accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
-				if(select_obj === a && select_obj.controllable && timescale <= 1){
-					if(buttons.up) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(buttons.down) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(buttons.left) select_obj.angularVelocity.add(new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(buttons.right) select_obj.angularVelocity.add(new THREE.Vector3(0, -1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(buttons.counterclockwise) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(buttons.clockwise) select_obj.angularVelocity.add(new THREE.Vector3(-1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-					if(!buttons.up && !buttons.down && !buttons.left && !buttons.right && !buttons.counterclockwise && !buttons.clockwise){
-						// Immediately stop micro-rotation if the body is controlled.
-						// This is done to make it still in larger timescale, since micro-rotation cannot be canceled
-						// by product of angularVelocity and quaternion which underflows by square.
-						// Think that the vehicle has a momentum wheels that cancels micro-rotation continuously working.
-						if(1e-6 < select_obj.angularVelocity.lengthSq())
-							select_obj.angularVelocity.add(select_obj.angularVelocity.clone().normalize().multiplyScalar(-angleAcceleration * deltaTime / div));
-						else
-							select_obj.angularVelocity.set(0, 0, 0);
-					}
-					if(0 < select_obj.throttle){
-						var deltaV = acceleration * select_obj.throttle * deltaTime / div;
-						select_obj.velocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(deltaV));
-						select_obj.totalDeltaV += deltaV;
-					}
-				}
-				var dvelo = accel.clone().multiplyScalar(0.5);
-				var vec0 = a.position.clone().add(a.velocity.clone().multiplyScalar(deltaTime / div / 2.));
-				var accel1 = vec0.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / vec0.lengthSq());
-				var velo1 = a.velocity.clone().add(dvelo);
-
-				a.velocity.add(accel1);
-				a.position.add(velo1.multiplyScalar(deltaTime / div));
-				if(0 < a.angularVelocity.lengthSq()){
-					var axis = a.angularVelocity.clone().normalize();
-					// We have to multiply in this order!
-					a.quaternion.multiplyQuaternions(AxisAngleQuaternion(axis.x, axis.y, axis.z, a.angularVelocity.length() * deltaTime / div), a.quaternion);
-				}
-			}
-			// Only controllable objects can change orbiting body
-			if(a.controllable){
-				// Check if we are leaving sphere of influence of current parent.
-				if(a.parent.parent && a.parent.soi && a.parent.soi * 1.01 < a.position.length()){
-					a.position.add(parent.position);
-					a.velocity.add(parent.velocity);
-					var j = children.indexOf(a);
-					if(0 <= j)
-						children.splice(j, 1);
-					a.parent = parent.parent;
-					a.parent.children.push(a);
-					continue; // Continue but not increment i
-				}
-				var skip = false;
-				// Check if we are entering sphere of influence of another sibling.
-				for(var j = 0; j < children.length; j++){
-					var aj = children[j];
-					if(aj === a)
-						continue;
-					if(!aj.soi)
-						continue;
-					if(aj.position.distanceTo(a.position) < aj.soi * .99){
-						a.position.sub(aj.position);
-						a.velocity.sub(aj.velocity);
-						var k = children.indexOf(a);
-						if(0 <= k)
-							children.splice(k, 1);
-						a.parent = aj;
-						aj.children.push(a);
-						skip = true;
-						break;
-					}
-				}
-				if(skip)
-					continue; // Continue but not increment i
-			}
-			simulateBody(a);
-			i++;
-		}
-	}
 
 	for(var d = 0; d < div; d++){
 		// Allow trying to increase throttle when timewarping in order to show the message
 		if(accelerate) throttleControl.increment(deltaTime / div);
 		if(decelerate) throttleControl.decrement(deltaTime / div);
 
-		simulateBody(sun);
+		sun.simulateBody(deltaTime, div, timescale, buttons, select_obj);
 	}
 
 	// Convert length of unit au into a fixed-length string considering user unit selection.
@@ -1584,7 +1498,7 @@ function render() {
 		function(o, headingApoapsis){
 			orbitalElementControl.setText(
 				'<table class="table1">'
-				+ ' <tr><td>e</td><td>' + o.eccentricity.toFixed(10) + '</td></tr>'
+				+ ' <tr><td>e</td><td>' + (o.eccentricity || 0).toFixed(10) + '</td></tr>'
 				+ ' <tr><td>a</td><td>' + unitConvLength(o.semimajor_axis) + '</td></tr>'
 				+ ' <tr><td>i</td><td>' + (o.inclination / Math.PI).toFixed(10) + '</td></tr>'
 				+ ' <tr><td>Omega</td><td>' + (o.ascending_node / Math.PI).toFixed(10) + '</td></tr>'
