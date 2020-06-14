@@ -1,5 +1,5 @@
 import { CelestialBody } from "CelestialBody";
-import { navballRadius } from './NavBallControl';
+import { navballRadius } from './RotationControl';
 
 import throttleMaxUrl from './images/throttle-max.png';
 import throttleMinUrl from './images/throttle-min.png';

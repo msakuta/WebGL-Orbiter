@@ -8,19 +8,13 @@ import { CelestialBody, addPlanet } from './CelestialBody';
 import { Settings, SettingsControl } from './SettingsControl';
 import { TimeScaleControl } from './TimeScaleControl';
 import { ThrottleControl } from './ThrottleControl';
-import { navballRadius } from './NavBallControl';
+import { navballRadius, RotationControl } from './RotationControl';
 
 
 import orbitIconUrl from './images/orbitIcon.png';
 import perlinUrl from './images/perlin.jpg';
 import progradeUrl from './images/prograde.png';
 import retrogradeUrl from './images/retrograde.png';
-import rotateUpUrl from './images/rotate-up.png';
-import rotateDownUrl from './images/rotate-down.png';
-import rotateLeftUrl from './images/rotate-left.png';
-import rotateRightUrl from './images/rotate-right.png';
-import rotateCwUrl from './images/rotate-cw.png';
-import rotateCcwUrl from './images/rotate-ccw.png';
 import closeIconUrl from './images/closeIcon.png';
 import menuIconUrl from './images/menuIcon.png';
 import loadIconUrl from './images/loadIcon.png';
@@ -367,85 +361,7 @@ function init() {
 	}, () => select_obj);
 	container.appendChild( throttleControl.domElement );
 
-	var rotationControl = new (function(){
-		function setSize(){
-			rootElement.style.top = (window.innerHeight - 2 * navballRadius) + 'px';
-			rootElement.style.left = (window.innerWidth / 2 - navballRadius) + 'px';
-		}
-
-		function absorbEvent_(event) {
-			var e = event || window.event;
-			e.preventDefault && e.preventDefault();
-			e.stopPropagation && e.stopPropagation();
-			e.cancelBubble = true;
-			e.returnValue = false;
-			return false;
-		}
-
-		function addArrow(src, key, left, top){
-			var button = document.createElement('img');
-			button.src = src;
-			button.width = buttonWidth;
-			button.height = buttonHeight;
-			button.style.position = 'absolute';
-			button.style.top = top + 'px';
-			button.style.left = left + 'px';
-			button.onmousedown = function(event){
-				buttons[key] = true;
-			};
-			button.onmouseup = function(event){
-				buttons[key] = false;
-				button.style.boxShadow = '';
-			}
-			button.ondragstart = function(event){
-				event.preventDefault();
-			};
-			button.ontouchstart = function(event){
-				buttons[key] = true;
-				event.preventDefault();
-				event.stopPropagation();
-			};
-			button.ontouchmove = absorbEvent_;
-			button.ontouchend = function(event){
-				buttons[key] = false;
-				button.style.boxShadow = '';
-				event.preventDefault();
-				event.stopPropagation();
-			};
-			button.ontouchcancel = absorbEvent_;
-			element.appendChild(button);
-		}
-		var buttonHeight = 32;
-		var buttonWidth = 32;
-		this.domElement = document.createElement('div');
-		var rootElement = this.domElement;
-		this.domElement.style.position = 'absolute';
-		this.domElement.style.width = (navballRadius * 2) + 'px';
-		this.domElement.style.height = (navballRadius * 2) + 'px';
-		setSize();
-		this.domElement.style.zIndex = 5;
-		// Introduce internal 'div' because the outer 'div' cannot be
-		// hidden since it need to receive mouseenter event.
-		var element = document.createElement('div');
-		element.style.width = '100%';
-		element.style.height = '100%';
-		element.style.display = 'none';
-		this.domElement.appendChild(element);
-		this.domElement.onmouseenter = function(event){
-			element.style.display = 'block';
-		};
-		this.domElement.onmouseleave = function(event){
-			element.style.display = 'none';
-			buttons.up = buttons.down = buttons.left = buttons.right = false;
-		};
-		addArrow(rotateUpUrl, 'up', navballRadius - buttonWidth / 2, 0);
-		addArrow(rotateDownUrl, 'down', navballRadius - buttonWidth / 2, 2 * navballRadius - buttonHeight);
-		addArrow(rotateLeftUrl, 'left', 0, navballRadius - buttonHeight / 2);
-		addArrow(rotateRightUrl, 'right', 2 * navballRadius - buttonWidth, navballRadius - buttonHeight / 2);
-		addArrow(rotateCwUrl, 'clockwise', 2 * navballRadius - buttonWidth, 0);
-		addArrow(rotateCcwUrl, 'counterclockwise', 0, 0);
-		window.addEventListener('resize', setSize);
-	})();
+	var rotationControl = new RotationControl(buttons);
 	container.appendChild( rotationControl.domElement );
 
 	speedControl = new (function(){
