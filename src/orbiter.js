@@ -4,20 +4,20 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import "./main.css";
 
-import { CelestialBody, addPlanet } from './CelestialBody';
+import { CelestialBody, addPlanet, AxisAngleQuaternion } from './CelestialBody';
 import { Settings, SettingsControl } from './SettingsControl';
 import { TimeScaleControl } from './TimeScaleControl';
 import { ThrottleControl } from './ThrottleControl';
 import { navballRadius, RotationControl } from './RotationControl';
 import { zerofill, StatsControl } from './StatsControl';
 import { MenuControl } from './MenuControl';
+import { ScenarioSelectorControl } from './ScenarioSelectorControl';
 
 
 import orbitIconUrl from './images/orbitIcon.png';
 import perlinUrl from './images/perlin.jpg';
 import progradeUrl from './images/prograde.png';
 import retrogradeUrl from './images/retrograde.png';
-import menuIconUrl from './images/menuIcon.png';
 import loadIconUrl from './images/loadIcon.png';
 import saveIconUrl from './images/saveIcon.png';
 import trashcanUrl from './images/trashcan.png';
@@ -86,12 +86,6 @@ var GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (
 var epsilon = 1e-40; // Doesn't the machine epsilon depend on browsers!??
 var timescale = 1e0; // This is not a constant; it can be changed by the user
 var rad_per_deg = Math.PI / 180; // Radians per degrees
-
-function AxisAngleQuaternion(x, y, z, angle){
-	var q = new THREE.Quaternion();
-	q.setFromAxisAngle(new THREE.Vector3(x, y, z), angle);
-	return q;
-}
 
 function init() {
 
@@ -537,71 +531,18 @@ function init() {
 	})
 	container.appendChild( messageControl.domElement );
 
-
-
-
-	scenarioSelectorControl = new (function(){
-		var config = {
-			buttonTop: 0,
-			buttonHeight: 32,
-			buttonWidth: 32,
-			innerTitle: "Scenario Selector",
-		};
-		var scope = this;
-		MenuControl.call(this, 'Scenarios', menuIconUrl, config);
-
-		this.valueElement.style.border = "5px ridge #ffff7f";
-		var scenarios = [
-			{title: "Earth orbit", parent: earth, semimajor_axis: 10000 / AU},
-			{title: "Moon orbit", parent: moon, semimajor_axis: 3000 / AU},
-			{title: "Mars orbit", parent: mars, semimajor_axis: 5000 / AU},
-			{title: "Venus orbit", parent: venus, semimajor_axis: 10000 / AU, ascending_node: Math.PI},
-			{title: "Jupiter orbit", parent: jupiter, semimajor_axis: 100000 / AU},
-		];
-		for(var i = 0; i < scenarios.length; i++){
-			var elem = document.createElement('div');
-			elem.style.margin = "15px";
-			elem.style.padding = "15px";
-			elem.style.border = "1px solid #ffff00";
-			elem.innerHTML = scenarios[i].title;
-			elem.onclick = (function(scenario){
-				return function(){
-					var ascending_node = scenario.ascending_node || 0.;
-					var eccentricity = scenario.eccentricity || 0.;
-					var rotation = scenario.rotation || (function(){
-						var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2);
-						rotation.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI));
-						return rotation;
-					})();
-					rocket.setParent(scenario.parent);
-					rocket.position = new THREE.Vector3(0, 1 - eccentricity, 0)
-						.multiplyScalar(scenario.semimajor_axis).applyQuaternion(rotation);
-					rocket.quaternion = rotation.clone();
-					rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, -Math.PI / 2));
-					rocket.angularVelocity = new THREE.Vector3();
-					throttleControl.setThrottle(0);
-					rocket.setOrbitingVelocity(scenario.semimajor_axis, rotation);
-					rocket.totalDeltaV = 0.;
-					rocket.ignitionCount = 0;
-					simTime = new Date();
-					realTime = simTime;
-					startTime = simTime;
-					messageControl.setText('Scenario ' + scenario.title + ' Loaded!');
-					scope.title.style.display = 'none';
-					scope.visible = false;
-					scope.valueElement.style.display = 'none';
-				}
-			})(scenarios[i]);
-			this.valueElement.appendChild(elem);
+	scenarioSelectorControl = new ScenarioSelectorControl(function(){return select_obj;},
+		function(throttle){ throttleControl.setThrottle(throttle); },
+		function(){
+			simTime = new Date();
+			realTime = simTime;
+			startTime = simTime;
+		},
+		function(msg){ messageControl.setText(msg); },
+		function(){
+			[saveControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
 		}
-
-		this.setVisible = function(v){
-			MenuControl.prototype.setVisible.call(this, v);
-			if(this.visible){
-				[saveControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
-			}
-		}
-	});
+	);
 	container.appendChild( scenarioSelectorControl.domElement );
 
 	function serializeState(){

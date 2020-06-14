@@ -18,7 +18,7 @@ function deserializeQuaternion(json: any){
     return new THREE.Quaternion(json._x, json._y, json._z, json._w);
 }
 
-function AxisAngleQuaternion(x: number, y: number, z: number, angle: number){
+export function AxisAngleQuaternion(x: number, y: number, z: number, angle: number){
 	const q = new THREE.Quaternion();
 	q.setFromAxisAngle(new THREE.Vector3(x, y, z), angle);
 	return q;
@@ -429,6 +429,10 @@ export class CelestialBody{
             a.simulateBody(deltaTime, div, timescale, buttons, select_obj);
             i++;
         }
+    }
+
+    static findBody(name: string){
+        return this.celestialBodies.get(name);
     }
 }
 
