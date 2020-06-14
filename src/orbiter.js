@@ -345,7 +345,7 @@ function init() {
 		ret.orbit = orbitMesh;
 		scene.add(orbitMesh);
 		ret.init();
-		ret.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfX,
+		ret.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfY,
 			units_km, (_) => {}, scene);
 		return ret;
 	}
@@ -421,7 +421,7 @@ function init() {
 		scene.add(orbitMesh);
 
 		asteroid.init();
-		asteroid.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfX,
+		asteroid.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfY,
 			units_km, (_) => {}, scene);
 
 	}
@@ -1579,7 +1579,7 @@ function render() {
 			return au.toFixed(10) + ' AU';
 	}
 
-	sun.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfX,
+	sun.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfY,
 		units_km,
 		function(o, headingApoapsis){
 			orbitalElementControl.setText(
