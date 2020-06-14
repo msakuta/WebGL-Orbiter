@@ -9,6 +9,7 @@ import { Settings, SettingsControl } from './SettingsControl';
 import { TimeScaleControl } from './TimeScaleControl';
 import { ThrottleControl } from './ThrottleControl';
 import { navballRadius, RotationControl } from './RotationControl';
+import { zerofill, StatsControl } from './StatsControl';
 
 
 import orbitIconUrl from './images/orbitIcon.png';
@@ -19,7 +20,6 @@ import closeIconUrl from './images/closeIcon.png';
 import menuIconUrl from './images/menuIcon.png';
 import loadIconUrl from './images/loadIcon.png';
 import saveIconUrl from './images/saveIcon.png';
-import statsIconUrl from './images/statsIcon.png';
 import trashcanUrl from './images/trashcan.png';
 import navballUrl from './images/navball.png';
 import watermarkUrl from './images/watermark.png';
@@ -460,114 +460,9 @@ function init() {
 		title.style.right = iconRect.width + 'px';
 	}
 
-	statsControl = new (function(){
-		function setSize(){
-			element.style.left = (window.innerWidth - buttonWidth) + 'px';
-			rightTitleSetSize(title, icon);
-		}
-		var buttonTop = 120;
-		var buttonHeight = 32;
-		var buttonWidth = 32;
-		this.domElement = document.createElement('div');
-		var element = this.domElement;
-		element.style.position = 'absolute';
-		element.style.textAlign = 'left';
-		element.style.top = buttonTop + 'px';
-		element.style.left = 0 + 'px';
-		element.style.zIndex = 7;
-		var visible = false;
-		var icon = document.createElement('img');
-		icon.src = statsIconUrl;
-		icon.style.width = buttonWidth + 'px';
-		icon.style.height = buttonHeight + 'px';
-		element.appendChild(icon);
-
-		var title = document.createElement('div');
-		title.innerHTML = 'Statistics';
-		title.style.display = 'none';
-		title.style.position = 'absolute';
-		title.style.top = buttonTop + 'px';
-		title.style.background = 'rgba(0, 0, 0, 0.5)';
-		title.style.zIndex = 20;
-		element.appendChild(title);
-
-		var valueElement = document.createElement('div');
-		element.appendChild(valueElement);
-		valueElement.style.display = 'none';
-		valueElement.style.position = 'absolute';
-		valueElement.style.background = 'rgba(0, 0, 0, 0.5)';
-		valueElement.style.border = '3px ridge #7f3f3f';
-		valueElement.style.padding = '3px';
-		var valueElements = [];
-		for(var i = 0; i < 3; i++){
-			var titleElement = document.createElement('div');
-			titleElement.innerHTML = ['Mission Time', 'Delta-V', 'Ignition&nbsp;Count'][i];
-			titleElement.style.fontWeight = 'bold';
-			titleElement.style.paddingRight = '1em';
-			valueElement.appendChild(titleElement);
-			var valueElementChild = document.createElement('div');
-			valueElementChild.style.textAlign = 'right';
-			valueElements.push(valueElementChild);
-			valueElement.appendChild(valueElementChild);
-		}
-
-		setSize();
-
-		// Register event handlers
-		window.addEventListener('resize', setSize);
-		icon.ondragstart = function(event){
-			event.preventDefault();
-		};
-		icon.onclick = function(event){
-			visible = !visible;
-			if(visible){
-				valueElement.style.display = 'block';
-				element.style.background = 'rgba(0, 0, 0, 0.5)';
-			}
-			else{
-				valueElement.style.display = 'none';
-				element.style.background = 'rgba(0, 0, 0, 0)';
-				settingsControl.domElement.style.top = element.getBoundingClientRect().bottom + 'px';
-			}
-		};
-		icon.onmouseenter = function(event){
-			if(!visible)
-				title.style.display = 'block';
-			rightTitleSetSize(title, icon);
-		};
-		icon.onmouseleave = function(event){
-			if(!visible)
-				title.style.display = 'none';
-		};
-
-		this.setText = function(text){
-			if(!visible)
-				return;
-			if(!select_obj){
-				valueElements[3].innerHTML = valueElements[2] = '';
-				return;
-			}
-			var totalSeconds = (simTime.getTime() - startTime.getTime()) / 1e3;
-			var seconds = Math.floor(totalSeconds) % 60;
-			var minutes = Math.floor(totalSeconds / 60) % 60;
-			var hours = Math.floor(totalSeconds / 60 / 60) % 24;
-			var days = Math.floor(totalSeconds / 60 / 60 / 24);
-			valueElements[0].innerHTML = days + 'd ' + zerofill(hours) + ':' + zerofill(minutes) + ':' + zerofill(seconds);
-			var deltaVkm = select_obj.totalDeltaV * AU;
-			var deltaV;
-			if(deltaVkm < 10)
-				deltaV = (deltaVkm * 1e3).toFixed(1) + 'm/s';
-			else
-				deltaV = deltaVkm.toFixed(4) + 'km/s';
-			valueElements[1].innerHTML = deltaV;
-			valueElements[2].innerHTML = select_obj.ignitionCount;
-			valueElement.style.marginLeft = (buttonWidth - valueElement.getBoundingClientRect().width) + 'px';
-			settingsControl.domElement.style.top = valueElement.getBoundingClientRect().bottom + 'px';
-		}
-	})();
-	container.appendChild( statsControl.domElement );
-
 	settingsControl = new SettingsControl(settings);
+	statsControl = new StatsControl(settingsControl, () => select_obj);
+	container.appendChild( statsControl.domElement );
 	container.appendChild( settingsControl.domElement );
 
 	altitudeControl = new (function(){
@@ -1007,16 +902,6 @@ function animate() {
 
 }
 
-// Fills leading zero if the value is less than 10, making the returned string always two characters long.
-// Note that values not less than 100 or negative values are not guaranteed to be two characters wide.
-// This function is for date time formatting purpose only.
-function zerofill(v){
-	if(v < 10)
-		return "0" + v;
-	else
-		return v;
-}
-
 function render() {
 	var now = new Date();
 	var realDeltaTimeMilliSec = now.getTime() - realTime.getTime();
@@ -1027,7 +912,7 @@ function render() {
 	timescaleControl.setDate(time.getFullYear() + '/' + zerofill(time.getMonth() + 1) + '/' + zerofill(time.getDate())
 		+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds()));
 	speedControl.setSpeed();
-	statsControl.setText();
+	statsControl.setText(simTime, startTime);
 	settingsControl.setText();
 	messageControl.timeStep(realDeltaTimeMilliSec * 1e-3);
 

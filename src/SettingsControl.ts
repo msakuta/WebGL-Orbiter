@@ -1,6 +1,6 @@
 import settingsIconUrl from './images/settingsIcon.png';
 
-function rightTitleSetSize(title: HTMLElement, icon: HTMLElement){
+export function rightTitleSetSize(title: HTMLElement, icon: HTMLElement){
     const r = title.getBoundingClientRect();
     const iconRect = icon.getBoundingClientRect()
     title.style.top = (iconRect.height - r.height) + 'px';

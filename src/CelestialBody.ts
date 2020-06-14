@@ -5,7 +5,7 @@ import apoapsisUrl from './images/apoapsis.png';
 import periapsisUrl from './images/periapsis.png';
 import { Settings } from './SettingsControl';
 
-const AU = 149597871; // Astronomical unit in kilometers
+export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 const epsilon = 1e-40; // Doesn't the machine epsilon depend on browsers!??
 const acceleration = 5e-10;
