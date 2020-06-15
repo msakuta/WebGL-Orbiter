@@ -65,11 +65,11 @@ export default class GameState{
         this.startTime = this.simTime;
     }
 
-    updateTime(){
-        var now = new Date();
-        var realDeltaTimeMilliSec = now.getTime() - this.realTime.getTime();
-        var time = new Date(this.simTime.getTime() + realDeltaTimeMilliSec * this.timescale);
-        var deltaTime = (time.getTime() - this.simTime.getTime()) * 1e-3;
+    updateTime(): [Date, number, number] {
+        const now = new Date();
+        const realDeltaTimeMilliSec = now.getTime() - this.realTime.getTime();
+        const time = new Date(this.simTime.getTime() + realDeltaTimeMilliSec * this.timescale);
+        const deltaTime = (time.getTime() - this.simTime.getTime()) * 1e-3;
         this.realTime = now;
         this.simTime = time;
         return [time, realDeltaTimeMilliSec, deltaTime];
@@ -115,17 +115,17 @@ export default class GameState{
                     // Some objects do not have an orbit
                     if(this.select_obj.orbit)
                         this.select_obj.orbit.material = this.select_obj.orbitMaterial;
-                    var objs = this.select_obj.getChildren();
+                    const objs = this.select_obj.getChildren();
                     if(0 < objs.length){
                         this.select_obj = objs[0];
                     }
                     else{
-                        var selected = false;
-                        var prev = this.select_obj;
-                        for(var parent = this.select_obj.getParent(); parent; parent = parent.getParent()){
-                            objs = parent.getChildren();
-                            for(var i = 0; i < objs.length; i++){
-                                var o = objs[i];
+                        let selected = false;
+                        let prev = this.select_obj;
+                        for(let parent = this.select_obj.getParent(); parent; parent = parent.getParent()){
+                            const objs = parent.getChildren();
+                            for(let i = 0; i < objs.length; i++){
+                                const o = objs[i];
                                 if(o === prev && i + 1 < objs.length){
                                     this.select_obj = objs[i+1];
                                     selected = true;

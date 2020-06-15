@@ -46,13 +46,13 @@ export class TimeScaleControl{
         this.timeIndex = number;
     }
 
-    protected increment(){
+    increment(){
         if(TimeScaleControl.series.length <= this.timeIndex + 1)
             return;
         this.clickForward(this.timeIndex + 1);
     }
 
-    protected decrement(){
+    decrement(){
         if(this.timeIndex - 1 < 0)
             return;
         this.clickForward(this.timeIndex - 1);

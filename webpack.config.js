@@ -3,8 +3,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
-//   entry: './src/index.ts',
-  entry: './src/orbiter.js',
+  entry: './src/orbiter.ts',
   devtool: 'inline-source-map',
   plugins: [
     new HtmlWebpackPlugin({

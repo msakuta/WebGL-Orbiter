@@ -90,7 +90,7 @@ export class ThrottleControl{
         this.setThrottle(1 - pos / max);
     }
 
-    protected setThrottle(pos: number){
+    setThrottle(pos: number){
         if(!this.allowThrottleCallback(pos))
             return;
         const select_obj = this.getSelectObj();

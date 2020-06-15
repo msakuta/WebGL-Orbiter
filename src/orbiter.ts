@@ -1,4 +1,4 @@
-import * as THREE from 'three/build/three.module.js';
+import * as THREE from 'three/src/Three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
@@ -24,47 +24,49 @@ import backgroundUrl from './images/hipparcoscyl1.jpg';
 
 
 ;(function(){
-'use strict'
-var container, stats;
-var camera, scene, renderer;
-var background;
-var overlay;
-var timescaleControl;
-var throttleControl;
-var speedControl;
-var orbitalElementsControl;
-var statsControl;
-var settingsControl;
-var altitudeControl;
-var messageControl;
-var cameraControls;
-var grids;
-var scenarioSelectorControl;
-var saveControl;
-var loadControl;
+let container: HTMLElement;
+let stats: Stats;
+let camera: THREE.PerspectiveCamera;
+let scene: THREE.Scene;
+let renderer: THREE.WebGLRenderer;
+let background: THREE.Scene;
+let overlay: Overlay;
+let timescaleControl: TimeScaleControl;
+let throttleControl: ThrottleControl;
+let speedControl: any;
+let orbitalElementsControl: OrbitalElementsControl;
+let statsControl: StatsControl;
+let settingsControl: SettingsControl;
+let altitudeControl: any;
+let messageControl: MessageControl;
+let cameraControls: OrbitControls;
+let grids: THREE.Object3D;
+let scenarioSelectorControl: ScenarioSelectorControl;
+let saveControl: SaveControl;
+let loadControl: LoadControl;
 
-var windowHalfX = window.innerWidth / 2;
-var windowHalfY = window.innerHeight / 2;
-var viewScale = 100;
+let windowHalfX = window.innerWidth / 2;
+let windowHalfY = window.innerHeight / 2;
+let viewScale = 100;
 
-var gameState;
-var settings = new Settings();
+let gameState: GameState;
+let settings = new Settings();
 
-var buttons = new RotationButtons();
-var accelerate = false;
-var decelerate = false;
+let buttons = new RotationButtons();
+let accelerate = false;
+let decelerate = false;
 
 function init() {
 
 	container = document.createElement( 'div' );
 	document.body.appendChild(container);
 
-	var headerTitle = document.createElement('div');
+	const headerTitle = document.createElement('div');
 	headerTitle.id = 'info';
 	headerTitle.innerHTML = 'Orbital rocket simulation demo - powered by <a href="http://threejs.org" target="_blank">three.js</a>';
 	document.body.appendChild(headerTitle);
 
-	var metaViewport = document.createElement('meta');
+	const metaViewport = document.createElement('meta');
 	metaViewport.setAttribute('name', 'viewport');
 	metaViewport.setAttribute('content', "width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0");
 	document.head.appendChild(metaViewport);
@@ -76,14 +78,14 @@ function init() {
 
 	background = new THREE.Scene();
 	background.rotation.x = Math.PI / 2;
-	var loader = new THREE.TextureLoader();
+	const loader = new THREE.TextureLoader();
 	loader.load( backgroundUrl, function ( texture ) {
 
-		var geometry = new THREE.SphereGeometry( 2, 20, 20 );
+		const geometry = new THREE.SphereGeometry( 2, 20, 20 );
 
-		var material = new THREE.MeshBasicMaterial( { map: texture, depthTest: false, depthWrite: false, side: THREE.BackSide } );
+		const material = new THREE.MeshBasicMaterial( { map: texture, depthTest: false, depthWrite: false, side: THREE.BackSide } );
 		material.depthWrite = false;
-		var mesh = new THREE.Mesh(geometry, material);
+		const mesh = new THREE.Mesh(geometry, material);
 		background.add(mesh);
 
 	} );
@@ -92,30 +94,30 @@ function init() {
 
 	scene = new THREE.Scene();
 
-	var orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
+	const orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
 	CelestialBody.prototype.orbitMaterial = orbitMaterial; // Default orbit material
 
 	gameState = new GameState(scene, viewScale, overlay.overlay, settings, camera, windowHalfX, windowHalfY, function(msg){ messageControl.setText(msg); });
 
-	var meshMaterial = new THREE.LineBasicMaterial({color: 0x3f3f3f});
-	var meshGeometry = new THREE.Geometry();
-	for(var x = -10; x <= 10; x++)
+	const meshMaterial = new THREE.LineBasicMaterial({color: 0x3f3f3f});
+	const meshGeometry = new THREE.Geometry();
+	for(let x = -10; x <= 10; x++)
 		meshGeometry.vertices.push( new THREE.Vector3( -10, x, 0 ), new THREE.Vector3(10, x, 0));
-	for(var x = -10; x <= 10; x++)
+	for(let x = -10; x <= 10; x++)
 		meshGeometry.vertices.push( new THREE.Vector3( x, -10, 0 ), new THREE.Vector3(x, 10, 0));
 	grids = new THREE.Object3D();
-	var mesh = new THREE.LineSegments(meshGeometry, meshMaterial);
+	const mesh = new THREE.LineSegments(meshGeometry, meshMaterial);
 	mesh.scale.x = mesh.scale.y = 100;
 	grids.add(mesh);
-	var mesh2 = new THREE.LineSegments(meshGeometry, meshMaterial);
+	const mesh2 = new THREE.LineSegments(meshGeometry, meshMaterial);
 	mesh2.scale.x = mesh2.scale.y = 10000 / AU * 100;
 	grids.add(mesh2);
 
-	function addAxis(axisVector, color){
-		var axisXMaterial = new THREE.LineBasicMaterial({color: color});
-		var axisXGeometry = new THREE.Geometry();
+	function addAxis(axisVector: THREE.Vector3, color: number){
+		const axisXMaterial = new THREE.LineBasicMaterial({color: color});
+		const axisXGeometry = new THREE.Geometry();
 		axisXGeometry.vertices.push(new THREE.Vector3(0,0,0), axisVector);
-		var axisX = new THREE.Line(axisXGeometry, axisXMaterial);
+		const axisX = new THREE.Line(axisXGeometry, axisXMaterial);
 		axisX.scale.multiplyScalar(100);
 		grids.add(axisX);
 	}
@@ -142,7 +144,7 @@ function init() {
 
 	container.appendChild( renderer.domElement );
 
-	stats = new Stats();
+	stats = Stats();
 	stats.domElement.style.position = 'absolute';
 	stats.domElement.style.top = '0px';
 	container.appendChild( stats.domElement );
@@ -154,41 +156,48 @@ function init() {
 		function(){ return gameState.getSelectObj(); });
 	container.appendChild( throttleControl.domElement );
 
-	var rotationControl = new RotationControl(buttons);
+	const rotationControl = new RotationControl(buttons);
 	container.appendChild( rotationControl.domElement );
 
-	speedControl = new (function(){
-		function setSize(){
-			element.style.top = (window.innerHeight - 2 * navballRadius - 32) + 'px';
-			element.style.left = (window.innerWidth / 2 - element.getBoundingClientRect().width / 2) + 'px';
+	class SpeedControl{
+		protected element: HTMLDivElement;
+		get domElement(){ return this.element; }
+		protected valueElement: HTMLDivElement;
+		constructor(){
+			function setSize(){
+				element.style.top = (window.innerHeight - 2 * navballRadius - 32) + 'px';
+				element.style.left = (window.innerWidth / 2 - element.getBoundingClientRect().width / 2) + 'px';
+			}
+			const buttonHeight = 32;
+			const buttonWidth = 32;
+			this.element = document.createElement('div');
+			const element = this.element;
+			element.style.position = 'absolute';
+			setSize();
+			element.style.zIndex = '7';
+			element.style.background = 'rgba(0, 0, 0, 0.5)';
+			window.addEventListener('resize', setSize);
+			const title = document.createElement('div');
+			title.innerHTML = 'Orbit';
+			element.appendChild(title);
+			this.valueElement = document.createElement('div');
+			element.appendChild(this.valueElement);
 		}
-		var buttonHeight = 32;
-		var buttonWidth = 32;
-		this.domElement = document.createElement('div');
-		var element = this.domElement;
-		element.style.position = 'absolute';
-		setSize();
-		element.style.zIndex = 7;
-		element.style.background = 'rgba(0, 0, 0, 0.5)';
-		window.addEventListener('resize', setSize);
-		var title = document.createElement('div');
-		title.innerHTML = 'Orbit';
-		element.appendChild(title);
-		var valueElement = document.createElement('div');
-		element.appendChild(valueElement);
-		this.setSpeed = function(){
+
+		setSpeed(){
 			if(gameState.select_obj){
-				var value = gameState.select_obj.velocity.length() * AU;
+				const value = gameState.select_obj.velocity.length() * AU;
 				if(value < 1)
-					valueElement.innerHTML = (value * 1000).toFixed(4) + 'm/s';
+					this.valueElement.innerHTML = (value * 1000).toFixed(4) + 'm/s';
 				else
-					valueElement.innerHTML = value.toFixed(4) + 'km/s';
+					this.valueElement.innerHTML = value.toFixed(4) + 'km/s';
 			}
 			else
-				valueElement.innerHTML = '';
-			element.style.left = (window.innerWidth / 2 - element.getBoundingClientRect().width / 2) + 'px';
+				this.valueElement.innerHTML = '';
+			this.element.style.left = (window.innerWidth / 2 - this.element.getBoundingClientRect().width / 2) + 'px';
 		}
-	})();
+	}
+	speedControl = new SpeedControl();
 	container.appendChild( speedControl.domElement );
 
 	orbitalElementsControl = new OrbitalElementsControl();
@@ -199,35 +208,41 @@ function init() {
 	container.appendChild( statsControl.domElement );
 	container.appendChild( settingsControl.domElement );
 
-	altitudeControl = new (function(){
-		var buttonHeight = 32;
-		var buttonWidth = 32;
-		this.domElement = document.createElement('div');
-		var element = this.domElement;
-		element.style.position = 'absolute';
-		element.style.top = '2em';
-		element.style.left = '50%';
-		element.style.background = 'rgba(0,0,0,0.5)';
-		element.style.zIndex = 8;
-		var visible = false;
+	class AltitudeControl{
+		protected element: HTMLDivElement;
+		get domElement(){ return this.element; }
+		protected valueElement: HTMLDivElement;
+		constructor(){
+			const buttonHeight = 32;
+			const buttonWidth = 32;
+			this.element = document.createElement('div');
+			const element = this.element;
+			element.style.position = 'absolute';
+			element.style.top = '2em';
+			element.style.left = '50%';
+			element.style.background = 'rgba(0,0,0,0.5)';
+			element.style.zIndex = '8';
+			const visible = false;
 
-		// Register event handlers
-		element.ondragstart = function(event){
-			event.preventDefault();
-		};
+			// Register event handlers
+			element.ondragstart = function(event){
+				event.preventDefault();
+			};
+		}
 
-		this.setText = function(value){
-			var text;
+		setText(value: number){
+			let text;
 			if(value < 1e5)
 				text = value.toFixed(4) + 'km';
 			else if(value < 1e8)
 				text = (value / 1000).toFixed(4) + 'Mm';
 			else
 				text = (value / AU).toFixed(4) + 'AU';
-			element.innerHTML = text;
-			element.style.marginLeft = -element.getBoundingClientRect().width / 2 + 'px';
-		};
-	})();
+			this.element.innerHTML = text;
+			this.element.style.marginLeft = -this.element.getBoundingClientRect().width / 2 + 'px';
+		}
+	}
+	altitudeControl = new AltitudeControl();
 	container.appendChild( altitudeControl.domElement );
 
 	messageControl = new MessageControl();
@@ -268,7 +283,7 @@ function init() {
 	window.addEventListener( 'keydown', onKeyDown, false );
 	window.addEventListener( 'keyup', onKeyUp, false );
 	window.addEventListener( 'pageshow', function(){
-		var state = localStorage.getItem('WebGLOrbiterAutoSave');
+		const state = localStorage.getItem('WebGLOrbiterAutoSave');
 		if(state){
 			gameState.loadState(JSON.parse(state));
 		}
@@ -302,7 +317,7 @@ function animate() {
 }
 
 function render() {
-	var [time, realDeltaTimeMilliSec, deltaTime] = gameState.updateTime();
+	const [time, realDeltaTimeMilliSec, deltaTime] = gameState.updateTime();
 	timescaleControl.setDate(time.getFullYear() + '/' + zerofill(time.getMonth() + 1) + '/' + zerofill(time.getDate())
 		+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds()));
 	speedControl.setSpeed();
@@ -313,10 +328,10 @@ function render() {
 	camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);
 	camera.updateProjectionMatrix();
 
-	var acceleration = 5e-10;
-	var div = 100; // We should pick subdivide simulation step count by angular speed!
+	const acceleration = 5e-10;
+	const div = 100; // We should pick subdivide simulation step count by angular speed!
 
-	for(var d = 0; d < div; d++){
+	for(let d = 0; d < div; d++){
 		// Allow trying to increase throttle when timewarping in order to show the message
 		if(accelerate) throttleControl.increment(deltaTime / div);
 		if(decelerate) throttleControl.decrement(deltaTime / div);
@@ -324,7 +339,7 @@ function render() {
 		gameState.simulateBody(deltaTime, div, buttons);
 	}
 
-	var select_obj = gameState.getSelectObj();
+	const select_obj = gameState.getSelectObj();
 	gameState.universe.update(settings.center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
 		settings.units_km,
 		function(o, headingApoapsis){
@@ -339,15 +354,15 @@ function render() {
 //				camera.up.copy(new THREE.Vector3(0,0,1)); // This did't work with OrbitControls
 	cameraControls.update();
 
-	var oldPosition = camera.position.clone();
-	var oldQuaternion = camera.quaternion.clone();
+	const oldPosition = camera.position.clone();
+	const oldQuaternion = camera.quaternion.clone();
 	if(settings.sync_rotate && select_obj){
 		camera.quaternion.copy(
 			select_obj.quaternion.clone()
 			.multiply(AxisAngleQuaternion(0, 1, 0, -1*Math.PI / 2)));
 		camera.position.copy(new THREE.Vector3(0, 0.2, 1).normalize().multiplyScalar(camera.position.length()).applyQuaternion(camera.quaternion));
 	}
-	var position = camera.position.clone();
+	const position = camera.position.clone();
 	camera.position.set(0,0,0);
 	renderer.render( background, camera);
 	camera.position.copy(position);
@@ -364,17 +379,17 @@ function render() {
 	camera.quaternion.copy(oldQuaternion);
 	camera.position.copy(oldPosition);
 
-	if(select_obj && select_obj.parent){
-		altitudeControl.setText(select_obj.position.length() * AU - select_obj.parent.radius);
+	if(select_obj && select_obj.getParent()){
+		altitudeControl.setText(select_obj.position.length() * AU - select_obj.getParent().radius);
 	}
 	else
 		altitudeControl.setText(0);
 }
 
-function onKeyDown( event ) {
-	var char = String.fromCharCode(event.which || event.keyCode).toLowerCase();
+function onKeyDown( event: KeyboardEvent ) {
+	const char = String.fromCharCode(event.which || event.keyCode).toLowerCase();
 
-	var select_obj = gameState.getSelectObj();
+	const select_obj = gameState.getSelectObj();
 	if(select_obj && select_obj.controllable) switch( char ){
 		case 'z':
 			throttleControl.setThrottle(1);
@@ -385,7 +400,7 @@ function onKeyDown( event ) {
 	}
 
 	// Annoying browser incompatibilities
-	var code = event.which || event.keyCode;
+	const code = event.which || event.keyCode;
 	// Also support numpad plus and minus
 	if(code === 107 || code === 187 && event.shiftKey)
 		timescaleControl.increment();
@@ -397,9 +412,9 @@ function onKeyDown( event ) {
 		decelerate = true;
 }
 
-function onKeyUp( event ) {
+function onKeyUp( event: KeyboardEvent ) {
 	// Annoying browser incompatibilities
-	var code = event.which || event.keyCode;
+	const code = event.which || event.keyCode;
 	if(code === 16)
 		accelerate = false;
 	if(code === 17)
