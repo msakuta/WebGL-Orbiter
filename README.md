@@ -56,13 +56,13 @@ If you want to reset state, choose "Earth orbit" from the scenarios.
 
 #### Periapsis
 
-![Periapsis](images/periapsis.png)
+![Periapsis](src/images/periapsis.png)
 
 This icon is shown on the periapsis of current orbit.
 
 #### Apoapsis
 
-![Apoapsis](images/apoapsis.png)
+![Apoapsis](src/images/apoapsis.png)
 
 This icon is shown on the apoapsis of current orbit.
 
@@ -96,8 +96,8 @@ the spin will be and takes longer time to stop.
 
 #### Prograde/retrograde icon
 
-![prograde](images/prograde.png)
-![retrograde](images/retrograde.png)
+![prograde](src/images/prograde.png)
+![retrograde](src/images/retrograde.png)
 
 These icons on the navigation ball indicates which direction the rocket is
 going, in relation to the vehicle's orientation.
@@ -111,7 +111,7 @@ Accelerating in this direction will reduce the energy from the orbit and make it
 
 #### Watermark
 
-![watermark](images/watermark.png)
+![watermark](src/images/watermark.png)
 
 This icon indicates horizontal line in the vehicle's orientation.
 The navigation ball is oriented in a way that the watermark is fixed.
@@ -140,7 +140,7 @@ You'll need it to travel distances between planets.
 
 On top right corner of the screen is a little icon.
 
-![](images/menuIcon.png)
+![](src/images/menuIcon.png)
 
 Clicking it will show a list of predefined scenarios.
 
@@ -153,14 +153,14 @@ Clicking one of these items will teleport the rocket to specific location in the
 
 On the 2nd from right top corner is an icon for saving simulation state.
 
-![](images/saveIcon.png)
+![](src/images/saveIcon.png)
 
 Clicking it will show a list of saved states.
 
 Saved states are like scenarios but you can create whenever and as many as you would like to.
 
 You can either type a new save name or overwrite existing one by clicking on its name.
-You can delete a saved state by clicking on the trash can icon ![trashcan](images/trashcan.png).
+You can delete a saved state by clicking on the trash can icon ![trashcan](src/images/trashcan.png).
 
 ![](screenshots/saveData.jpg)
 
@@ -169,12 +169,12 @@ You can delete a saved state by clicking on the trash can icon ![trashcan](image
 
 On the 3rd from right top corner is an icon for loading simulation state.
 
-![](images/loadIcon.png)
+![](src/images/loadIcon.png)
 
 Clicking on it will show a list of saved states.
 
 You can click on one of the items to load it.
-You can delete a saved state by clicking on the trash can icon ![trashcan](images/trashcan.png).
+You can delete a saved state by clicking on the trash can icon ![trashcan](src/images/trashcan.png).
 
 ![](screenshots/loadData.jpg)
 
@@ -183,7 +183,7 @@ You can delete a saved state by clicking on the trash can icon ![trashcan](image
 
 Just below the Speed control is a little icon for toggling orbital elements display.
 
-![](images/orbitIcon.png)
+![](src/images/orbitIcon.png)
 
 If you click on it,  a little table shows up like below.
 
@@ -207,7 +207,7 @@ If you're not familiar with orbital mechanics, [Wikipedia](https://en.wikipedia.
 
 On the 4th from right top corner is an icon for statistics.
 
-![](images/statsIcon.png)
+![](src/images/statsIcon.png)
 
 Clicking on it will toggle the display of statistics of the whole mission.
 
@@ -230,7 +230,7 @@ Clicking on it will toggle the display of statistics of the whole mission.
 
 Just below the Statistics icon is an icon for toggling setting display.
 
-![](images/settingsIcon.png)
+![](src/images/settingsIcon.png)
 
 Clicking on it will toggle the display of a panel for settings.
 Characters in parentheses indicate shortcut keys.
