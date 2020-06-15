@@ -105,7 +105,7 @@ export class StatsControl{
         };
     }
 
-    setText(simTime: Date, startTime: Date){
+    setText(missionTime: number){
         if(!this.visible)
             return;
         const select_obj = this.getSelectObj();
@@ -113,7 +113,7 @@ export class StatsControl{
             this.valueElements[3].innerHTML = this.valueElements[2].innerHTML = '';
             return;
         }
-        const totalSeconds = (simTime.getTime() - startTime.getTime()) / 1e3;
+        const totalSeconds = missionTime / 1e3;
         const seconds = Math.floor(totalSeconds) % 60;
         const minutes = Math.floor(totalSeconds / 60) % 60;
         const hours = Math.floor(totalSeconds / 60 / 60) % 24;

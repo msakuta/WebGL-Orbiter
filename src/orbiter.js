@@ -17,6 +17,7 @@ import { SaveControl } from './SaveControl';
 import { LoadControl } from './LoadControl';
 import Overlay from './Overlay';
 import Universe from './Universe';
+import GameState from './GameState';
 
 import backgroundUrl from './images/hipparcoscyl1.jpg';
 
@@ -46,23 +47,16 @@ var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 var viewScale = 100;
 
-var simTime, startTime;
-var realTime;
-var center_select = false;
-var select_idx = 0;
-var select_obj = null;
+var gameState;
 var settings = new Settings();
 
 var buttons = new RotationButtons();
 var accelerate = false;
 var decelerate = false;
 
-var universe;
-
 var selectedOrbitMaterial;
 
 var AU = 149597871; // Astronomical unit in kilometers
-var timescale = 1e0; // This is not a constant; it can be changed by the user
 
 function init() {
 
@@ -102,16 +96,11 @@ function init() {
 
 	scene = new THREE.Scene();
 
-	function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name, orbitGeometry){
-		return addPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name,
-			scene, viewScale, overlay.overlay, orbitGeometry, center_select, settings, camera, windowHalfX, windowHalfY);
-	}
-
 	var orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
 	CelestialBody.prototype.orbitMaterial = orbitMaterial; // Default orbit material
 	selectedOrbitMaterial = new THREE.LineBasicMaterial({color: 0xff7fff});
 
-	universe = new Universe(scene, AddPlanet, center_select, viewScale, settings, camera);
+	gameState = new GameState(scene, viewScale, overlay.overlay, settings, camera, windowHalfX, windowHalfY, function(msg){ messageControl.setText(msg); });
 
 	var meshMaterial = new THREE.LineBasicMaterial({color: 0x3f3f3f});
 	var meshGeometry = new THREE.Geometry();
@@ -141,8 +130,6 @@ function init() {
 
 	scene.add(grids);
 
-	select_obj = universe.rocket;
-	center_select = true;
 	camera.position.set(0.005, 0.003, 0.005);
 
 	renderer = new THREE.WebGLRenderer();
@@ -165,28 +152,11 @@ function init() {
 	stats.domElement.style.top = '0px';
 	container.appendChild( stats.domElement );
 
-	timescaleControl = new TimeScaleControl(
-		(scale) => {
-			if(select_obj && 0 < select_obj.throttle){
-				messageControl.setText('You cannot timewarp while accelerating');
-				return false;
-			}
-			timescale = scale;
-			return true;
-	});
+	timescaleControl = new TimeScaleControl(function(scale){ return gameState.setTimeScale(scale); });
 	container.appendChild( timescaleControl.domElement );
 
-	throttleControl = new ThrottleControl(windowHalfX, (pos) => {
-		if(1 < timescale && 0 < pos){
-			messageControl.setText('You cannot accelerate while timewarping');
-			return false;
-		}
-		if(!select_obj || !select_obj.controllable){
-			messageControl.setText('You need to select a controllable object to set throttle');
-			return false;
-		}
-		return true;
-	}, () => select_obj);
+	throttleControl = new ThrottleControl(windowHalfX, function(pos){ return gameState.allowThrottle(pos); },
+		function(){ return gameState.getSelectObj(); });
 	container.appendChild( throttleControl.domElement );
 
 	var rotationControl = new RotationControl(buttons);
@@ -212,8 +182,8 @@ function init() {
 		var valueElement = document.createElement('div');
 		element.appendChild(valueElement);
 		this.setSpeed = function(){
-			if(select_obj){
-				var value = select_obj.velocity.length() * AU;
+			if(gameState.select_obj){
+				var value = gameState.select_obj.velocity.length() * AU;
 				if(value < 1)
 					valueElement.innerHTML = (value * 1000).toFixed(4) + 'm/s';
 				else
@@ -230,7 +200,7 @@ function init() {
 	container.appendChild( orbitalElementsControl.domElement );
 
 	settingsControl = new SettingsControl(settings);
-	statsControl = new StatsControl(settingsControl, () => select_obj);
+	statsControl = new StatsControl(settingsControl, function() { return gameState.getSelectObj(); });
 	container.appendChild( statsControl.domElement );
 	container.appendChild( settingsControl.domElement );
 
@@ -268,13 +238,10 @@ function init() {
 	messageControl = new MessageControl();
 	container.appendChild( messageControl.domElement );
 
-	scenarioSelectorControl = new ScenarioSelectorControl(function(){return select_obj;},
+	scenarioSelectorControl = new ScenarioSelectorControl(
+		function(){ return gameState.getSelectObj(); },
 		function(throttle){ throttleControl.setThrottle(throttle); },
-		function(){
-			simTime = new Date();
-			realTime = simTime;
-			startTime = simTime;
-		},
+		function(){ gameState.resetTime(); },
 		function(msg){ messageControl.setText(msg); },
 		function(){
 			[saveControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
@@ -282,16 +249,8 @@ function init() {
 	);
 	container.appendChild( scenarioSelectorControl.domElement );
 
-	function serializeState(){
-		return {
-			simTime: simTime,
-			startTime: startTime,
-			bodies: universe.sun.serializeTree(),
-		};
-	}
-
 	saveControl = new SaveControl(
-		serializeState,
+		function(){ return gameState.serializeState(); },
 		function(msg){ messageControl.setText(msg); },
 		function(){
 			[scenarioSelectorControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
@@ -299,22 +258,10 @@ function init() {
 	);
 	container.appendChild( saveControl.domElement );
 
-	function loadState(state){
-		simTime = new Date(state.simTime);
-		startTime = new Date(state.startTime);
-		var bodies = state.bodies;
-		for(var i = 0; i < bodies.length; i++){
-			var body = bodies[i];
-			if(CelestialBody.celestialBodies.has(body.name)){
-				CelestialBody.celestialBodies.get(body.name).deserialize(body);
-			}
-		}
-		if(select_obj)
-			throttleControl.setThrottle(select_obj.throttle);
-	}
+	gameState.onStateLoad = () => throttleControl.setThrottle(gameState.select_obj.throttle);
 
 	loadControl = new LoadControl(
-		loadState,
+		function(state){ gameState.loadState(state) },
 		function(msg){ messageControl.setText(msg); },
 		function(){
 			[scenarioSelectorControl, saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
@@ -328,18 +275,14 @@ function init() {
 	window.addEventListener( 'pageshow', function(){
 		var state = localStorage.getItem('WebGLOrbiterAutoSave');
 		if(state){
-			loadState(JSON.parse(state));
+			gameState.loadState(JSON.parse(state));
 		}
 	});
 	window.addEventListener( 'beforeunload', function(){
-		localStorage.setItem('WebGLOrbiterAutoSave', JSON.stringify(serializeState()));
+		localStorage.setItem('WebGLOrbiterAutoSave', JSON.stringify(gameState.serializeState()));
 	});
 
-	// Start the clock after the initialization is finished, otherwise
-	// the very first frame of simulation can be long.
-	simTime = new Date();
-	realTime = simTime;
-	startTime = simTime;
+	gameState.startTicking();
 }
 
 function onWindowResize() {
@@ -364,16 +307,11 @@ function animate() {
 }
 
 function render() {
-	var now = new Date();
-	var realDeltaTimeMilliSec = now.getTime() - realTime.getTime();
-	var time = new Date(simTime.getTime() + realDeltaTimeMilliSec * timescale);
-	var deltaTime = (time.getTime() - simTime.getTime()) * 1e-3;
-	realTime = now;
-	simTime = time;
+	var [time, realDeltaTimeMilliSec, deltaTime] = gameState.updateTime();
 	timescaleControl.setDate(time.getFullYear() + '/' + zerofill(time.getMonth() + 1) + '/' + zerofill(time.getDate())
 		+ ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds()));
 	speedControl.setSpeed();
-	statsControl.setText(simTime, startTime);
+	statsControl.setText(gameState.getMissionTime());
 	settingsControl.setText();
 	messageControl.timeStep(realDeltaTimeMilliSec * 1e-3);
 
@@ -388,10 +326,11 @@ function render() {
 		if(accelerate) throttleControl.increment(deltaTime / div);
 		if(decelerate) throttleControl.decrement(deltaTime / div);
 
-		universe.simulateBody(deltaTime, div, timescale, buttons, select_obj);
+		gameState.simulateBody(deltaTime, div, buttons);
 	}
 
-	universe.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
+	var select_obj = gameState.getSelectObj();
+	gameState.universe.update(gameState.center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
 		settings.units_km,
 		function(o, headingApoapsis){
 			orbitalElementsControl.setText(o, headingApoapsis, settings.units_km);
@@ -440,6 +379,7 @@ function render() {
 function onKeyDown( event ) {
 	var char = String.fromCharCode(event.which || event.keyCode).toLowerCase();
 
+	var select_obj = gameState.getSelectObj();
 	switch ( char ) {
 
 		case 'i':
