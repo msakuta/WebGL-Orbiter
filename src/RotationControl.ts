@@ -98,7 +98,7 @@ export class RotationControl{
         addArrow(rotateRightUrl, 'right', 2 * navballRadius - buttonWidth, navballRadius - buttonHeight / 2);
         addArrow(rotateCwUrl, 'clockwise', 2 * navballRadius - buttonWidth, 0);
         addArrow(rotateCcwUrl, 'counterclockwise', 0, 0);
-        window.addEventListener('resize', this.setSize);
+        window.addEventListener('resize', (e: UIEvent) => this.setSize);
         window.addEventListener( 'keydown', (e: KeyboardEvent) => this.onKeyDown(e), false );
         window.addEventListener( 'keyup', (e: KeyboardEvent) => this.onKeyUp(e), false );
     }
