@@ -15,13 +15,10 @@ import { MessageControl } from './MessageControl';
 import { ScenarioSelectorControl } from './ScenarioSelectorControl';
 import { SaveControl } from './SaveControl';
 import { LoadControl } from './LoadControl';
+import Overlay from './Overlay';
 
 
 import perlinUrl from './images/perlin.jpg';
-import progradeUrl from './images/prograde.png';
-import retrogradeUrl from './images/retrograde.png';
-import navballUrl from './images/navball.png';
-import watermarkUrl from './images/watermark.png';
 import backgroundUrl from './images/hipparcoscyl1.jpg';
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
@@ -37,8 +34,7 @@ var container, stats;
 var camera, scene, renderer;
 var group;
 var background;
-var overlay, overlayCamera;
-var navballMesh, prograde, retrograde;
+var overlay;
 var timescaleControl;
 var throttleControl;
 var speedControl;
@@ -120,59 +116,7 @@ function init() {
 
 	} );
 
-	overlayCamera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, -1000, 1000 );
-	window.addEventListener('resize', function(){
-		overlayCamera.left = window.innerWidth / - 2;
-		overlayCamera.right = window.innerWidth / 2;
-		overlayCamera.top = window.innerHeight / 2;
-		overlayCamera.bottom = window.innerHeight / - 2;
-		overlayCamera.updateProjectionMatrix();
-	});
-
-	overlay = new THREE.Scene();
-	var loader = new THREE.TextureLoader();
-	loader.load( navballUrl, function ( texture ) {
-
-		var geometry = new THREE.SphereGeometry( navballRadius, 20, 20 );
-
-		var material = new THREE.MeshBasicMaterial( { map: texture, depthTest: false, depthWrite: false } );
-		navballMesh = new THREE.Mesh(geometry, material);
-		overlay.add(navballMesh);
-
-		var spriteMaterial = new THREE.SpriteMaterial({
-			map: new THREE.TextureLoader().load( watermarkUrl ),
-			depthTest: false,
-			depthWrite: false,
-			transparent: true,
-		});
-		var watermark = new THREE.Sprite(spriteMaterial);
-		watermark.scale.set(64, 32, 64);
-		navballMesh.add(watermark);
-	} );
-
-	var spriteGeometry = new THREE.PlaneGeometry( 40, 40 );
-    prograde = new THREE.Mesh(spriteGeometry,
-		new THREE.MeshBasicMaterial({
-			map: new THREE.TextureLoader().load( progradeUrl ),
-			color: 0xffffff,
-			side: THREE.DoubleSide,
-			depthTest: false,
-			depthWrite: false,
-			transparent: true,
-		} )
-	);
-    overlay.add(prograde);
-	retrograde = new THREE.Mesh(spriteGeometry,
-		new THREE.MeshBasicMaterial({
-			map: new THREE.TextureLoader().load( retrogradeUrl ),
-			color: 0xffffff,
-			side: THREE.DoubleSide,
-			depthTest: false,
-			depthWrite: false,
-			transparent: true,
-		} )
-	);
-    overlay.add(retrograde);
+	overlay = new Overlay();
 
 	scene = new THREE.Scene();
 
@@ -231,7 +175,7 @@ function init() {
 
 	function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name){
 		return addPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name,
-			scene, viewScale, overlay, orbitGeometry, center_select, settings, camera, windowHalfX, windowHalfY);
+			scene, viewScale, overlay.overlay, orbitGeometry, center_select, settings, camera, windowHalfX, windowHalfY);
 	}
 
 	sun = new CelestialBody(null, new THREE.Vector3(), null, 0xffffff, GMsun, "sun");
@@ -587,43 +531,11 @@ function render() {
 	camera.position.copy(position);
 	renderer.render( scene, camera );
 
-	if(navballMesh && select_obj && select_obj.controllable){
-		// First, calculate the quaternion for rotating the system so that
-		// X axis points north, Y axis points east and Z axis points zenith.
-		var north = new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.parent.quaternion);
-		var tangent = north.cross(select_obj.position).normalize();
-		var qball = new THREE.Quaternion();
-		var mat = new THREE.Matrix4();
-		var normal = select_obj.position.clone().normalize().negate();
-		mat.makeBasis(tangent.clone().cross(normal), tangent, normal);
-		qball.setFromRotationMatrix (mat);
-
-		navballMesh.quaternion.copy(
-			AxisAngleQuaternion(0, 1, 0, -1*Math.PI / 2)
-			.multiply(AxisAngleQuaternion(0, 0, 1, Math.PI))
-			.multiply(select_obj.quaternion.clone().conjugate())
-			.multiply(qball)
-			.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2))
-			);
-		navballMesh.position.y = -window.innerHeight / 2 + navballRadius;
-		var grade;
-		var factor;
-		if(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) < 0){
-			grade = retrograde;
-			prograde.visible = false;
-			factor = -1.;
-		}
-		else{
-			grade = prograde;
-			retrograde.visible = false;
-			factor = 1.;
-		}
-		grade.visible = true;
-		grade.position.y = -window.innerHeight / 2 + navballRadius + factor * new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) / select_obj.velocity.length() * navballRadius;
-		grade.position.x = factor * new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) / select_obj.velocity.length() * navballRadius;
+	if(select_obj && select_obj.controllable){
+		overlay.updateRotation(select_obj);
 		camera.position.set(0,0,0);
 		camera.quaternion.set(1,0,0,0);
-		renderer.render( overlay, overlayCamera);
+		overlay.render(renderer);
 	}
 
 	// Restore the original state because cameraControls expect these variables unchanged

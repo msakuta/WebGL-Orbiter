@@ -35,6 +35,7 @@ export class CelestialBody{
     orbitMaterial: THREE.LineBasicMaterial;
     protected children: Array<CelestialBody>;
     protected parent: CelestialBody;
+    getParent(){ return this.parent; }
     GM: number;
     radius: number;
     apoapsis?: THREE.Sprite = null;
