@@ -204,8 +204,10 @@ function init() {
     statsControl = new StatsControl(settingsControl, function() { return gameState.getSelectObj(); });
     const verticalContainer = document.createElement('div');
     verticalContainer.style.position = 'absolute';
-    verticalContainer.style.top = '300px';
+    verticalContainer.style.top = '200px';
     verticalContainer.style.width = '100%';
+    verticalContainer.ondragstart = (event) => event.preventDefault();
+    verticalContainer.style.pointerEvents = 'none';
     verticalContainer.appendChild( statsControl.domElement );
     verticalContainer.appendChild( settingsControl.domElement );
     container.appendChild(verticalContainer);

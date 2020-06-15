@@ -45,9 +45,8 @@ export class SettingsControl{
         const iconT = (props: SettingsControl) =>
             <img src={settingsIconUrl}
                 style={{
-                    position: "absolute",
-                    right: 0,
-                    top: 0,
+                    pointerEvents: 'auto',
+                    float: 'right',
                     width: this.config.buttonWidth + 'px',
                     height: this.config.buttonHeight + 'px',
                 }}
@@ -75,12 +74,13 @@ export class SettingsControl{
         const titleT = (props: SettingsControl) =>
             <div
                 style={{
-                    display: props.visible || props.mouseOver ? "block" : "none",
-                    position: "absolute",
+                    display: props.visible || props.mouseOver ? "inline" : "none",
+                    position: "relative",
+                    float: 'right',
                     background: 'rgba(0, 0, 0, 0.5)',
                     bottom: 0,
-                    right: this.config.buttonWidth,
-                    top: 0,
+                    right: 0,
+                    top: (this.config.buttonHeight - 20) + 'px',
                     zIndex: 20,
                 }}>
                 Settings
@@ -88,12 +88,12 @@ export class SettingsControl{
 
         const valueT = (props: SettingsControl) =>
             props.visible ? <div style={{
-                position: 'absolute',
+                pointerEvents: 'auto',
+                float: 'right',
+                clear: 'both',
                 background: 'rgba(0, 0, 0, 0.5)',
                 border: '3px ridge #7f3f3f',
                 padding: '3px',
-                right: 0,
-                top: this.config.buttonHeight,
             }}>
                 {props.items.map((item: {name: string, checked: boolean, label: string}, i: number) =>
                     <div style={{
@@ -114,10 +114,10 @@ export class SettingsControl{
 
         this.render = (props: SettingsControl) => <div
             style={{
-                position: 'relative',
+                float: 'right',
+                clear: 'both',
                 textAlign: 'left',
-                top: this.config.buttonTop + 'px',
-                right: 0 + 'px',
+                marginTop: 2,
                 zIndex: 7,
             }}>{iconT(props)}
             {titleT(props)}

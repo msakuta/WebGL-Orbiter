@@ -38,38 +38,35 @@ export class StatsControl{
         }
 
         this.element = document.createElement('div');
-        this.element.style.position = 'relative';
+        this.element.style.float = 'right';
         this.element.style.textAlign = 'left';
-        this.element.style.top = buttonTop + 'px';
-        this.element.style.right = 0 + 'px';
-        this.element.style.width = '150px';
         this.element.style.zIndex = '7';
         const icon = document.createElement('img');
         icon.src = statsIconUrl;
-        icon.style.position = 'absolute';
-        icon.style.right = '0px';
+        icon.style.pointerEvents = 'auto';
+        icon.style.float = 'right';
         icon.style.width = buttonWidth + 'px';
         icon.style.height = buttonHeight + 'px';
+        icon.ondragstart = (event) => event.preventDefault();
         this.element.appendChild(icon);
 
         const title = document.createElement('div');
         title.innerHTML = 'Statistics';
         title.style.display = 'none';
-        title.style.position = 'absolute';
-        title.style.top = (buttonTop - 20) + 'px';
-        // title.style.bottom = '0px';
-        title.style.right = buttonWidth + 'px';
+        title.style.float = 'right';
+        title.style.position = 'relative';
+        title.style.top = (buttonHeight - 20) + 'px';
+        title.style.right = '0px';
         title.style.background = 'rgba(0, 0, 0, 0.5)';
         title.style.zIndex = '20';
         this.element.appendChild(title);
 
         this.valueElement = document.createElement('div');
         this.element.appendChild(this.valueElement);
+        this.valueElement.style.pointerEvents = 'auto';
         this.valueElement.style.display = 'none';
-        this.valueElement.style.position = 'relative';
-        this.valueElement.style.top = buttonHeight + 'px';
-        this.valueElement.style.right = '0px';
-        this.valueElement.style.width = '150px';
+        this.valueElement.style.float = 'right';    
+        this.valueElement.style.clear = 'both';
         this.valueElement.style.background = 'rgba(0, 0, 0, 0.5)';
         this.valueElement.style.border = '3px ridge #7f3f3f';
         this.valueElement.style.padding = '3px';
@@ -94,18 +91,14 @@ export class StatsControl{
             this.visible = !this.visible;
             if(this.visible){
                 this.valueElement.style.display = 'inline-block';
-                this.element.style.background = 'rgba(0, 0, 0, 0.5)';
             }
             else{
                 this.valueElement.style.display = 'none';
-                this.element.style.background = 'rgba(0, 0, 0, 0)';
-                settingsControl.domElement.style.top = this.element.getBoundingClientRect().bottom + 'px';
             }
         };
         icon.onmouseenter = (event) => {
             if(!this.visible)
-                title.style.display = 'block';
-            rightTitleSetSize(title, icon);
+                title.style.display = 'inline';
         };
         icon.onmouseleave = (event) => {
             if(!this.visible)
@@ -135,7 +128,5 @@ export class StatsControl{
             deltaV = deltaVkm.toFixed(4) + 'km/s';
         this.valueElements[1].innerHTML = deltaV;
         this.valueElements[2].innerHTML = select_obj.ignitionCount.toString();
-        // this.valueElement.style.marginLeft = (buttonWidth - this.valueElement.getBoundingClientRect().width) + 'px';
-        this.settingsControl.domElement.style.top = this.valueElement.getBoundingClientRect().bottom + 'px';
     }
 }
