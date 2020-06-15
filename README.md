@@ -243,12 +243,14 @@ Characters in parentheses indicate shortcut keys.
 * Units in KM - Shows distances in Orbital Elements panel in Kilometers instead of AUs.
 
 
-## Sources
+## How to build
 
-* orbiter.html
+Use npm to build or debug the project.
 
-  The real-time orbital simulator with three.js and WebGL.
-  You'll need a WebGL supporting browser in order to enable this simulation.
+1. Install Node.js
+2. Run `npm i`
+3. Serve the page with `npm run start`
+4. or `npm run build` to make a static website in `dist/` subdirectory.
 
 * runge-kutta.html  
 
@@ -258,4 +260,8 @@ Characters in parentheses indicate shortcut keys.
 
 ## Libraries
 
-This project uses three.js JavaScript library for rendering.
+This project uses:
+
+* three.js
+* Node.js
+* webpack
