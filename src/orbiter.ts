@@ -16,14 +16,11 @@ import { ScenarioSelectorControl } from './ScenarioSelectorControl';
 import { SaveControl } from './SaveControl';
 import { LoadControl } from './LoadControl';
 import Overlay from './Overlay';
-import Universe from './Universe';
 import GameState from './GameState';
 
 import backgroundUrl from './images/hipparcoscyl1.jpg';
 
 
-
-;(function(){
 let container: HTMLElement;
 let stats: Stats;
 let camera: THREE.PerspectiveCamera;
@@ -423,4 +420,3 @@ function onKeyUp( event: KeyboardEvent ) {
 
 init();
 animate();
-})()
