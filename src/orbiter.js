@@ -9,13 +9,13 @@ import { Settings, SettingsControl } from './SettingsControl';
 import { TimeScaleControl } from './TimeScaleControl';
 import { ThrottleControl } from './ThrottleControl';
 import { navballRadius, RotationControl } from './RotationControl';
+import { OrbitalElementsControl } from './OrbitalElementsControl';
 import { zerofill, StatsControl } from './StatsControl';
 import { ScenarioSelectorControl } from './ScenarioSelectorControl';
 import { SaveControl } from './SaveControl';
 import { LoadControl } from './LoadControl';
 
 
-import orbitIconUrl from './images/orbitIcon.png';
 import perlinUrl from './images/perlin.jpg';
 import progradeUrl from './images/prograde.png';
 import retrogradeUrl from './images/retrograde.png';
@@ -41,7 +41,7 @@ var navballMesh, prograde, retrograde;
 var timescaleControl;
 var throttleControl;
 var speedControl;
-var orbitalElementControl;
+var orbitalElementsControl;
 var statsControl;
 var settingsControl;
 var altitudeControl;
@@ -390,67 +390,8 @@ function init() {
 	})();
 	container.appendChild( speedControl.domElement );
 
-	orbitalElementControl = new (function(){
-		var buttonHeight = 32;
-		var buttonWidth = 32;
-		this.domElement = document.createElement('div');
-		var element = this.domElement;
-		element.style.position = 'absolute';
-		element.style.textAlign = 'left';
-		element.style.top = 120 + 'px';
-		element.style.left = 0 + 'px';
-		element.style.zIndex = 7;
-		var visible = false;
-		var icon = document.createElement('img');
-		icon.src = orbitIconUrl;
-		element.appendChild(icon);
-
-		var title = document.createElement('div');
-		title.innerHTML = 'Orbital Elements';
-		title.style.display = 'none';
-		element.appendChild(title);
-
-		var valueElement = document.createElement('div');
-		element.appendChild(valueElement);
-		valueElement.id = 'orbit';
-		valueElement.style.display = 'none';
-
-		// Register event handlers
-		icon.ondragstart = function(event){
-			event.preventDefault();
-		};
-		icon.onclick = function(event){
-			visible = !visible;
-			if(visible){
-				valueElement.style.display = 'block';
-				element.style.background = 'rgba(0, 0, 0, 0.5)';
-			}
-			else{
-				valueElement.style.display = 'none';
-				element.style.background = 'rgba(0, 0, 0, 0)';
-			}
-		};
-		icon.onmouseenter = function(event){
-			if(!visible)
-				title.style.display = 'block';
-		};
-		icon.onmouseleave = function(event){
-			if(!visible)
-				title.style.display = 'none';
-		};
-
-		this.setText = function(text){
-			valueElement.innerHTML = text;
-		}
-	})();
-	container.appendChild( orbitalElementControl.domElement );
-
-	function rightTitleSetSize(title, icon){
-		var r = title.getBoundingClientRect();
-		var iconRect = icon.getBoundingClientRect()
-		title.style.top = (iconRect.height - r.height) + 'px';
-		title.style.right = iconRect.width + 'px';
-	}
+	orbitalElementsControl = new OrbitalElementsControl();
+	container.appendChild( orbitalElementsControl.domElement );
 
 	settingsControl = new SettingsControl(settings);
 	statsControl = new StatsControl(settingsControl, () => select_obj);
@@ -651,31 +592,10 @@ function render() {
 		sun.simulateBody(deltaTime, div, timescale, buttons, select_obj);
 	}
 
-	// Convert length of unit au into a fixed-length string considering user unit selection.
-	// Also appends unit string for clarity.
-	function unitConvLength(au){
-		if(settings.units_km)
-			return (au * AU).toPrecision(10) + ' km';
-		else
-			return au.toFixed(10) + ' AU';
-	}
-
 	sun.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
 		settings.units_km,
 		function(o, headingApoapsis){
-			orbitalElementControl.setText(
-				'<table class="table1">'
-				+ ' <tr><td>e</td><td>' + (o.eccentricity || 0).toFixed(10) + '</td></tr>'
-				+ ' <tr><td>a</td><td>' + unitConvLength(o.semimajor_axis) + '</td></tr>'
-				+ ' <tr><td>i</td><td>' + (o.inclination / Math.PI).toFixed(10) + '</td></tr>'
-				+ ' <tr><td>Omega</td><td>' + (o.ascending_node / Math.PI).toFixed(10) + '</td></tr>'
-				+ ' <tr><td>w</td><td>' + (o.argument_of_perihelion / Math.PI).toFixed(10) + '</td></tr>'
-				+ ' <tr><td>Periapsis</td><td>' + unitConvLength(o.semimajor_axis * (1 - o.eccentricity)) + '</td></tr>'
-				+ ' <tr><td>Apoapsis</td><td>' + unitConvLength(o.semimajor_axis * (1 + o.eccentricity)) + '</td></tr>'
-				+ ' <tr><td>head</td><td>' + headingApoapsis.toFixed(5) + '</td></tr>'
-	//							+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + '<br>' + this.angularVelocity.y.toFixed(10) + ',' + '<br>' + this.angularVelocity.z.toFixed(10)
-				+'</table>'
-			);
+			orbitalElementsControl.setText(o, headingApoapsis, settings.units_km);
 		},
 		scene,
 		select_obj
