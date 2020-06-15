@@ -8,7 +8,7 @@ import { CelestialBody, addPlanet, AxisAngleQuaternion } from './CelestialBody';
 import { Settings, SettingsControl } from './SettingsControl';
 import { TimeScaleControl } from './TimeScaleControl';
 import { ThrottleControl } from './ThrottleControl';
-import { navballRadius, RotationControl } from './RotationControl';
+import { navballRadius, RotationControl, RotationButtons } from './RotationControl';
 import { OrbitalElementsControl } from './OrbitalElementsControl';
 import { zerofill, StatsControl } from './StatsControl';
 import { MessageControl } from './MessageControl';
@@ -16,23 +16,16 @@ import { ScenarioSelectorControl } from './ScenarioSelectorControl';
 import { SaveControl } from './SaveControl';
 import { LoadControl } from './LoadControl';
 import Overlay from './Overlay';
+import Universe from './Universe';
 
-
-import perlinUrl from './images/perlin.jpg';
 import backgroundUrl from './images/hipparcoscyl1.jpg';
-import moonUrl from './images/moon.png';
-import mercuryUrl from './images/mercury.jpg';
-import marsUrl from './images/mars.jpg';
-import venusUrl from './images/venus.jpg';
-import jupiterUrl from './images/jupiter.jpg';
-import earthUrl from './images/land_ocean_ice_cloud_2048.jpg';
-import rocketModelUrl from './rocket.obj';
+
+
 
 ;(function(){
 'use strict'
 var container, stats;
 var camera, scene, renderer;
-var group;
 var background;
 var overlay;
 var timescaleControl;
@@ -60,27 +53,16 @@ var select_idx = 0;
 var select_obj = null;
 var settings = new Settings();
 
-var buttons = {
-	up: false,
-	down: false,
-	left: false,
-	right: false,
-	counterclockwise: false,
-	clockwise: false,
-};
+var buttons = new RotationButtons();
 var accelerate = false;
 var decelerate = false;
 
-var sun;
-var light;
+var universe;
 
 var selectedOrbitMaterial;
 
 var AU = 149597871; // Astronomical unit in kilometers
-var GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
-var epsilon = 1e-40; // Doesn't the machine epsilon depend on browsers!??
 var timescale = 1e0; // This is not a constant; it can be changed by the user
-var rad_per_deg = Math.PI / 180; // Radians per degrees
 
 function init() {
 
@@ -120,22 +102,16 @@ function init() {
 
 	scene = new THREE.Scene();
 
-	group = new THREE.Object3D();
-	scene.add( group );
+	function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name, orbitGeometry){
+		return addPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name,
+			scene, viewScale, overlay.overlay, orbitGeometry, center_select, settings, camera, windowHalfX, windowHalfY);
+	}
 
-	var material = new THREE.PointsMaterial( { size: 0.1 } );
+	var orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
+	CelestialBody.prototype.orbitMaterial = orbitMaterial; // Default orbit material
+	selectedOrbitMaterial = new THREE.LineBasicMaterial({color: 0xff7fff});
 
-	// Sun
-	var Rsun = 695800.;
-	var sgeometry = new THREE.SphereGeometry( Rsun / AU * viewScale, 20, 20 );
-
-	var sunMesh = new THREE.Mesh( sgeometry, material );
-	group.add( sunMesh );
-
-	// Sun light
-	light = new THREE.PointLight( 0xffffff, 1, 0, 1e-6 );
-	scene.add( light );
-	scene.add( new THREE.AmbientLight( 0x202020 ) );
+	universe = new Universe(scene, AddPlanet, center_select, viewScale, settings, camera);
 
 	var meshMaterial = new THREE.LineBasicMaterial({color: 0x3f3f3f});
 	var meshGeometry = new THREE.Geometry();
@@ -165,94 +141,9 @@ function init() {
 
 	scene.add(grids);
 
-	var orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
-	CelestialBody.prototype.orbitMaterial = orbitMaterial; // Default orbit material
-	selectedOrbitMaterial = new THREE.LineBasicMaterial({color: 0xff7fff});
-	var orbitGeometry = new THREE.Geometry();
-	var curve = new THREE.EllipseCurve(0, 0, 1, 1,
-		0, Math.PI * 2, false, 90);
-	var orbitGeometry = new THREE.Geometry().setFromPoints( curve.getPoints(256) );
-
-	function AddPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name){
-		return addPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name,
-			scene, viewScale, overlay.overlay, orbitGeometry, center_select, settings, camera, windowHalfX, windowHalfY);
-	}
-
-	sun = new CelestialBody(null, new THREE.Vector3(), null, 0xffffff, GMsun, "sun");
-	sun.radius = Rsun;
-	sun.model = group;
-	var mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, 0x3f7f7f, 22032 / AU / AU / AU, sun, mercuryUrl, 2439.7, {soi: 2e5}, "mercury");
-	var venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, 0x7f7f3f, 324859 / AU / AU / AU, sun, venusUrl, 6051.8, {soi: 5e5}, "mars");
-	// Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
-	var earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x3f7f3f, 398600 / AU / AU / AU, sun, earthUrl, 6534,
-		{axialTilt: 23.4392811 * rad_per_deg,
-		rotationPeriod: ((23 * 60 + 56) * 60 + 4.10),
-		soi: 5e5}, "earth");
-	var rocket = AddPlanet(10000 / AU, 0., 0, 0, 0, 0x3f7f7f, 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: rocketModelUrl, controllable: true}, "rocket");
-	rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
-	var moon = AddPlanet(384399 / AU, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, 0x5f5f5f, 4904.8695 / AU / AU / AU, earth, moonUrl, 1737.1, {soi: 1e5}, "moon");
-	var mars = AddPlanet(1.523679, 0.0935, 1.850 * rad_per_deg, 49.562 * rad_per_deg, 286.537 * rad_per_deg, 0x7f3f3f, 42828 / AU / AU / AU, sun, marsUrl, 3389.5, {soi: 3e5}, "mars");
-	var jupiter = AddPlanet(5.204267, 0.048775, 1.305 * rad_per_deg, 100.492 * rad_per_deg, 275.066 * rad_per_deg, 0x7f7f3f, 126686534 / AU / AU / AU, sun, jupiterUrl, 69911, {soi: 10e6}, "jupiter");
-	select_obj = rocket;
+	select_obj = universe.rocket;
 	center_select = true;
 	camera.position.set(0.005, 0.003, 0.005);
-
-	// Use icosahedron instead of sphere to make it look like uniform
-	var asteroidGeometry = new THREE.IcosahedronGeometry( 1, 2 );
-	// Modulate the vertices randomly to make it look like an asteroid. Simplex noise is desirable.
-	for(var i = 0; i < asteroidGeometry.vertices.length; i++){
-		asteroidGeometry.vertices[i].multiplyScalar(0.3 * (Math.random() - 0.5) + 1);
-	}
-	// Recalculate normal vectors according to updated vertices
-	asteroidGeometry.computeFaceNormals();
-	asteroidGeometry.computeVertexNormals();
-
-	// Perlin noise is applied as detail texture.
-	// It's asynchrnonous because it's shared by multiple asteroids.
-	var asteroidTexture = new THREE.TextureLoader().load(perlinUrl);
-	asteroidTexture.wrapS = THREE.RepeatWrapping;
-	asteroidTexture.wrapT = THREE.RepeatWrapping;
-	asteroidTexture.repeat.set(4, 4);
-	var asteroidMaterial = new THREE.MeshLambertMaterial( {
-		map: asteroidTexture,
-		color: 0xffaf7f, flatShading: false
-	} );
-
-	// Randomly generate asteroids
-	for ( i = 0; i < 3; i ++ ) {
-
-		var angle = Math.random() * Math.PI * 2;
-		var position = new THREE.Vector3();
-		position.x = 0.1 * (Math.random() - 0.5);
-		position.y = 0.1 * (Math.random() - 0.5) + 1;
-		position.z = 0.1 * (Math.random() - 0.5);
-		position.applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
-
-		position.multiplyScalar(2.5);
-		var asteroid = new CelestialBody(sun, position, undefined, undefined, undefined, "asteroid" + i);
-		asteroid.velocity = new THREE.Vector3((Math.random() - 0.5) * 0.3 - 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
-			.multiplyScalar(Math.sqrt(GMsun / position.length())).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
-
-		asteroid.radius = Math.random() * 1 + 0.1;
-		// We need nested Object3D for NLIPS
-		asteroid.model = new THREE.Object3D();
-		// The inner Mesh object has scale determined by radius
-		var shape = new THREE.Mesh( asteroidGeometry, asteroidMaterial );
-		asteroid.model.add(shape);
-		var radiusInAu = viewScale * asteroid.radius / AU;
-		shape.scale.set(radiusInAu, radiusInAu, radiusInAu);
-		shape.up.set(0,0,1);
-		scene.add( asteroid.model );
-
-		var orbitMesh = new THREE.Line(orbitGeometry, asteroid.orbitMaterial);
-		asteroid.orbit = orbitMesh;
-		scene.add(orbitMesh);
-
-		asteroid.init();
-		asteroid.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
-			settings.units_km, (_) => {}, scene);
-
-	}
 
 	renderer = new THREE.WebGLRenderer();
 	renderer.setClearColor( 0x000000 );
@@ -395,7 +286,7 @@ function init() {
 		return {
 			simTime: simTime,
 			startTime: startTime,
-			bodies: sun.serializeTree(),
+			bodies: universe.sun.serializeTree(),
 		};
 	}
 
@@ -418,7 +309,8 @@ function init() {
 				CelestialBody.celestialBodies.get(body.name).deserialize(body);
 			}
 		}
-		throttleControl.setThrottle(rocket.throttle);
+		if(select_obj)
+			throttleControl.setThrottle(select_obj.throttle);
 	}
 
 	loadControl = new LoadControl(
@@ -496,10 +388,10 @@ function render() {
 		if(accelerate) throttleControl.increment(deltaTime / div);
 		if(decelerate) throttleControl.decrement(deltaTime / div);
 
-		sun.simulateBody(deltaTime, div, timescale, buttons, select_obj);
+		universe.simulateBody(deltaTime, div, timescale, buttons, select_obj);
 	}
 
-	sun.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
+	universe.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
 		settings.units_km,
 		function(o, headingApoapsis){
 			orbitalElementsControl.setText(o, headingApoapsis, settings.units_km);
@@ -507,10 +399,6 @@ function render() {
 		scene,
 		select_obj
 	);
-
-	var irotate = AxisAngleQuaternion(-1, 0, 0, Math.PI / 2);
-	// offset sun position
-	light.position.copy(sun.model.position);
 
 	grids.visible = settings.grid_enable;
 
