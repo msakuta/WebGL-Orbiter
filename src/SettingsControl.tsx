@@ -1,6 +1,6 @@
 import settingsIconUrl from './images/settingsIcon.png';
+import { ContainerControl } from './ContainerControl';
 import * as React from "react";
-import * as ReactDOM from "react-dom";
 
 export function rightTitleSetSize(title: HTMLElement, icon: HTMLElement){
     const r = title.getBoundingClientRect();
@@ -28,47 +28,12 @@ export interface SettingsControlProps {
     onChangeItem: (i: number, name: string) => void;
 }
 
-export class SettingsControl extends React.Component<SettingsControlProps, {visible: boolean, mouseOver: boolean}>{
+export class SettingsControl extends React.Component<SettingsControlProps>{
     config = new Config();
 
     render(): JSX.Element{
-
-        const iconT = () =>
-            <img src={settingsIconUrl}
-                style={{
-                    pointerEvents: 'auto',
-                    float: 'right',
-                    width: this.config.buttonWidth + 'px',
-                    height: this.config.buttonHeight + 'px',
-                }}
-                onDragStart={(event) => event.preventDefault()}
-                onClick={(event) => {
-                    this.setState({visible: !this.state.visible, mouseOver: this.state.mouseOver});
-                }}
-                onMouseEnter={(event) => {
-                    this.setState({visible: this.state.visible, mouseOver: true});
-                }}
-                onMouseLeave={(event) => {
-                    this.setState({visible: this.state.visible, mouseOver: false});
-                }}
-            />;
-        const titleT = () =>
-            <div
-                style={{
-                    display: this.state.visible || this.state.mouseOver ? "inline" : "none",
-                    position: "relative",
-                    float: 'right',
-                    background: this.state.visible ? 'rgba(0, 0, 0, 0.5)' : '',
-                    bottom: 0,
-                    right: 0,
-                    top: (this.config.buttonHeight - 20) + 'px',
-                    zIndex: 20,
-                }}>
-                Settings
-            </div>;
-
         const valueT = () =>
-            this.state.visible ? <div style={{
+            <div style={{
                 pointerEvents: 'auto',
                 float: 'right',
                 clear: 'both',
@@ -91,24 +56,19 @@ export class SettingsControl extends React.Component<SettingsControlProps, {visi
                                     this.setState({});
                                 })(item.name, i)}
                     />{item.label}</label></div>)}
-            </div> : <div></div>;
+            </div>;
 
-        return <div
-            style={{
-                float: 'right',
-                clear: 'both',
-                textAlign: 'left',
-                marginTop: 2,
-                zIndex: 7,
-            }}>{iconT()}
-            {titleT()}
-            {valueT()}</div>;
+        return <ContainerControl
+           buttonTop={this.config.buttonTop}
+           buttonWidth={this.config.buttonWidth}
+           buttonHeight={this.config.buttonHeight}
+           iconUrl={settingsIconUrl}
+        >{valueT()}</ContainerControl>;
 
     }
 
     constructor(props: SettingsControlProps){
         super(props);
-        this.state = {visible: false, mouseOver: false};
         window.addEventListener( 'keydown', (event: KeyboardEvent) => this.onKeyDown(event), false );
     }
 
