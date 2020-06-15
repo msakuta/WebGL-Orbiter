@@ -31,7 +31,9 @@ export class SettingsControl{
     protected valueElement: HTMLDivElement;
     protected checkElements: HTMLInputElement[] = [];
     protected visible = false;
-    protected titleT: (props: {visible: boolean}) => JSX.Element;
+    protected mouseOver = false;
+    protected iconT: (props: SettingsControl) => JSX.Element;
+    protected titleT: (props: SettingsControl) => JSX.Element;
     protected items: {name: string, checked: boolean, label: string}[];
     protected valueT: (props: SettingsControl) => JSX.Element;
 
@@ -50,17 +52,22 @@ export class SettingsControl{
         element.style.top = this.config.buttonTop + 'px';
         element.style.left = 0 + 'px';
         element.style.zIndex = '7';
-        const icon = document.createElement('img');
-        icon.src = settingsIconUrl;
-        icon.style.width = this.config.buttonWidth + 'px';
-        icon.style.height = this.config.buttonHeight + 'px';
+        const icon = document.createElement('div');
+        this.iconT = (props: SettingsControl) =>
+            <img src={settingsIconUrl}
+                style={{
+                    width: this.config.buttonWidth + 'px',
+                    height: this.config.buttonHeight + 'px',
+                }}
+            />;
         element.appendChild(icon);
+        ReactDOM.render(this.iconT(this), icon);
 
         const title = document.createElement('div');
-        this.titleT = (((props: {visible: boolean}) =>
+        this.titleT = (props: SettingsControl) =>
             <div
                 style={{
-                    display: props.visible ? "block" : "none",
+                    display: props.visible || props.mouseOver ? "block" : "none",
                     position: "absolute",
                     background: 'rgba(0, 0, 0, 0.5)',
                     bottom: 0,
@@ -68,7 +75,7 @@ export class SettingsControl{
                     zIndex: 20,
                 }}>
                 Settings
-            </div>));
+            </div>;
 
         element.appendChild(title);
 
@@ -81,7 +88,7 @@ export class SettingsControl{
                 'Units in KM (K)',
                 'Center selected (C)'][i]}));
         this.valueElement = document.createElement('div');
-        this.valueT = (((props: SettingsControl) =>
+        this.valueT = (props: SettingsControl) =>
             props.visible ? <div style={{
                 position: 'absolute',
                 background: 'rgba(0, 0, 0, 0.5)',
@@ -101,7 +108,7 @@ export class SettingsControl{
                             (event: React.ChangeEvent<HTMLInputElement>) =>
                                 {this.items[i].checked = a[field] = !a[field]})(this.settings, item.name, i)}
                     />{item.label}</label></div>)}
-            </div> : <div></div>));
+            </div> : <div></div>;
         ReactDOM.render(this.valueT(this), this.valueElement);
         element.appendChild(this.valueElement);
 
@@ -121,13 +128,13 @@ export class SettingsControl{
             }
         };
         icon.onmouseenter = (event) => {
-            if(!this.visible)
-                ReactDOM.render(this.titleT({visible: this.visible}), title);
+            this.mouseOver = true;
+            ReactDOM.render(this.titleT(this), title);
             rightTitleSetSize(title, icon);
         };
         icon.onmouseleave = (event) => {
-            if(!this.visible)
-                ReactDOM.render(this.titleT({visible: this.visible}), title);
+            this.mouseOver = false;
+            ReactDOM.render(this.titleT(this), title);
         };
 
         window.addEventListener( 'keydown', (event: KeyboardEvent) => this.onKeyDown(event), false );
