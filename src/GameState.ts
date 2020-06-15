@@ -122,7 +122,8 @@ export default class GameState{
                     else{
                         let selected = false;
                         let prev = this.select_obj;
-                        for(let parent = this.select_obj.getParent(); parent; parent = parent.getParent()){
+                        let parent;
+                        for(parent = this.select_obj.getParent(); parent; parent = parent.getParent()){
                             const objs = parent.getChildren();
                             for(let i = 0; i < objs.length; i++){
                                 const o = objs[i];
