@@ -34,7 +34,9 @@ let timescaleControl: TimeScaleControl;
 let throttleControl: ThrottleControl;
 let speedControl: any;
 let orbitalElementsControl: OrbitalElementsControl;
-let statsControl: StatsControl;
+let statsControl: JSX.Element;
+let statsElement: HTMLElement;
+let statsItems: {title: string, value: string}[];
 let settingsControl: JSX.Element;
 let settingsElement: HTMLElement;
 let altitudeControl: any;
@@ -55,6 +57,12 @@ let settings = new Settings();
 let buttons = new RotationButtons();
 let accelerate = false;
 let decelerate = false;
+
+function renderStatsControl(){
+    statsControl = <StatsControl items={statsItems} select_obj={gameState.getSelectObj()}></StatsControl>;
+    ReactDOM.render(statsControl, statsElement);
+}
+
 
 function init() {
 
@@ -220,14 +228,16 @@ function init() {
         }}
         />;
     ReactDOM.render(settingsControl, settingsElement);
-    statsControl = new StatsControl(settingsControl.type, function() { return gameState.getSelectObj(); });
+    statsItems = ['Mission Time', 'Delta-V', 'Ignition&nbsp;Count'].map((item) => ({title: item, value: ''}));
+    statsElement = document.createElement('div');
+    renderStatsControl();
     const verticalContainer = document.createElement('div');
     verticalContainer.style.position = 'absolute';
     verticalContainer.style.top = '200px';
     verticalContainer.style.width = '100%';
     verticalContainer.ondragstart = (event) => event.preventDefault();
     verticalContainer.style.pointerEvents = 'none';
-    verticalContainer.appendChild( statsControl.domElement );
+    verticalContainer.appendChild( statsElement );
     verticalContainer.appendChild( settingsElement );
     container.appendChild(verticalContainer);
 
@@ -344,7 +354,8 @@ function render() {
     timescaleControl.setDate(time.getFullYear() + '/' + zerofill(time.getMonth() + 1) + '/' + zerofill(time.getDate())
         + ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds()));
     speedControl.setSpeed();
-    statsControl.setText(gameState.getMissionTime());
+    StatsControl.setText(statsItems, gameState.getSelectObj(), gameState.getMissionTime());
+    renderStatsControl();
     messageControl.timeStep(realDeltaTimeMilliSec * 1e-3);
 
     camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);

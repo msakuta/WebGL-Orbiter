@@ -1,11 +1,4 @@
 import * as React from "react";
-import * as ReactDOM from "react-dom";
-
-export class Config{
-    buttonTop = 34;
-    buttonWidth = 32;
-    buttonHeight = 32;
-}
 
 export interface ContainerControlProps {
     buttonTop: number;
@@ -13,10 +6,10 @@ export interface ContainerControlProps {
     buttonHeight: number;
     children: JSX.Element;
     iconUrl: string;
+    caption: string;
 }
 
 export class ContainerControl extends React.Component<ContainerControlProps, {visible: boolean, mouseOver: boolean}>{
-    config = new Config();
 
     render(): JSX.Element{
 
@@ -25,8 +18,8 @@ export class ContainerControl extends React.Component<ContainerControlProps, {vi
                 style={{
                     pointerEvents: 'auto',
                     float: 'right',
-                    width: this.config.buttonWidth + 'px',
-                    height: this.config.buttonHeight + 'px',
+                    width: this.props.buttonWidth + 'px',
+                    height: this.props.buttonHeight + 'px',
                 }}
                 onDragStart={(event) => event.preventDefault()}
                 onClick={(event) => {
@@ -48,10 +41,10 @@ export class ContainerControl extends React.Component<ContainerControlProps, {vi
                     background: this.state.visible ? 'rgba(0, 0, 0, 0.5)' : '',
                     bottom: 0,
                     right: 0,
-                    top: (this.config.buttonHeight - 20) + 'px',
+                    top: (this.props.buttonHeight - 20) + 'px',
                     zIndex: 20,
                 }}>
-                Settings
+                {this.props.caption}
             </div>;
 
         return <div

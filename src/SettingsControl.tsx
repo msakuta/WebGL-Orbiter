@@ -63,6 +63,7 @@ export class SettingsControl extends React.Component<SettingsControlProps>{
            buttonWidth={this.config.buttonWidth}
            buttonHeight={this.config.buttonHeight}
            iconUrl={settingsIconUrl}
+           caption="Settings"
         >{valueT()}</ContainerControl>;
 
     }
