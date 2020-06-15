@@ -330,7 +330,7 @@ function render() {
 	}
 
 	var select_obj = gameState.getSelectObj();
-	gameState.universe.update(gameState.center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
+	gameState.universe.update(settings.center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
 		settings.units_km,
 		function(o, headingApoapsis){
 			orbitalElementsControl.setText(o, headingApoapsis, settings.units_km);
@@ -416,26 +416,6 @@ function onKeyDown( event ) {
 			}
 			if(select_obj.orbit)
 				select_obj.orbit.material = selectedOrbitMaterial;
-			break;
-
-		case 'c':
-			center_select = !center_select;
-			break;
-
-		case 'n': // toggle NLIPS
-			settings.nlips_enable = !settings.nlips_enable;
-			break;
-
-		case 'g':
-			settings.grid_enable = !settings.grid_enable;
-			break;
-
-		case 'h':
-			settings.sync_rotate = !settings.sync_rotate;
-			break;
-
-		case 'k':
-			settings.units_km = !settings.units_km;
 			break;
 	}
 

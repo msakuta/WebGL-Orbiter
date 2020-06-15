@@ -18,6 +18,7 @@ export class Settings{
     sync_rotate = false;
     nlips_enable = true;
     units_km = true;
+    center_select = true;
 }
 
 export class SettingsControl{
@@ -68,6 +69,9 @@ export class SettingsControl{
         const names = Object.keys(this.settings);
         for(const i in names){
             const name = names[i];
+            // Hide center_select from visible options
+            if(name === 'center_select')
+                continue;
             const lineElement = document.createElement('div');
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
@@ -82,7 +86,8 @@ export class SettingsControl{
                 'Show&nbsp;grid&nbsp;(G)',
                 'Chase&nbsp;camera&nbsp;(H)',
                 'Nonlinear&nbsp;scale&nbsp;(N)',
-                'Units in KM&nbsp;(K)'][i];
+                'Units in KM&nbsp;(K)',
+                'Center selected&nbsp;(C)'][i];
             lineElement.appendChild(label);
             lineElement.style.fontWeight = 'bold';
             lineElement.style.paddingRight = '1em';
@@ -115,6 +120,8 @@ export class SettingsControl{
             if(!this.visible)
                 title.style.display = 'none';
         };
+
+        window.addEventListener( 'keydown', (event: KeyboardEvent) => this.onKeyDown(event), false );
     }
 
     setText(){
@@ -125,5 +132,30 @@ export class SettingsControl{
         this.checkElements[2].checked = this.settings.nlips_enable;
         this.checkElements[3].checked = this.settings.units_km;
         this.valueElement.style.marginLeft = (this.config.buttonWidth - this.valueElement.getBoundingClientRect().width) + 'px';
+    }
+
+    onKeyDown(event: KeyboardEvent){
+        const char = String.fromCharCode(event.which || event.keyCode).toLowerCase();
+        switch(char){
+        case 'c':
+            this.settings.center_select = !this.settings.center_select;
+            break;
+
+        case 'n': // toggle NLIPS
+            this.settings.nlips_enable = !this.settings.nlips_enable;
+            break;
+
+        case 'g':
+            this.settings.grid_enable = !this.settings.grid_enable;
+            break;
+
+        case 'h':
+            this.settings.sync_rotate = !this.settings.sync_rotate;
+            break;
+
+        case 'k':
+            this.settings.units_km = !this.settings.units_km;
+            break;
+        }
     }
 }

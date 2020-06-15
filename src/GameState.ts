@@ -10,7 +10,6 @@ export default class GameState{
     startTime: Date;
     realTime: Date;
     timescale = 1e0; // This is not a constant; it can be changed by the user
-    center_select = true;
     select_obj?: CelestialBody = null;
     getSelectObj(){ return this.select_obj; }
     universe: Universe;
@@ -22,9 +21,9 @@ export default class GameState{
 
         const AddPlanet = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: any, name: string, orbitGeometry: THREE.Geometry) =>
             addPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name,
-                scene, viewScale, overlay, orbitGeometry, this.center_select, settings, camera, windowHalfX, windowHalfY);
+                scene, viewScale, overlay, orbitGeometry, settings.center_select, settings, camera, windowHalfX, windowHalfY);
 
-        this.universe = new Universe(scene, AddPlanet, this.center_select, viewScale, settings, camera, windowHalfX, windowHalfY);
+        this.universe = new Universe(scene, AddPlanet, settings.center_select, viewScale, settings, camera, windowHalfX, windowHalfY);
         this.select_obj = this.universe.rocket;
     }
 
