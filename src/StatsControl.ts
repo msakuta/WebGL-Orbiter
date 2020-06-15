@@ -4,7 +4,7 @@ import { CelestialBody, AU } from './CelestialBody';
 import statsIconUrl from './images/statsIcon.png';
 
 
-const buttonTop = 120;
+const buttonTop = 0;
 const buttonHeight = 32;
 const buttonWidth = 32;
 
@@ -33,18 +33,21 @@ export class StatsControl{
         this.getSelectObj = getSelectObj;
 
         const setSize = () => {
-            this.element.style.left = (window.innerWidth - buttonWidth) + 'px';
-            rightTitleSetSize(title, icon);
+            // this.element.style.left = (window.innerWidth - buttonWidth) + 'px';
+            // rightTitleSetSize(title, icon);
         }
 
         this.element = document.createElement('div');
-        this.element.style.position = 'absolute';
+        this.element.style.position = 'relative';
         this.element.style.textAlign = 'left';
         this.element.style.top = buttonTop + 'px';
-        this.element.style.left = 0 + 'px';
+        this.element.style.right = 0 + 'px';
+        this.element.style.width = '150px';
         this.element.style.zIndex = '7';
         const icon = document.createElement('img');
         icon.src = statsIconUrl;
+        icon.style.position = 'absolute';
+        icon.style.right = '0px';
         icon.style.width = buttonWidth + 'px';
         icon.style.height = buttonHeight + 'px';
         this.element.appendChild(icon);
@@ -53,7 +56,9 @@ export class StatsControl{
         title.innerHTML = 'Statistics';
         title.style.display = 'none';
         title.style.position = 'absolute';
-        title.style.top = buttonTop + 'px';
+        title.style.top = (buttonTop - 20) + 'px';
+        // title.style.bottom = '0px';
+        title.style.right = buttonWidth + 'px';
         title.style.background = 'rgba(0, 0, 0, 0.5)';
         title.style.zIndex = '20';
         this.element.appendChild(title);
@@ -61,7 +66,10 @@ export class StatsControl{
         this.valueElement = document.createElement('div');
         this.element.appendChild(this.valueElement);
         this.valueElement.style.display = 'none';
-        this.valueElement.style.position = 'absolute';
+        this.valueElement.style.position = 'relative';
+        this.valueElement.style.top = buttonHeight + 'px';
+        this.valueElement.style.right = '0px';
+        this.valueElement.style.width = '150px';
         this.valueElement.style.background = 'rgba(0, 0, 0, 0.5)';
         this.valueElement.style.border = '3px ridge #7f3f3f';
         this.valueElement.style.padding = '3px';
@@ -85,7 +93,7 @@ export class StatsControl{
         icon.onclick = (event) => {
             this.visible = !this.visible;
             if(this.visible){
-                this.valueElement.style.display = 'block';
+                this.valueElement.style.display = 'inline-block';
                 this.element.style.background = 'rgba(0, 0, 0, 0.5)';
             }
             else{
@@ -127,7 +135,7 @@ export class StatsControl{
             deltaV = deltaVkm.toFixed(4) + 'km/s';
         this.valueElements[1].innerHTML = deltaV;
         this.valueElements[2].innerHTML = select_obj.ignitionCount.toString();
-        this.valueElement.style.marginLeft = (buttonWidth - this.valueElement.getBoundingClientRect().width) + 'px';
+        // this.valueElement.style.marginLeft = (buttonWidth - this.valueElement.getBoundingClientRect().width) + 'px';
         this.settingsControl.domElement.style.top = this.valueElement.getBoundingClientRect().bottom + 'px';
     }
 }

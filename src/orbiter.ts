@@ -202,8 +202,13 @@ function init() {
 
     settingsControl = new SettingsControl(settings);
     statsControl = new StatsControl(settingsControl, function() { return gameState.getSelectObj(); });
-    container.appendChild( statsControl.domElement );
-    container.appendChild( settingsControl.domElement );
+    const verticalContainer = document.createElement('div');
+    verticalContainer.style.position = 'absolute';
+    verticalContainer.style.top = '300px';
+    verticalContainer.style.width = '100%';
+    verticalContainer.appendChild( statsControl.domElement );
+    verticalContainer.appendChild( settingsControl.domElement );
+    container.appendChild(verticalContainer);
 
     class AltitudeControl{
         protected element: HTMLDivElement;
