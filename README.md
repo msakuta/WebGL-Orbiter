@@ -252,10 +252,12 @@ Use npm to build or debug the project.
 3. Serve the page with `npm run start`
 4. or `npm run build` to make a static website in `dist/` subdirectory.
 
-* runge-kutta.html  
 
-  Formulation of methods used for simulation steps.  Euler method and Runge-Kutta method
-  are presented.  You'll need a decent browser with JavaScript support to see the formula.
+## Additional materials
+
+* RungeKuttaMethod.ipynb
+
+  A jupyter notebook for formulation of methods used for simulation steps.Euler method and Runge-Kutta method are presented.
 
 
 ## Libraries
