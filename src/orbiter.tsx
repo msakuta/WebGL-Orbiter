@@ -1,6 +1,8 @@
 import * as THREE from 'three/src/Three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import * as React from "react";
+import * as ReactDOM from "react-dom";
 
 import "./main.css";
 
@@ -33,7 +35,8 @@ let throttleControl: ThrottleControl;
 let speedControl: any;
 let orbitalElementsControl: OrbitalElementsControl;
 let statsControl: StatsControl;
-let settingsControl: SettingsControl;
+let settingsControl: JSX.Element;
+let settingsElement: HTMLElement;
 let altitudeControl: any;
 let messageControl: MessageControl;
 let cameraControls: OrbitControls;
@@ -200,8 +203,24 @@ function init() {
     orbitalElementsControl = new OrbitalElementsControl();
     container.appendChild( orbitalElementsControl.domElement );
 
-    settingsControl = new SettingsControl(settings);
-    statsControl = new StatsControl(settingsControl, function() { return gameState.getSelectObj(); });
+    const names = Object.keys(settings);
+    settingsElement = document.createElement('div');
+    const settingsItems = names.filter((item) => item !== 'center_select')
+    .map((item, i) => ({name: item, checked: (settings as any)[item], label: [
+        'Show grid (G)',
+        'Chase camera (H)',
+        'Nonlinear scale (N)',
+        'Units in KM (K)',
+        'Center selected (C)'][i],
+        shortcutKey: 'ghnkc'[i]}));
+    settingsControl = <SettingsControl
+        items={settingsItems}
+        onChangeItem={(i, name) => {
+            settingsItems[i].checked = (settings as any)[name] = !(settings as any)[name];
+        }}
+        />;
+    ReactDOM.render(settingsControl, settingsElement);
+    statsControl = new StatsControl(settingsControl.type, function() { return gameState.getSelectObj(); });
     const verticalContainer = document.createElement('div');
     verticalContainer.style.position = 'absolute';
     verticalContainer.style.top = '200px';
@@ -209,7 +228,7 @@ function init() {
     verticalContainer.ondragstart = (event) => event.preventDefault();
     verticalContainer.style.pointerEvents = 'none';
     verticalContainer.appendChild( statsControl.domElement );
-    verticalContainer.appendChild( settingsControl.domElement );
+    verticalContainer.appendChild( settingsElement );
     container.appendChild(verticalContainer);
 
     class AltitudeControl{
@@ -326,7 +345,6 @@ function render() {
         + ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds()));
     speedControl.setSpeed();
     statsControl.setText(gameState.getMissionTime());
-    settingsControl.setText();
     messageControl.timeStep(realDeltaTimeMilliSec * 1e-3);
 
     camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);

@@ -23,26 +23,17 @@ export class Settings{
     center_select = true;
 }
 
-export class SettingsControl{
+export interface SettingsControlProps {
+    items: {name: string, checked: boolean, label: string, shortcutKey: string}[]
+    onChangeItem: (i: number, name: string) => void;
+}
+
+export class SettingsControl extends React.Component<SettingsControlProps, {visible: boolean, mouseOver: boolean}>{
     config = new Config();
-    protected settings: Settings;
-    protected element: HTMLElement;
-    get domElement(): HTMLElement{ return this.element; }
-    protected checkElements: HTMLInputElement[] = [];
-    protected visible = false;
-    protected mouseOver = false;
-    protected render: (props: SettingsControl) => JSX.Element;
-    protected items: {name: string, checked: boolean, label: string}[];
 
-    constructor(settings: Settings, config?: Config){
-        // const setSize = () => {
-        //     this.element.style.left = (window.innerWidth - this.config.buttonWidth) + 'px';
-        //     rightTitleSetSize(title, icon);
-        // }
+    render(): JSX.Element{
 
-        this.settings = settings;
-        if(config) this.config = config;
-        const iconT = (props: SettingsControl) =>
+        const iconT = () =>
             <img src={settingsIconUrl}
                 style={{
                     pointerEvents: 'auto',
@@ -52,32 +43,22 @@ export class SettingsControl{
                 }}
                 onDragStart={(event) => event.preventDefault()}
                 onClick={(event) => {
-                    this.visible = !this.visible;
-                    ReactDOM.render(this.render(this), this.element);
-                    if(this.visible){
-                        element.style.background = 'rgba(0, 0, 0, 0.5)';
-                    }
-                    else{
-                        element.style.background = 'rgba(0, 0, 0, 0)';
-                    }
+                    this.setState({visible: !this.state.visible, mouseOver: this.state.mouseOver});
                 }}
                 onMouseEnter={(event) => {
-                    this.mouseOver = true;
-                    ReactDOM.render(this.render(this), this.element);
-                    // rightTitleSetSize(title, icon);
+                    this.setState({visible: this.state.visible, mouseOver: true});
                 }}
                 onMouseLeave={(event) => {
-                    this.mouseOver = false;
-                    ReactDOM.render(this.render(this), this.element);
+                    this.setState({visible: this.state.visible, mouseOver: false});
                 }}
             />;
-        const titleT = (props: SettingsControl) =>
+        const titleT = () =>
             <div
                 style={{
-                    display: props.visible || props.mouseOver ? "inline" : "none",
+                    display: this.state.visible || this.state.mouseOver ? "inline" : "none",
                     position: "relative",
                     float: 'right',
-                    background: 'rgba(0, 0, 0, 0.5)',
+                    background: this.state.visible ? 'rgba(0, 0, 0, 0.5)' : '',
                     bottom: 0,
                     right: 0,
                     top: (this.config.buttonHeight - 20) + 'px',
@@ -86,8 +67,8 @@ export class SettingsControl{
                 Settings
             </div>;
 
-        const valueT = (props: SettingsControl) =>
-            props.visible ? <div style={{
+        const valueT = () =>
+            this.state.visible ? <div style={{
                 pointerEvents: 'auto',
                 float: 'right',
                 clear: 'both',
@@ -95,7 +76,7 @@ export class SettingsControl{
                 border: '3px ridge #7f3f3f',
                 padding: '3px',
             }}>
-                {props.items.map((item: {name: string, checked: boolean, label: string}, i: number) =>
+                {this.props.items.map((item: {name: string, checked: boolean, label: string}, i: number) =>
                     <div style={{
                         fontWeight: 'bold',
                         paddingRight: '1em',
@@ -103,74 +84,41 @@ export class SettingsControl{
                     }}
                     key={i}><label><input type="checkbox"
                         checked={item.checked}
-                        onChange={((a: any, field, i) =>
+                        onChange={((field, i) =>
                             (event: React.ChangeEvent<HTMLInputElement>) =>
                                 {
-                                    this.items[i].checked = a[field] = !a[field];
-                                    ReactDOM.render(this.render(this), element);
-                                })(this.settings, item.name, i)}
+                                    this.props.onChangeItem(i, field);
+                                    this.setState({});
+                                })(item.name, i)}
                     />{item.label}</label></div>)}
             </div> : <div></div>;
 
-        this.render = (props: SettingsControl) => <div
+        return <div
             style={{
                 float: 'right',
                 clear: 'both',
                 textAlign: 'left',
                 marginTop: 2,
                 zIndex: 7,
-            }}>{iconT(props)}
-            {titleT(props)}
-            {valueT(props)}</div>;
+            }}>{iconT()}
+            {titleT()}
+            {valueT()}</div>;
 
-        this.element = document.createElement('div');
-        const element = this.domElement;
-        ReactDOM.render(this.render(this), element);
-
-        const names = Object.keys(this.settings);
-        this.items = names.filter((item) => item !== 'center_select')
-            .map((item, i) => ({name: item, checked: false, label: [
-                'Show grid (G)',
-                'Chase camera (H)',
-                'Nonlinear scale (N)',
-                'Units in KM (K)',
-                'Center selected (C)'][i]}));
-
-        window.addEventListener( 'keydown', (event: KeyboardEvent) => this.onKeyDown(event), false );
     }
 
-    setText(){
-        if(!this.visible)
-            return;
-        this.items[0].checked = this.settings.grid_enable;
-        this.items[1].checked = this.settings.sync_rotate;
-        this.items[2].checked = this.settings.nlips_enable;
-        this.items[3].checked = this.settings.units_km;
-        ReactDOM.render(this.render(this), this.element);
+    constructor(props: SettingsControlProps){
+        super(props);
+        this.state = {visible: false, mouseOver: false};
+        window.addEventListener( 'keydown', (event: KeyboardEvent) => this.onKeyDown(event), false );
     }
 
     onKeyDown(event: KeyboardEvent){
         const char = String.fromCharCode(event.which || event.keyCode).toLowerCase();
-        switch(char){
-        case 'c':
-            this.settings.center_select = !this.settings.center_select;
-            break;
-
-        case 'n': // toggle NLIPS
-            this.settings.nlips_enable = !this.settings.nlips_enable;
-            break;
-
-        case 'g':
-            this.settings.grid_enable = !this.settings.grid_enable;
-            break;
-
-        case 'h':
-            this.settings.sync_rotate = !this.settings.sync_rotate;
-            break;
-
-        case 'k':
-            this.settings.units_km = !this.settings.units_km;
-            break;
+        for(let i = 0; i < this.props.items.length; i++){
+            if(this.props.items[i].shortcutKey === char){
+                this.props.onChangeItem(i, this.props.items[i].name);
+                this.setState({});
+            }
         }
     }
 }
