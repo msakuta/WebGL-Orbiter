@@ -35,7 +35,6 @@ export class StatsControl extends React.Component<StatsControlProps>{
     protected settingsControl: SettingsControl;
 
     render(){
-//settingsControl: SettingsControl, getSelectObj: () => CelestialBody
         return <ContainerControl
             buttonTop={buttonTop}
             buttonWidth={buttonWidth}
@@ -52,26 +51,21 @@ export class StatsControl extends React.Component<StatsControlProps>{
             padding: '3px',
         }}>
         {
-            this.props.items.map((item) => <>
+            this.props.items.map((item, i) => <>
                 <div
+                key={`title-${i}`}
                 style={{
                     fontWeight: 'bold',
                     paddingRight: '1em',
                 }}>{item.title}</div>
                 <div
+                key={`value-${i}`}
                 style={{
                     textAlign: 'right',
                 }}>{item.value}</div>
             </>)
         }
         </div></ContainerControl>;
-    }
-
-    constructor(props: StatsControlProps){
-        super(props);
-
-        // Register event handlers
-        // window.addEventListener('resize', setSize);
     }
 
     static setText(statsItems: {title: string, value: string}[], select_obj: CelestialBody, missionTime: number){

@@ -35,10 +35,9 @@ let throttleControl: ThrottleControl;
 let speedControl: any;
 let orbitalElementsControl: OrbitalElementsControl;
 let statsControl: JSX.Element;
-let statsElement: HTMLElement;
 let statsItems: {title: string, value: string}[];
 let settingsControl: JSX.Element;
-let settingsElement: HTMLElement;
+let verticalContainer: HTMLElement;
 let altitudeControl: any;
 let messageControl: MessageControl;
 let cameraControls: OrbitControls;
@@ -58,9 +57,17 @@ let buttons = new RotationButtons();
 let accelerate = false;
 let decelerate = false;
 
-function renderStatsControl(){
+function renderRightControls(){
     statsControl = <StatsControl items={statsItems} select_obj={gameState.getSelectObj()}></StatsControl>;
-    ReactDOM.render(statsControl, statsElement);
+    ReactDOM.render(<div
+        style={{
+            position: 'absolute',
+            top: '200px',
+            width: '100%',
+            pointerEvents: 'none',
+        }}
+        onDragStart={(event) => event.preventDefault()}
+        >{statsControl}{settingsControl}</div>, verticalContainer);
 }
 
 
@@ -212,7 +219,6 @@ function init() {
     container.appendChild( orbitalElementsControl.domElement );
 
     const names = Object.keys(settings);
-    settingsElement = document.createElement('div');
     const settingsItems = names.filter((item) => item !== 'center_select')
     .map((item, i) => ({name: item, checked: (settings as any)[item], label: [
         'Show grid (G)',
@@ -227,18 +233,9 @@ function init() {
             settingsItems[i].checked = (settings as any)[name] = !(settings as any)[name];
         }}
         />;
-    ReactDOM.render(settingsControl, settingsElement);
-    statsItems = ['Mission Time', 'Delta-V', 'Ignition&nbsp;Count'].map((item) => ({title: item, value: ''}));
-    statsElement = document.createElement('div');
-    renderStatsControl();
-    const verticalContainer = document.createElement('div');
-    verticalContainer.style.position = 'absolute';
-    verticalContainer.style.top = '200px';
-    verticalContainer.style.width = '100%';
-    verticalContainer.ondragstart = (event) => event.preventDefault();
-    verticalContainer.style.pointerEvents = 'none';
-    verticalContainer.appendChild( statsElement );
-    verticalContainer.appendChild( settingsElement );
+    statsItems = ['Mission Time', 'Delta-V', 'Ignition Count'].map((item) => ({title: item, value: ''}));
+    verticalContainer = document.createElement('div');
+    renderRightControls();
     container.appendChild(verticalContainer);
 
     class AltitudeControl{
@@ -355,7 +352,7 @@ function render() {
         + ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds()));
     speedControl.setSpeed();
     StatsControl.setText(statsItems, gameState.getSelectObj(), gameState.getMissionTime());
-    renderStatsControl();
+    renderRightControls();
     messageControl.timeStep(realDeltaTimeMilliSec * 1e-3);
 
     camera.near = Math.min(1, cameraControls.target.distanceTo(camera.position) / 10);
