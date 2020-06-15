@@ -12,6 +12,7 @@ import { navballRadius, RotationControl } from './RotationControl';
 import { zerofill, StatsControl } from './StatsControl';
 import { MenuControl } from './MenuControl';
 import { ScenarioSelectorControl } from './ScenarioSelectorControl';
+import { SaveControl } from './SaveControl';
 
 
 import orbitIconUrl from './images/orbitIcon.png';
@@ -19,7 +20,6 @@ import perlinUrl from './images/perlin.jpg';
 import progradeUrl from './images/prograde.png';
 import retrogradeUrl from './images/retrograde.png';
 import loadIconUrl from './images/loadIcon.png';
-import saveIconUrl from './images/saveIcon.png';
 import trashcanUrl from './images/trashcan.png';
 import navballUrl from './images/navball.png';
 import watermarkUrl from './images/watermark.png';
@@ -553,94 +553,13 @@ function init() {
 		};
 	}
 
-	saveControl = new (function(){
-		var config = {
-			buttonTop: 34,
-			buttonHeight: 32,
-			buttonWidth: 32,
-		};
-		var scope = this;
-		MenuControl.call(this, 'Save data', saveIconUrl, config);
-
-		var inputContainer = document.createElement('div');
-		inputContainer.style.border = "1px solid #7fff7f";
-		inputContainer.style.margin = "5px";
-		inputContainer.style.padding = "5px";
-		var inputTitle = document.createElement('div');
-		inputTitle.innerHTML = 'New Save Name';
-		var inputElement = document.createElement('input');
-		inputElement.setAttribute('type', 'text');
-		var inputButton = document.createElement('button');
-		inputButton.innerHTML = 'save'
-		inputButton.onclick = function(event){
-			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
-			saveData.push({title: inputElement.value, state: serializeState()});
-			localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
-			messageControl.setText('Game State Saved!');
-			scope.title.style.display = 'none';
-			scope.visible = false;
-			scope.valueElement.style.display = 'none';
-		};
-		inputElement.onkeydown = function(e){
-			e.stopPropagation();
+	saveControl = new SaveControl(
+		serializeState,
+		function(msg){ messageControl.setText(msg); },
+		function(){
+			[scenarioSelectorControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
 		}
-		inputContainer.appendChild(inputTitle);
-		inputContainer.appendChild(inputElement);
-		inputContainer.appendChild(inputButton);
-		this.valueElement.appendChild(inputContainer);
-
-		var saveContainer = document.createElement('div');
-
-		function updateSaveDataList(){
-			while(0 < saveContainer.children.length) saveContainer.removeChild(saveContainer.children[0]);
-			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
-			for(var i = 0; i < saveData.length; i++){
-				var elem = document.createElement('div');
-				elem.style.margin = "5px";
-				elem.style.padding = "5px";
-				elem.style.border = "1px solid #00ff00";
-				var labelElem = document.createElement('div');
-				labelElem.innerHTML = saveData[i].title;
-				labelElem.style.cssText = "width: 100%; margin-right: -32px; display: inline-block; text-align: overflow: auto;";
-				elem.appendChild(labelElem);
-				var deleteElem = document.createElement('img');
-				deleteElem.setAttribute('src', trashcanUrl);
-				deleteElem.style.width = '20px';
-				deleteElem.onclick = (function(i){
-					return function(e){
-						saveData.splice(i, 1);
-						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
-						messageControl.setText('Game State Deleted!');
-						scope.title.style.display = 'none';
-						scope.visible = false;
-						scope.valueElement.style.display = 'none';
-						e.stopPropagation();
-					}
-				})(i);
-				elem.appendChild(deleteElem);
-				elem.onclick = (function(save){
-					return function(){
-						save.state = serializeState();
-						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
-						messageControl.setText('Game State Saved!');
-						scope.title.style.display = 'none';
-						scope.visible = false;
-						scope.valueElement.style.display = 'none';
-					}
-				})(saveData[i]);
-				saveContainer.appendChild(elem);
-			}
-		}
-		this.valueElement.appendChild(saveContainer);
-
-		this.setVisible = function(v){
-			if(v){
-				[scenarioSelectorControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
-				updateSaveDataList();
-			}
-			MenuControl.prototype.setVisible.call(this, v);
-		}
-	});
+	);
 	container.appendChild( saveControl.domElement );
 
 	function loadState(state){
