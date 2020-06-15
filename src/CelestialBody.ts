@@ -34,6 +34,7 @@ export class CelestialBody{
     orbitColor: string;
     orbitMaterial: THREE.LineBasicMaterial;
     protected children: Array<CelestialBody>;
+    getChildren(){ return this.children; }
     protected parent: CelestialBody;
     getParent(){ return this.parent; }
     GM: number;

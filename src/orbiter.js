@@ -4,7 +4,7 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import "./main.css";
 
-import { CelestialBody, addPlanet, AxisAngleQuaternion } from './CelestialBody';
+import { CelestialBody, AU, AxisAngleQuaternion } from './CelestialBody';
 import { Settings, SettingsControl } from './SettingsControl';
 import { TimeScaleControl } from './TimeScaleControl';
 import { ThrottleControl } from './ThrottleControl';
@@ -54,10 +54,6 @@ var buttons = new RotationButtons();
 var accelerate = false;
 var decelerate = false;
 
-var selectedOrbitMaterial;
-
-var AU = 149597871; // Astronomical unit in kilometers
-
 function init() {
 
 	container = document.createElement( 'div' );
@@ -98,7 +94,6 @@ function init() {
 
 	var orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
 	CelestialBody.prototype.orbitMaterial = orbitMaterial; // Default orbit material
-	selectedOrbitMaterial = new THREE.LineBasicMaterial({color: 0xff7fff});
 
 	gameState = new GameState(scene, viewScale, overlay.overlay, settings, camera, windowHalfX, windowHalfY, function(msg){ messageControl.setText(msg); });
 
@@ -380,45 +375,6 @@ function onKeyDown( event ) {
 	var char = String.fromCharCode(event.which || event.keyCode).toLowerCase();
 
 	var select_obj = gameState.getSelectObj();
-	switch ( char ) {
-
-		case 'i':
-			if(select_obj === null)
-				select_obj = sun.children[0];
-			else{
-				// Some objects do not have an orbit
-				if(select_obj.orbit)
-					select_obj.orbit.material = select_obj.orbitMaterial;
-				var objs = select_obj.children;
-				if(0 < objs.length){
-					select_obj = objs[0];
-				}
-				else{
-					var selected = false;
-					var prev = select_obj;
-					for(var parent = select_obj.parent; parent; parent = parent.parent){
-						objs = parent.children;
-						for(var i = 0; i < objs.length; i++){
-							var o = objs[i];
-							if(o === prev && i + 1 < objs.length){
-								select_obj = objs[i+1];
-								selected = true;
-								break;
-							}
-						}
-						if(selected)
-							break;
-						prev = parent;
-					}
-					if(!parent)
-						select_obj = sun;
-				}
-			}
-			if(select_obj.orbit)
-				select_obj.orbit.material = selectedOrbitMaterial;
-			break;
-	}
-
 	if(select_obj && select_obj.controllable) switch( char ){
 		case 'z':
 			throttleControl.setThrottle(1);

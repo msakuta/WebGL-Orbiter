@@ -107,6 +107,7 @@ export default class Universe{
             shape.up.set(0,0,1);
             scene.add( asteroid.model );
 
+            asteroid.orbitMaterial = new THREE.LineBasicMaterial({color: 0x7f3f7f});
             const orbitMesh = new THREE.Line(orbitGeometry, asteroid.orbitMaterial);
             asteroid.orbit = orbitMesh;
             scene.add(orbitMesh);
