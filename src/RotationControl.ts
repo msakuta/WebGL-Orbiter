@@ -99,6 +99,70 @@ export class RotationControl{
         addArrow(rotateCwUrl, 'clockwise', 2 * navballRadius - buttonWidth, 0);
         addArrow(rotateCcwUrl, 'counterclockwise', 0, 0);
         window.addEventListener('resize', this.setSize);
+        window.addEventListener( 'keydown', (e: KeyboardEvent) => this.onKeyDown(e), false );
+        window.addEventListener( 'keyup', (e: KeyboardEvent) => this.onKeyUp(e), false );
+    }
+
+    onKeyDown(event: KeyboardEvent){
+        const char = String.fromCharCode(event.which || event.keyCode).toLowerCase();
+
+        const buttons = this.buttons;
+        switch( char ){
+            case 'w': // prograde
+                buttons.up = true;
+    //						prograde = true;
+                break;
+            case 's': // retrograde
+                buttons.down = true;
+    //						retrograde = true;
+                break;
+            case 'q': // normal
+                buttons.counterclockwise = true;
+    //						normal = true;
+                break;
+            case 'e': // normal negative
+                buttons.clockwise = true;
+    //						antinormal = true;
+                break;
+            case 'a': // orbit plane normal
+                buttons.left = true;
+    //						incline = true;
+                break;
+            case 'd': // orbit plane normal negative
+                buttons.right = true;
+    //						antiincline = true;
+                break;
+        }
+    }
+
+    onKeyUp(event: KeyboardEvent){
+        const buttons = this.buttons;
+        switch ( String.fromCharCode(event.which || event.keyCode).toLowerCase() ) {
+            case 'w': // prograde
+                buttons.up = false;
+    //						prograde = false;
+                break;
+            case 's':
+                buttons.down = false;
+    //						retrograde = false;
+                break;
+            case 'q': // prograde
+                buttons.counterclockwise = false;
+    //						normal = false;
+                break;
+            case 'e':
+                buttons.clockwise = false;
+    //						antinormal = false;
+                break;
+            case 'a': // orbit plane normal
+                buttons.left = false;
+    //						incline = false;
+                break;
+            case 'd': // orbit plane normal negative
+                buttons.right = false;
+    //						antiincline = false;
+                break;
+        }
     }
 }
 

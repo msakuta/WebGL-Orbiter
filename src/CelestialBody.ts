@@ -4,6 +4,7 @@ import blastUrl from './images/blast.png';
 import apoapsisUrl from './images/apoapsis.png';
 import periapsisUrl from './images/periapsis.png';
 import { Settings } from './SettingsControl';
+import { RotationButtons } from './RotationControl';
 
 export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
@@ -346,7 +347,7 @@ export class CelestialBody{
 
     };
 
-    simulateBody(deltaTime: number, div: number, timescale: number, buttons: any, select_obj?: CelestialBody){
+    simulateBody(deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
         const children = this.children;
         for(let i = 0; i < children.length;){
             const a = children[i];

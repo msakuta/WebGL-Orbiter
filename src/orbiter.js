@@ -700,30 +700,6 @@ function onKeyDown( event ) {
 	}
 
 	if(select_obj && select_obj.controllable) switch( char ){
-		case 'w': // prograde
-			buttons.up = true;
-//						prograde = true;
-			break;
-		case 's': // retrograde
-			buttons.down = true;
-//						retrograde = true;
-			break;
-		case 'q': // normal
-			buttons.counterclockwise = true;
-//						normal = true;
-			break;
-		case 'e': // normal negative
-			buttons.clockwise = true;
-//						antinormal = true;
-			break;
-		case 'a': // orbit plane normal
-			buttons.left = true;
-//						incline = true;
-			break;
-		case 'd': // orbit plane normal negative
-			buttons.right = true;
-//						antiincline = true;
-			break;
 		case 'z':
 			throttleControl.setThrottle(1);
 			break;
@@ -746,32 +722,6 @@ function onKeyDown( event ) {
 }
 
 function onKeyUp( event ) {
-	switch ( String.fromCharCode(event.which || event.keyCode).toLowerCase() ) {
-		case 'w': // prograde
-			buttons.up = false;
-//						prograde = false;
-			break;
-		case 's':
-			buttons.down = false;
-//						retrograde = false;
-			break;
-		case 'q': // prograde
-			buttons.counterclockwise = false;
-//						normal = false;
-			break;
-		case 'e':
-			buttons.clockwise = false;
-//						antinormal = false;
-			break;
-		case 'a': // orbit plane normal
-			buttons.left = false;
-//						incline = false;
-			break;
-		case 'd': // orbit plane normal negative
-			buttons.right = false;
-//						antiincline = false;
-			break;
-	}
 	// Annoying browser incompatibilities
 	var code = event.which || event.keyCode;
 	if(code === 16)
