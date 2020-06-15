@@ -56,7 +56,10 @@ export class ScenarioSelectorControl extends MenuControl{
                         return rotation;
                     })();
                     const select_obj = getSelectObj();
-                    select_obj.setParent(CelestialBody.findBody(scenario.parent));
+                    const parent = CelestialBody.findBody(scenario.parent);
+                    if(!parent)
+                        return;
+                    select_obj.setParent(parent);
                     select_obj.position = new THREE.Vector3(0, 1 - eccentricity, 0)
                         .multiplyScalar(scenario.semimajor_axis).applyQuaternion(rotation);
                     select_obj.quaternion = rotation.clone();

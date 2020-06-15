@@ -48,7 +48,7 @@ export default class Universe{
         this.sun.radius = Rsun;
         this.sun.model = group;
         const mercury = AddPlanet(0.387098, 0.205630, 7.005 * rad_per_deg, 48.331 * rad_per_deg, 29.124 * rad_per_deg, "#3f7f7f", 22032 / AU / AU / AU, this.sun, mercuryUrl, 2439.7, {soi: 2e5}, "mercury");
-        const venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, "#7f7f3f", 324859 / AU / AU / AU, this.sun, venusUrl, 6051.8, {soi: 5e5}, "mars");
+        const venus = AddPlanet(0.723332, 0.00677323, 3.39458 * rad_per_deg, 76.678 * rad_per_deg, 55.186 * rad_per_deg, "#7f7f3f", 324859 / AU / AU / AU, this.sun, venusUrl, 6051.8, {soi: 5e5}, "venus");
         // Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
         const earth = AddPlanet(1, 0.0167086, 0, -11.26064 * rad_per_deg, 114.20783 * rad_per_deg, "#3f7f3f", 398600 / AU / AU / AU, this.sun, earthUrl, 6534,
             {axialTilt: 23.4392811 * rad_per_deg,
