@@ -11,6 +11,7 @@ import { ThrottleControl } from './ThrottleControl';
 import { navballRadius, RotationControl } from './RotationControl';
 import { OrbitalElementsControl } from './OrbitalElementsControl';
 import { zerofill, StatsControl } from './StatsControl';
+import { MessageControl } from './MessageControl';
 import { ScenarioSelectorControl } from './ScenarioSelectorControl';
 import { SaveControl } from './SaveControl';
 import { LoadControl } from './LoadControl';
@@ -429,45 +430,7 @@ function init() {
 	})();
 	container.appendChild( altitudeControl.domElement );
 
-	messageControl = new (function(){
-		this.domElement = document.createElement('div');
-		var element = this.domElement;
-		element.style.position = 'absolute';
-		element.style.top = '25%';
-		element.style.left = '50%';
-		element.style.fontSize = '20px';
-		element.style.fontWeight = 'bold';
-		element.style.textShadow = '0px 0px 5px rgba(0,0,0,1)';
-		element.style.zIndex = 20;
-		var showTime = 0;
-
-		// Register event handlers
-		element.ondragstart = function(event){
-			event.preventDefault();
-		};
-		// Disable text selection
-		element.onselectstart = function(){ return false; }
-
-		this.setText = function(text){
-			element.innerHTML = text;
-			element.style.display = 'block';
-			element.style.opacity = '1';
-			element.style.marginTop = -element.getBoundingClientRect().height / 2 + 'px';
-			element.style.marginLeft = -element.getBoundingClientRect().width / 2 + 'px';
-			showTime = 5; // Seconds to show should depend on text length!
-		};
-
-		this.timeStep = function(deltaTime){
-			if(showTime < deltaTime){
-				element.style.display = 'none';
-				showTime = 0;
-				return;
-			}
-			showTime -= deltaTime;
-			if(showTime < 2);
-				element.style.opacity = (showTime / 2).toString();
-		}
-	})
+	messageControl = new MessageControl();
 	container.appendChild( messageControl.domElement );
 
 	scenarioSelectorControl = new ScenarioSelectorControl(function(){return select_obj;},
