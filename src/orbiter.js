@@ -10,17 +10,15 @@ import { TimeScaleControl } from './TimeScaleControl';
 import { ThrottleControl } from './ThrottleControl';
 import { navballRadius, RotationControl } from './RotationControl';
 import { zerofill, StatsControl } from './StatsControl';
-import { MenuControl } from './MenuControl';
 import { ScenarioSelectorControl } from './ScenarioSelectorControl';
 import { SaveControl } from './SaveControl';
+import { LoadControl } from './LoadControl';
 
 
 import orbitIconUrl from './images/orbitIcon.png';
 import perlinUrl from './images/perlin.jpg';
 import progradeUrl from './images/prograde.png';
 import retrogradeUrl from './images/retrograde.png';
-import loadIconUrl from './images/loadIcon.png';
-import trashcanUrl from './images/trashcan.png';
 import navballUrl from './images/navball.png';
 import watermarkUrl from './images/watermark.png';
 import backgroundUrl from './images/hipparcoscyl1.jpg';
@@ -575,67 +573,13 @@ function init() {
 		throttleControl.setThrottle(rocket.throttle);
 	}
 
-	loadControl = new (function(){
-		var config = {
-			buttonTop: 34 * 2,
-			buttonHeight: 32,
-			buttonWidth: 32,
-		};
-		MenuControl.call(this, 'Load data', loadIconUrl, config);
-		var scope = this;
-		this.valueElement.style.border = "5px ridge #ff7fff";
-
-		var saveContainer = document.createElement('div');
-
-		function updateSaveDataList(){
-			while(0 < saveContainer.children.length) saveContainer.removeChild(saveContainer.children[0]);
-			var saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
-			for(var i = 0; i < saveData.length; i++){
-				var elem = document.createElement('div');
-				elem.style.margin = "5px";
-				elem.style.padding = "5px";
-				elem.style.border = "1px solid #ff00ff";
-				var labelElem = document.createElement('div');
-				labelElem.innerHTML = saveData[i].title;
-				labelElem.style.cssText = "width: 100%; margin-right: -32px; display: inline-block; text-align: overflow: auto;";
-				elem.appendChild(labelElem);
-				var deleteElem = document.createElement('img');
-				deleteElem.setAttribute('src', trashcanUrl);
-				deleteElem.style.width = '20px';
-				deleteElem.onclick = (function(i){
-					return function(e){
-						saveData.splice(i, 1);
-						localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
-						messageControl.setText('Game State Deleted!');
-						scope.title.style.display = 'none';
-						scope.visible = false;
-						scope.valueElement.style.display = 'none';
-						e.stopPropagation();
-					}
-				})(i);
-				elem.appendChild(deleteElem);
-				elem.onclick = (function(save){
-					return function(){
-						loadState(save.state);
-						messageControl.setText('Game State Loaded!');
-						scope.title.style.display = 'none';
-						scope.visible = false;
-						scope.valueElement.style.display = 'none';
-					}
-				})(saveData[i]);
-				saveContainer.appendChild(elem);
-			}
+	loadControl = new LoadControl(
+		loadState,
+		function(msg){ messageControl.setText(msg); },
+		function(){
+			[scenarioSelectorControl, saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
 		}
-		this.valueElement.appendChild(saveContainer);
-
-		this.setVisible = function(v){
-			if(v){
-				[scenarioSelectorControl, saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
-				updateSaveDataList();
-			}
-			MenuControl.prototype.setVisible.call(this, v);
-		}
-	});
+	);
 	container.appendChild( loadControl.domElement );
 
 	window.addEventListener( 'resize', onWindowResize, false );

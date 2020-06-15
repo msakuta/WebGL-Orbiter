@@ -1,45 +1,20 @@
 import { MenuControl } from './MenuControl';
 
-import saveIconUrl from './images/saveIcon.png';
+import loadIconUrl from './images/loadIcon.png';
 import trashcanUrl from './images/trashcan.png';
 
-
-export class SaveControl extends MenuControl{
+export class LoadControl extends MenuControl{
     protected showEvent: () => void;
     protected updateSaveDataList: () => void;
 
-    constructor(serializeState: () => any, sendMessage: (msg: string) => void, showEvent: () => void){
-        super('Save data', saveIconUrl, {
-            buttonTop: 34,
+    constructor(loadState: (a: any) => void, sendMessage: (msg: string) => void, showEvent: () => void){
+        super('Load data', loadIconUrl, {
+            buttonTop: 34 * 2,
             buttonHeight: 32,
             buttonWidth: 32,
         });
         this.showEvent = showEvent;
-
-        const inputContainer = document.createElement('div');
-        inputContainer.style.border = "1px solid #7fff7f";
-        inputContainer.style.margin = "5px";
-        inputContainer.style.padding = "5px";
-        const inputTitle = document.createElement('div');
-        inputTitle.innerHTML = 'New Save Name';
-        const inputElement = document.createElement('input');
-        inputElement.setAttribute('type', 'text');
-        const inputButton = document.createElement('button');
-        inputButton.innerHTML = 'save'
-        inputButton.onclick = (event) => {
-            const saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
-            saveData.push({title: inputElement.value, state: serializeState()});
-            localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
-            sendMessage('Game State Saved!');
-            this.title.style.display = 'none';
-            this.visible = false;
-            this.valueElement.style.display = 'none';
-        };
-        inputElement.onkeydown = (e) => e.stopPropagation();
-        inputContainer.appendChild(inputTitle);
-        inputContainer.appendChild(inputElement);
-        inputContainer.appendChild(inputButton);
-        this.valueElement.appendChild(inputContainer);
+        this.valueElement.style.border = "5px ridge #ff7fff";
 
         const saveContainer = document.createElement('div');
 
@@ -50,7 +25,7 @@ export class SaveControl extends MenuControl{
                 const elem = document.createElement('div');
                 elem.style.margin = "5px";
                 elem.style.padding = "5px";
-                elem.style.border = "1px solid #00ff00";
+                elem.style.border = "1px solid #ff00ff";
                 const labelElem = document.createElement('div');
                 labelElem.innerHTML = saveData[i].title;
                 labelElem.style.cssText = "width: 100%; margin-right: -32px; display: inline-block; text-align: overflow: auto;";
@@ -71,10 +46,9 @@ export class SaveControl extends MenuControl{
                 )(i);
                 elem.appendChild(deleteElem);
                 elem.onclick = ((save) =>
-                    (event: MouseEvent) => {
-                        save.state = serializeState();
-                        localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
-                        sendMessage('Game State Saved!');
+                    () => {
+                        loadState(save.state);
+                        sendMessage('Game State Loaded!');
                         this.title.style.display = 'none';
                         this.visible = false;
                         this.valueElement.style.display = 'none';
