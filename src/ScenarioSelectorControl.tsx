@@ -38,8 +38,33 @@ export class ScenarioSelectorControl extends React.Component<ScenarioSelectorCon
             style={{
                 border: "5px ridge #ffff7f",
                 pointerEvents: "auto",
+                position: "fixed",
+                left: 0,
+                right: 0,
+                marginRight: "auto",
+                marginLeft: "auto",
+                width: "300px",
+                top: 0,
+                bottom: 0,
+                marginTop: "auto",
+                marginBottom: "auto",
+                height: "70%",
+                backgroundColor: "rgba(0,0,0,0.85)",
+                fontSize: 15,
+                textAlign: "center",
+                fontFamily: "Sans-Serif",
+                overflowY: "auto",
             }}
-            >{
+            >
+            <div
+                style={{
+                    margin: 15,
+                    padding: 15,
+                    fontSize: 25,
+                }}>
+                Scenario selector
+            </div>
+            {
             ([
                 {title: "Earth orbit", parent: "earth", semimajor_axis: 10000 / AU},
                 {title: "Moon orbit", parent: "moon", semimajor_axis: 3000 / AU},

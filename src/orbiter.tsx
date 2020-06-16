@@ -102,7 +102,8 @@ function init() {
 
     const headerTitle = document.createElement('div');
     headerTitle.id = 'info';
-    headerTitle.innerHTML = 'Orbital rocket simulation demo - powered by <a href="http://threejs.org" target="_blank">three.js</a>';
+    headerTitle.style.pointerEvents = 'none';
+    headerTitle.innerHTML = 'Orbital rocket simulation demo - powered by <a style="pointer-events: auto" href="http://threejs.org" target="_blank">three.js</a>';
     document.body.appendChild(headerTitle);
 
     const metaViewport = document.createElement('meta');

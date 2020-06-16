@@ -15,7 +15,7 @@ export class ContainerControl extends React.Component<ContainerControlProps, {mo
 
     render(): JSX.Element{
 
-        const iconT = () =>
+        const iconT =
             <img src={this.props.iconUrl}
                 style={{
                     pointerEvents: 'auto',
@@ -34,7 +34,7 @@ export class ContainerControl extends React.Component<ContainerControlProps, {mo
                     this.setState({mouseOver: false});
                 }}
             />;
-        const titleT = () =>
+        const titleT =
             <div
                 style={{
                     display: this.props.visible || this.state.mouseOver ? "inline" : "none",
@@ -56,8 +56,8 @@ export class ContainerControl extends React.Component<ContainerControlProps, {mo
                 textAlign: 'left',
                 marginTop: 2,
                 zIndex: 7,
-            }}>{iconT()}
-            {titleT()}
+            }}>{iconT}
+            {titleT}
             {this.props.visible ? this.props.children : ''}</div>;
     }
 
