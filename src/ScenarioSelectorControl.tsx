@@ -1,9 +1,8 @@
 import * as THREE from 'three/src/Three';
 import * as React from "react";
 
-import { MenuControl } from './MenuControl';
+import { MenuComponent } from './MenuComponent';
 import { AU, AxisAngleQuaternion, CelestialBody } from './CelestialBody';
-import { ContainerControl } from './ContainerControl';
 
 import menuIconUrl from './images/menuIcon.png';
 
@@ -18,9 +17,6 @@ export interface ScenarioSelectorControlProps{
 
 export class ScenarioSelectorControl extends React.Component<ScenarioSelectorControlProps, {visible: boolean}>{
 
-    protected getSelectObj: () => CelestialBody;
-    protected showEvent: () => void;
-
     constructor(props: ScenarioSelectorControlProps){
         super(props);
         this.state = {visible: false};
@@ -31,40 +27,9 @@ export class ScenarioSelectorControl extends React.Component<ScenarioSelectorCon
             buttonTop: 0,
             buttonHeight: 32,
             buttonWidth: 32,
-            innerTitle: "Scenario Selector",
         };
 
-        const valueElement = <div
-            style={{
-                border: "5px ridge #ffff7f",
-                pointerEvents: "auto",
-                position: "fixed",
-                left: 0,
-                right: 0,
-                marginRight: "auto",
-                marginLeft: "auto",
-                width: "300px",
-                top: 0,
-                bottom: 0,
-                marginTop: "auto",
-                marginBottom: "auto",
-                height: "70%",
-                backgroundColor: "rgba(0,0,0,0.85)",
-                fontSize: 15,
-                textAlign: "center",
-                fontFamily: "Sans-Serif",
-                overflowY: "auto",
-            }}
-            >
-            <div
-                style={{
-                    margin: 15,
-                    padding: 15,
-                    fontSize: 25,
-                }}>
-                Scenario selector
-            </div>
-            {
+        const valueElement =
             ([
                 {title: "Earth orbit", parent: "earth", semimajor_axis: 10000 / AU},
                 {title: "Moon orbit", parent: "moon", semimajor_axis: 3000 / AU},
@@ -109,23 +74,15 @@ export class ScenarioSelectorControl extends React.Component<ScenarioSelectorCon
                     })
                 )(item)
                 }
-                >{item.title}</div>)}</div>;
+                >{item.title}</div>);
 
-        return <ContainerControl
-            buttonTop={config.buttonHeight}
-            buttonWidth={config.buttonWidth}
-            buttonHeight={config.buttonHeight}
+        return <MenuComponent
+            config={config}
+            caption="Scenarios"
             iconUrl={menuIconUrl}
-            caption='Scenarios'
+            innerTitle="Scenario Selector"
             visible={this.state.visible}
             onSetVisible={(v) => this.setState({visible: v})}
-            >{valueElement}</ContainerControl>;//, menuIconUrl, config);
-    }
-
-    setVisible(v: boolean){
-        // super.setVisible.call(this, v);
-        // if(this.visible){
-        //     this.showEvent();
-        // }
+            ><div>{valueElement}</div></MenuComponent>;
     }
 }
