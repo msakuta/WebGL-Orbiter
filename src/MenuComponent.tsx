@@ -16,6 +16,7 @@ export interface MenuComponentProps{
     config: Config,
     iconUrl: string,
     visible: boolean,
+    style?: string,
     onSetVisible: (v: boolean) => void,
     children: JSX.Element,
 }
@@ -49,7 +50,7 @@ export class MenuComponent extends React.Component<MenuComponentProps>{
 
         const valueElement = <div
         style={{
-            border: "5px ridge #ffff7f",
+            border: this.props.style ?? "5px ridge #ffff7f",
             pointerEvents: "auto",
             position: "fixed",
             left: 0,
