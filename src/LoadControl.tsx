@@ -7,7 +7,6 @@ import trashcanUrl from './images/trashcan.png';
 export interface LoadControlProps{
     loadState: (a: any) => void,
     sendMessage: (msg: string) => void,
-    showEvent: () => void,
     visible: boolean,
     onSetVisible: (v: boolean) => void,
 }
@@ -16,7 +15,6 @@ export class LoadControl extends React.Component<LoadControlProps>{
 
     constructor(props: LoadControlProps){
         super(props);
-        this.state = {visible: false};
     }
     
     render(){

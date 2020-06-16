@@ -7,7 +7,6 @@ import trashcanUrl from './images/trashcan.png';
 export interface SaveControlProps{
     serializeState: () => any,
     sendMessage: (msg: string) => void,
-    showEvent: () => void,
     visible: boolean,
     onSetVisible: (v: boolean) => void,
 }
@@ -45,7 +44,6 @@ export class SaveControl extends React.Component<SaveControlProps, {saveName: st
                     localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
                     this.props.sendMessage('Game State Saved!');
                     this.props.onSetVisible(false);
-                    this.props.showEvent();
                 }}>Save
                 </button>
             </div>

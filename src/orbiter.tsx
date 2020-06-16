@@ -81,9 +81,9 @@ function renderRightTopControls(){
         }}
         onDragStart={(event) => event.preventDefault()}
         ><ScenarioSelectorControl
-            setThrottle={function(throttle){ throttleControl.setThrottle(throttle); }}
-            resetTime={function(){ gameState.resetTime(); }}
-            sendMessage={function(msg){ messageControl.setText(msg); }}
+            setThrottle={(throttle) => throttleControl.setThrottle(throttle)}
+            resetTime={() => gameState.resetTime()}
+            sendMessage={(msg) => messageControl.setText(msg)}
             onSelectScenario={(callback) => callback(gameState.getSelectObj())}
             visible={scenarioSelectorVisible}
             onSetVisible={(v) => {
@@ -98,7 +98,6 @@ function renderRightTopControls(){
         <LoadControl
             loadState={(state) => gameState.loadState(state)}
             sendMessage={(msg) => messageControl.setText(msg)}
-            showEvent={() => 0}
             visible={loadControlVisible}
             onSetVisible={(v) => {
                 loadControlVisible = v;
@@ -112,7 +111,6 @@ function renderRightTopControls(){
         <SaveControl
             serializeState={() => gameState.serializeState()}
             sendMessage={(msg) => messageControl.setText(msg)}
-            showEvent={() => 0}
             visible={saveControlVisible}
             onSetVisible={(v) => {
                 saveControlVisible = v;
