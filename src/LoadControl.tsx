@@ -29,6 +29,7 @@ export class LoadControl extends React.Component<LoadControlProps, {visible: boo
         const valueElement =
             saveDataList.map((saveData: any, i: number) =>
                 <div
+                    key={i}
                     style={{
                         margin: "5px",
                         padding: "5px",

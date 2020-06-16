@@ -84,7 +84,7 @@ function renderRightTopControl(){
             sendMessage={function(msg){ messageControl.setText(msg); }}
             onSelectScenario={(callback) => callback(gameState.getSelectObj())}
             showEvent={function(){
-                [saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
+                [].map(function(control){ control.setVisible(false); }); // Mutually exclusive
             }}
             ></ScenarioSelectorControl>
         <LoadControl
@@ -92,6 +92,11 @@ function renderRightTopControl(){
             sendMessage={(msg) => messageControl.setText(msg)}
             showEvent={() => 0}
             ></LoadControl>
+        <SaveControl
+            serializeState={() => gameState.serializeState()}
+            sendMessage={(msg) => messageControl.setText(msg)}
+            showEvent={() => 0}
+            ></SaveControl>
             </div>,
         scenarioSelectorElement);
 }
