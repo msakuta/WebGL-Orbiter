@@ -28,7 +28,7 @@ export interface SettingsControlProps {
     onChangeItem: (i: number, name: string) => void;
 }
 
-export class SettingsControl extends React.Component<SettingsControlProps>{
+export class SettingsControl extends React.Component<SettingsControlProps, {visible: boolean}>{
     config = new Config();
 
     render(): JSX.Element{
@@ -64,12 +64,15 @@ export class SettingsControl extends React.Component<SettingsControlProps>{
            buttonHeight={this.config.buttonHeight}
            iconUrl={settingsIconUrl}
            caption="Settings"
+           visible={this.state.visible}
+           onSetVisible={(v) => this.setState({visible: v})}
         >{valueT()}</ContainerControl>;
 
     }
 
     constructor(props: SettingsControlProps){
         super(props);
+        this.state = {visible: false};
         window.addEventListener( 'keydown', (event: KeyboardEvent) => this.onKeyDown(event), false );
     }
 

@@ -42,7 +42,7 @@ let altitudeControl: any;
 let messageControl: MessageControl;
 let cameraControls: OrbitControls;
 let grids: THREE.Object3D;
-let scenarioSelectorControl: ScenarioSelectorControl;
+let scenarioSelectorElement: HTMLElement;
 let saveControl: SaveControl;
 let loadControl: LoadControl;
 
@@ -68,6 +68,30 @@ function renderRightControls(){
         }}
         onDragStart={(event) => event.preventDefault()}
         >{statsControl}{settingsControl}</div>, verticalContainer);
+}
+
+function renderScenarios(){
+    ReactDOM.render(<div
+        style={{
+            position: 'absolute',
+            top: '0px',
+            width: '100%',
+            pointerEvents: 'none',
+        }}
+        onDragStart={(event) => event.preventDefault()}
+        ><ScenarioSelectorControl
+            // getSelectObj={function(){ return gameState.getSelectObj(); }}
+            // select_obj={gameState.getSelectObj()}
+            setThrottle={function(throttle){ throttleControl.setThrottle(throttle); }}
+            resetTime={function(){ gameState.resetTime(); }}
+            sendMessage={function(msg){ messageControl.setText(msg); }}
+            onSelectScenario={(callback) => callback(gameState.getSelectObj())}
+            showEvent={function(){
+                [saveControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
+            }}
+            ></ScenarioSelectorControl>
+            </div>,
+        scenarioSelectorElement);
 }
 
 
@@ -278,22 +302,15 @@ function init() {
     messageControl = new MessageControl();
     container.appendChild( messageControl.domElement );
 
-    scenarioSelectorControl = new ScenarioSelectorControl(
-        function(){ return gameState.getSelectObj(); },
-        function(throttle){ throttleControl.setThrottle(throttle); },
-        function(){ gameState.resetTime(); },
-        function(msg){ messageControl.setText(msg); },
-        function(){
-            [saveControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
-        }
-    );
-    container.appendChild( scenarioSelectorControl.domElement );
+    scenarioSelectorElement = document.createElement('div');
+    container.appendChild( scenarioSelectorElement );
+    renderScenarios();
 
     saveControl = new SaveControl(
         function(){ return gameState.serializeState(); },
         function(msg){ messageControl.setText(msg); },
         function(){
-            [scenarioSelectorControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
+            [loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
         }
     );
     container.appendChild( saveControl.domElement );
@@ -304,7 +321,7 @@ function init() {
         function(state){ gameState.loadState(state) },
         function(msg){ messageControl.setText(msg); },
         function(){
-            [scenarioSelectorControl, saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
+            [saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
         }
     );
     container.appendChild( loadControl.domElement );

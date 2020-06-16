@@ -25,7 +25,7 @@ export interface StatsControlProps{
     items: {title: string, value: string}[];
 }
 
-export class StatsControl extends React.Component<StatsControlProps>{
+export class StatsControl extends React.Component<StatsControlProps, {visible: boolean}>{
     protected element: HTMLElement;
     get domElement(): HTMLElement{ return this.element; }
     protected valueElement: HTMLElement;
@@ -34,6 +34,11 @@ export class StatsControl extends React.Component<StatsControlProps>{
     protected getSelectObj: () => CelestialBody;
     protected settingsControl: SettingsControl;
 
+    constructor(props: StatsControlProps){
+        super(props);
+        this.state = {visible: false};
+    }
+
     render(){
         return <ContainerControl
             buttonTop={buttonTop}
@@ -41,6 +46,8 @@ export class StatsControl extends React.Component<StatsControlProps>{
             buttonHeight={buttonHeight}
             iconUrl={statsIconUrl}
             caption="Statistics"
+            visible={this.state.visible}
+            onSetVisible={(v) => this.setState({visible: v})}
         ><div style={{
             pointerEvents: 'auto',
             display: 'inline',

@@ -7,9 +7,11 @@ export interface ContainerControlProps {
     children: JSX.Element;
     iconUrl: string;
     caption: string;
+    visible: boolean;
+    onSetVisible: (v: boolean) => void;
 }
 
-export class ContainerControl extends React.Component<ContainerControlProps, {visible: boolean, mouseOver: boolean}>{
+export class ContainerControl extends React.Component<ContainerControlProps, {mouseOver: boolean}>{
 
     render(): JSX.Element{
 
@@ -23,22 +25,22 @@ export class ContainerControl extends React.Component<ContainerControlProps, {vi
                 }}
                 onDragStart={(event) => event.preventDefault()}
                 onClick={(event) => {
-                    this.setState({visible: !this.state.visible, mouseOver: this.state.mouseOver});
+                    this.props.onSetVisible(!this.props.visible);
                 }}
                 onMouseEnter={(event) => {
-                    this.setState({visible: this.state.visible, mouseOver: true});
+                    this.setState({mouseOver: true});
                 }}
                 onMouseLeave={(event) => {
-                    this.setState({visible: this.state.visible, mouseOver: false});
+                    this.setState({mouseOver: false});
                 }}
             />;
         const titleT = () =>
             <div
                 style={{
-                    display: this.state.visible || this.state.mouseOver ? "inline" : "none",
+                    display: this.props.visible || this.state.mouseOver ? "inline" : "none",
                     position: "relative",
                     float: 'right',
-                    background: this.state.visible ? 'rgba(0, 0, 0, 0.5)' : '',
+                    background: this.props.visible ? 'rgba(0, 0, 0, 0.5)' : '',
                     bottom: 0,
                     right: 0,
                     top: (this.props.buttonHeight - 20) + 'px',
@@ -56,11 +58,11 @@ export class ContainerControl extends React.Component<ContainerControlProps, {vi
                 zIndex: 7,
             }}>{iconT()}
             {titleT()}
-            {this.state.visible ? this.props.children : ''}</div>;
+            {this.props.visible ? this.props.children : ''}</div>;
     }
 
     constructor(props: ContainerControlProps){
         super(props);
-        this.state = {visible: false, mouseOver: false};
+        this.state = {mouseOver: false};
     }
 }
