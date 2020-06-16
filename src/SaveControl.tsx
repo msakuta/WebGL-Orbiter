@@ -8,13 +8,15 @@ export interface SaveControlProps{
     serializeState: () => any,
     sendMessage: (msg: string) => void,
     showEvent: () => void,
+    visible: boolean,
+    onSetVisible: (v: boolean) => void,
 }
 
-export class SaveControl extends React.Component<SaveControlProps, {visible: boolean, saveName: string}>{
+export class SaveControl extends React.Component<SaveControlProps, {saveName: string}>{
 
     constructor(props: SaveControlProps){
         super(props);
-        this.state = {visible: false, saveName: ''};
+        this.state = {saveName: ''};
     }
 
     render(){
@@ -42,7 +44,7 @@ export class SaveControl extends React.Component<SaveControlProps, {visible: boo
                     saveData.push({title: this.state.saveName, state: this.props.serializeState()});
                     localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
                     this.props.sendMessage('Game State Saved!');
-                    this.setState({visible: false});
+                    this.props.onSetVisible(false);
                     this.props.showEvent();
                 }}>Save
                 </button>
@@ -62,7 +64,7 @@ export class SaveControl extends React.Component<SaveControlProps, {visible: boo
                             save.state = this.props.serializeState();
                             localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
                             this.props.sendMessage('Game State Saved!');
-                            this.setState({visible: false});
+                            this.props.onSetVisible(false);
                         }
                     )(saveData[i])}
                 >
@@ -81,7 +83,7 @@ export class SaveControl extends React.Component<SaveControlProps, {visible: boo
                         saveData.splice(i, 1);
                         localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
                         this.props.sendMessage('Game State Deleted!');
-                        this.setState({visible: false});
+                        this.props.onSetVisible(false);
                         event.stopPropagation();
                     }
                     )(i)
@@ -93,8 +95,8 @@ export class SaveControl extends React.Component<SaveControlProps, {visible: boo
             config={config}
             caption="Save data"
             iconUrl={saveIconUrl}
-            visible={this.state.visible}
-            onSetVisible={(v) => this.setState({visible: v})}
+            visible={this.props.visible}
+            onSetVisible={this.props.onSetVisible}
             style={"5px ridge #7fff7f"}
             ><div>{inputContainer}{saveContainer}</div></MenuComponent>;
     }

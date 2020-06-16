@@ -8,11 +8,11 @@ export interface LoadControlProps{
     loadState: (a: any) => void,
     sendMessage: (msg: string) => void,
     showEvent: () => void,
+    visible: boolean,
+    onSetVisible: (v: boolean) => void,
 }
 
-export class LoadControl extends React.Component<LoadControlProps, {visible: boolean}>{
-    protected showEvent: () => void;
-    protected updateSaveDataList: () => void;
+export class LoadControl extends React.Component<LoadControlProps>{
 
     constructor(props: LoadControlProps){
         super(props);
@@ -39,7 +39,7 @@ export class LoadControl extends React.Component<LoadControlProps, {visible: boo
                         () => {
                             this.props.loadState(saveData.state);
                             this.props.sendMessage('Game State Loaded!');
-                            this.setState({visible: false});
+                            this.props.onSetVisible(false);
                         }
                     )(saveData)}>
                 <div
@@ -59,7 +59,7 @@ export class LoadControl extends React.Component<LoadControlProps, {visible: boo
                         saveDataList.splice(i, 1);
                         localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveDataList));
                         this.props.sendMessage('Game State Deleted!');
-                        this.setState({visible: false});
+                        this.props.onSetVisible(false);
                         event.stopPropagation();
                     }
                     )(i)
@@ -71,8 +71,8 @@ export class LoadControl extends React.Component<LoadControlProps, {visible: boo
             config={config}
             caption="Load data"
             iconUrl={loadIconUrl}
-            visible={this.state.visible}
-            onSetVisible={(v) => this.setState({visible: v})}
+            visible={this.props.visible}
+            onSetVisible={this.props.onSetVisible}
             style={"5px ridge #ff7fff"}
             ><div>{valueElement}</div></MenuComponent>;
     }

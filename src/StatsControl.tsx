@@ -26,14 +26,6 @@ export interface StatsControlProps{
 }
 
 export class StatsControl extends React.Component<StatsControlProps, {visible: boolean}>{
-    protected element: HTMLElement;
-    get domElement(): HTMLElement{ return this.element; }
-    protected valueElement: HTMLElement;
-    protected valueElements: HTMLElement[] = [];
-    protected visible: boolean = false;
-    protected getSelectObj: () => CelestialBody;
-    protected settingsControl: SettingsControl;
-
     constructor(props: StatsControlProps){
         super(props);
         this.state = {visible: false};

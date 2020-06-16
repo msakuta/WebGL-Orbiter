@@ -12,15 +12,11 @@ export interface ScenarioSelectorControlProps{
     sendMessage: (msg: string) => void,
     setThrottle: (throttle: number) => void,
     resetTime: () => void,
-    showEvent: () => void,
+    visible: boolean,
+    onSetVisible: (v: boolean) => void,
 }
 
-export class ScenarioSelectorControl extends React.Component<ScenarioSelectorControlProps, {visible: boolean}>{
-
-    constructor(props: ScenarioSelectorControlProps){
-        super(props);
-        this.state = {visible: false};
-    }
+export class ScenarioSelectorControl extends React.Component<ScenarioSelectorControlProps>{
 
     render(){
         const config = {
@@ -69,7 +65,7 @@ export class ScenarioSelectorControl extends React.Component<ScenarioSelectorCon
                         select_obj.ignitionCount = 0;
                         // resetTime();
                         this.props.sendMessage('Scenario ' + scenario.title + ' Loaded!');
-                        this.setState({visible: false});
+                        this.props.onSetVisible(false);
                         return true;
                     })
                 )(item)
@@ -81,8 +77,8 @@ export class ScenarioSelectorControl extends React.Component<ScenarioSelectorCon
             caption="Scenarios"
             iconUrl={menuIconUrl}
             innerTitle="Scenario Selector"
-            visible={this.state.visible}
-            onSetVisible={(v) => this.setState({visible: v})}
+            visible={this.props.visible}
+            onSetVisible={this.props.onSetVisible}
             ><div>{valueElement}</div></MenuComponent>;
     }
 }

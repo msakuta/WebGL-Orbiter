@@ -43,7 +43,9 @@ let messageControl: MessageControl;
 let cameraControls: OrbitControls;
 let grids: THREE.Object3D;
 let scenarioSelectorElement: HTMLElement;
-let saveControl: SaveControl;
+let scenarioSelectorVisible: boolean = false;
+let loadControlVisible: boolean = false;
+let saveControlVisible: boolean = false;
 
 let windowHalfX = window.innerWidth / 2;
 let windowHalfY = window.innerHeight / 2;
@@ -69,7 +71,7 @@ function renderRightControls(){
         >{statsControl}{settingsControl}</div>, verticalContainer);
 }
 
-function renderRightTopControl(){
+function renderRightTopControls(){
     ReactDOM.render(<div
         style={{
             position: 'absolute',
@@ -83,19 +85,43 @@ function renderRightTopControl(){
             resetTime={function(){ gameState.resetTime(); }}
             sendMessage={function(msg){ messageControl.setText(msg); }}
             onSelectScenario={(callback) => callback(gameState.getSelectObj())}
-            showEvent={function(){
-                [].map(function(control){ control.setVisible(false); }); // Mutually exclusive
+            visible={scenarioSelectorVisible}
+            onSetVisible={(v) => {
+                scenarioSelectorVisible = v;
+                if(v){
+                    saveControlVisible = false; // Mutually exclusive
+                    loadControlVisible = false; // Mutually exclusive
+                }
+                renderRightTopControls()
             }}
             ></ScenarioSelectorControl>
         <LoadControl
             loadState={(state) => gameState.loadState(state)}
             sendMessage={(msg) => messageControl.setText(msg)}
             showEvent={() => 0}
+            visible={loadControlVisible}
+            onSetVisible={(v) => {
+                loadControlVisible = v;
+                if(v){
+                    scenarioSelectorVisible = false;
+                    saveControlVisible = false; // Mutually exclusive
+                }
+                renderRightTopControls()
+            }}
             ></LoadControl>
         <SaveControl
             serializeState={() => gameState.serializeState()}
             sendMessage={(msg) => messageControl.setText(msg)}
             showEvent={() => 0}
+            visible={saveControlVisible}
+            onSetVisible={(v) => {
+                saveControlVisible = v;
+                if(v){
+                    scenarioSelectorVisible = false;
+                    loadControlVisible = false; // Mutually exclusive
+                }
+                renderRightTopControls()
+            }}
             ></SaveControl>
             </div>,
         scenarioSelectorElement);
@@ -312,7 +338,7 @@ function init() {
 
     scenarioSelectorElement = document.createElement('div');
     container.appendChild( scenarioSelectorElement );
-    renderRightTopControl();
+    renderRightTopControls();
 
     // saveControl = new SaveControl(
     //     function(){ return gameState.serializeState(); },

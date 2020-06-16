@@ -78,7 +78,7 @@ export class MenuComponent extends React.Component<MenuComponentProps>{
             iconUrl={this.props.iconUrl}
             caption={this.props.caption}
             visible={this.props.visible}
-            onSetVisible={(v) => this.props.onSetVisible(v)}
+            onSetVisible={this.props.onSetVisible}
         >{valueElement}</ContainerControl>;
 
         return container;
