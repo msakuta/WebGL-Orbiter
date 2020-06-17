@@ -402,6 +402,7 @@ function render() {
         + ' ' + zerofill(time.getHours()) + ':' + zerofill(time.getMinutes()) + ':' + zerofill(time.getSeconds()));
     speedControl.setSpeed();
     StatsControl.setText(statsItems, gameState.getSelectObj(), gameState.getMissionTime());
+    renderOrbitalElements();
     renderRightControls();
     messageControl.timeStep(realDeltaTimeMilliSec * 1e-3);
 

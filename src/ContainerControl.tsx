@@ -41,7 +41,7 @@ export class ContainerControl extends React.Component<ContainerControlProps, {mo
                     display: this.props.visible || this.state.mouseOver ? "inline" : "none",
                     position: "relative",
                     float: this.props.side ?? 'right',
-                    background: this.props.visible ? 'rgba(0, 0, 0, 0.5)' : '',
+                    background: 'rgba(0, 0, 0, 0.5)',
                     bottom: 0,
                     right: 0,
                     top: (this.props.buttonHeight - 20) + 'px',
