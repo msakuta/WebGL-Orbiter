@@ -41,7 +41,7 @@ export class ScenarioSelectorControl extends React.Component<ScenarioSelectorCon
                     padding: "15px",
                     border: "1px solid #ffff00",
                 }}
-                onClick={((scenario) => (event: React.MouseEvent<HTMLDivElement, MouseEvent>) =>
+                onClick={(scenario => (event: React.MouseEvent<HTMLDivElement, MouseEvent>) =>
                     this.props.onSelectScenario((select_obj) => {
                         const ascending_node = scenario.ascending_node || 0.;
                         var eccentricity = scenario.eccentricity || 0.;

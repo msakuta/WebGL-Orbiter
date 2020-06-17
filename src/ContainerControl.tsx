@@ -4,6 +4,7 @@ export interface ContainerControlProps {
     buttonTop: number;
     buttonWidth: number;
     buttonHeight: number;
+    side?: "left" | "right";
     children: JSX.Element;
     iconUrl: string;
     caption: string;
@@ -19,7 +20,7 @@ export class ContainerControl extends React.Component<ContainerControlProps, {mo
             <img src={this.props.iconUrl}
                 style={{
                     pointerEvents: 'auto',
-                    float: 'right',
+                    float: this.props.side ?? 'right',
                     width: this.props.buttonWidth + 'px',
                     height: this.props.buttonHeight + 'px',
                 }}
@@ -39,7 +40,7 @@ export class ContainerControl extends React.Component<ContainerControlProps, {mo
                 style={{
                     display: this.props.visible || this.state.mouseOver ? "inline" : "none",
                     position: "relative",
-                    float: 'right',
+                    float: this.props.side ?? 'right',
                     background: this.props.visible ? 'rgba(0, 0, 0, 0.5)' : '',
                     bottom: 0,
                     right: 0,
@@ -51,7 +52,7 @@ export class ContainerControl extends React.Component<ContainerControlProps, {mo
 
         return <div
             style={{
-                float: 'right',
+                float: this.props.side ?? 'right',
                 clear: 'both',
                 textAlign: 'left',
                 marginTop: 2,

@@ -33,7 +33,7 @@ let overlay: Overlay;
 let timescaleControl: TimeScaleControl;
 let throttleControl: ThrottleControl;
 let speedControl: any;
-let orbitalElementsControl: OrbitalElementsControl;
+let orbitalElementsControl: HTMLElement;
 let statsControl: JSX.Element;
 let statsItems: {title: string, value: string}[];
 let settingsControl: JSX.Element;
@@ -57,6 +57,15 @@ let settings = new Settings();
 let buttons = new RotationButtons();
 let accelerate = false;
 let decelerate = false;
+let headingApoapsis = 0.;
+
+function renderOrbitalElements(){
+    ReactDOM.render(<OrbitalElementsControl
+        body={gameState.getSelectObj()}
+        headingApoapsis={headingApoapsis}
+        units_km={settings.units_km}
+    />, orbitalElementsControl);
+}
 
 function renderRightControls(){
     statsControl = <StatsControl items={statsItems} select_obj={gameState.getSelectObj()}></StatsControl>;
@@ -271,8 +280,9 @@ function init() {
     speedControl = new SpeedControl();
     container.appendChild( speedControl.domElement );
 
-    orbitalElementsControl = new OrbitalElementsControl();
-    container.appendChild( orbitalElementsControl.domElement );
+    orbitalElementsControl = document.createElement('div');
+    container.appendChild( orbitalElementsControl );
+    renderOrbitalElements();
 
     const names = Object.keys(settings);
     const settingsItems = names.filter((item) => item !== 'center_select')
@@ -412,9 +422,7 @@ function render() {
     const select_obj = gameState.getSelectObj();
     gameState.universe.update(settings.center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
         settings.units_km,
-        function(o, headingApoapsis){
-            orbitalElementsControl.setText(o, headingApoapsis, settings.units_km);
-        },
+        (o, headingApoapsis_) => headingApoapsis = headingApoapsis_,
         scene,
         select_obj
     );
