@@ -50,6 +50,7 @@ export class StatsControl extends React.Component<StatsControlProps, {visible: b
             padding: '3px',
         }}>
         {
+            this.state.visible ?
             this.props.items.map((item, i) => <>
                 <div
                 key={`title-${i}`}
@@ -62,7 +63,7 @@ export class StatsControl extends React.Component<StatsControlProps, {visible: b
                 style={{
                     textAlign: 'right',
                 }}>{item.value}</div>
-            </>)
+            </>) : <></>
         }
         </div></ContainerControl>;
     }

@@ -80,8 +80,15 @@ function renderRightControls(){
         >{statsControl}{settingsControl}</div>, verticalContainer);
 }
 
-function renderRightTopControls(){
-    ReactDOM.render(<div
+class RightControls extends React.Component<{}, {scenarioSelectorVisible: boolean, loadControlVisible: boolean, saveControlVisible: boolean}>{
+
+    constructor(props: {} = {}){
+        super(props);
+        this.state = {scenarioSelectorVisible: false, loadControlVisible: false, saveControlVisible: false};
+    }
+
+    render(){
+        return <div
         style={{
             position: 'absolute',
             top: '0px',
@@ -94,43 +101,51 @@ function renderRightTopControls(){
             resetTime={() => gameState.resetTime()}
             sendMessage={(msg) => messageControl.setText(msg)}
             onSelectScenario={(callback) => callback(gameState.getSelectObj())}
-            visible={scenarioSelectorVisible}
+            visible={this.state.scenarioSelectorVisible}
             onSetVisible={(v) => {
-                scenarioSelectorVisible = v;
+                this.setState({scenarioSelectorVisible: v});
                 if(v){
-                    saveControlVisible = false; // Mutually exclusive
-                    loadControlVisible = false; // Mutually exclusive
+                    this.setState({
+                        saveControlVisible: false, // Mutually exclusive
+                        loadControlVisible: false, // Mutually exclusive
+                    });
                 }
-                renderRightTopControls()
             }}
             ></ScenarioSelectorControl>
         <LoadControl
             loadState={(state) => gameState.loadState(state)}
             sendMessage={(msg) => messageControl.setText(msg)}
-            visible={loadControlVisible}
+            visible={this.state.loadControlVisible}
             onSetVisible={(v) => {
-                loadControlVisible = v;
+                this.setState({loadControlVisible: v});
                 if(v){
-                    scenarioSelectorVisible = false;
-                    saveControlVisible = false; // Mutually exclusive
+                    this.setState({
+                        scenarioSelectorVisible: false,
+                        saveControlVisible: false, // Mutually exclusive
+                    })
                 }
-                renderRightTopControls()
             }}
             ></LoadControl>
         <SaveControl
             serializeState={() => gameState.serializeState()}
             sendMessage={(msg) => messageControl.setText(msg)}
-            visible={saveControlVisible}
+            visible={this.state.saveControlVisible}
             onSetVisible={(v) => {
-                saveControlVisible = v;
+                this.setState({saveControlVisible: v});
                 if(v){
-                    scenarioSelectorVisible = false;
-                    loadControlVisible = false; // Mutually exclusive
+                    this.setState({
+                        scenarioSelectorVisible: false,
+                        loadControlVisible: false, // Mutually exclusive
+                    });
                 }
-                renderRightTopControls()
             }}
             ></SaveControl>
-            </div>,
+            </div>;
+    }
+}
+
+function renderRightTopControls(){
+    ReactDOM.render(<RightControls/>,
         scenarioSelectorElement);
 }
 
