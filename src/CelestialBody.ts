@@ -245,7 +245,7 @@ export class CelestialBody{
             // Avoid zero division and still get the correct answer when N == 0.
             // This is necessary to draw orbit with zero inclination and nonzero eccentricity.
             if(N.lengthSq() <= epsilon || e.lengthSq() <= epsilon)
-                this.argument_of_perihelion = Math.atan2(-e.y, e.x);
+                this.argument_of_perihelion = Math.atan2(ang.z < 0 ? -e.y : e.y, e.x);
             else{
                 this.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
                 if(e.z < 0) this.argument_of_perihelion = 2 * Math.PI - this.argument_of_perihelion;
