@@ -344,11 +344,17 @@ export class CelestialBody{
 
     simulateBody(deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
 
-        function checkCollision(source: CelestialBody, target: CelestialBody, destination: THREE.Vector3){
-            const delta = destination.clone().sub(target.position);
+        function checkCollision(source: CelestialBody, target: CelestialBody, destination: THREE.Vector3,
+            targetPositionLocal: THREE.Vector3)
+        {
+            // Non-controllable objects will not collide for now
+            if(!source.controllable)
+                return;
+            const delta = destination.clone().sub(targetPositionLocal);
             const rad2 = (source.radius + target.radius) * (source.radius + target.radius) / AU / AU;
-            if(delta.lengthSq() < rad2){
+            if(delta.lengthSq() < rad2 && delta.dot(source.velocity) < 0.){
                 const normal = delta.normalize();
+                // Perfect elastic collision (coefficient of restitution = 1.)
                 source.velocity.add(normal.multiplyScalar(-2. * normal.dot(source.velocity)));
             }
         }
@@ -389,12 +395,12 @@ export class CelestialBody{
                 const deltaPosition = a.velocity.clone().add(dvelo);
                 const destination = a.position.clone().add(deltaPosition);
 
-                checkCollision(a, this, destination);
+                checkCollision(a, this, destination, new THREE.Vector3(0, 0, 0));
                 for(let j = 0; j < children.length; j++){
                     const child = children[j];
                     if(child === a)
                         continue;
-                    checkCollision(a, child, destination);
+                    checkCollision(a, child, destination, child.position);
                 }
 
                 a.velocity.add(accel1);
