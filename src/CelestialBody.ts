@@ -365,7 +365,8 @@ export class CelestialBody{
                 }
                 else{
                     source.stuck = true;
-                    sendMessage('The rocket has crashed to an object!', 20);
+                    sendMessage('<span style="color: #ff7f7f">The rocket has crashed to an object!<br>'
+                        + 'Load another scenario and try again!</span>', 20);
                 }
             }
         }

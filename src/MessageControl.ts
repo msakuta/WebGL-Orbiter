@@ -17,6 +17,7 @@ export class MessageControl{
         element.style.fontWeight = 'bold';
         element.style.textShadow = '0px 0px 5px rgba(0,0,0,1)';
         element.style.zIndex = '20';
+        element.style.pointerEvents = 'none';
 
         // Register event handlers
         element.ondragstart = (event) => event.preventDefault();
