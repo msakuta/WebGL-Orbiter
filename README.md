@@ -250,6 +250,8 @@ Use npm to build or debug the project.
 1. Install Node.js
 2. Run `npm i`
 3. Serve the page with `npm run start`
+   1. and open `http://localhost:8080` with a browser
+   2. or use VSCode's Debugger for Chrome extension (`msjsdiag.debugger-for-chrome`) to debug the app
 4. or `npm run build` to make a static website in `dist/` subdirectory.
 
 
