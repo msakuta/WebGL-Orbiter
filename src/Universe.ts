@@ -3,6 +3,8 @@ import * as THREE from 'three/src/Three';
 import { CelestialBody, AU, AxisAngleQuaternion } from './CelestialBody';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
+import { SendMessageCallback } from './MessageControl';
+import GameState from './GameState';
 
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
@@ -137,7 +139,7 @@ export default class Universe{
         this.light.position.copy(this.sun.model.position);
     }
 
-    simulateBody(deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
-        this.sun.simulateBody(deltaTime, div, timescale, buttons, select_obj);
+    simulateBody(gameState: GameState, deltaTime: number, div: number, timescale: number, buttons: RotationButtons, sendMessage?: SendMessageCallback){
+        this.sun.simulateBody(gameState, deltaTime, div, timescale, buttons, sendMessage);
     }
 }

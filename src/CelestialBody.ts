@@ -5,6 +5,8 @@ import apoapsisUrl from './images/apoapsis.png';
 import periapsisUrl from './images/periapsis.png';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
+import { SendMessageCallback } from './MessageControl';
+import GameState from './GameState';
 
 export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
@@ -39,6 +41,7 @@ export class CelestialBody{
     getParent(){ return this.parent; }
     GM: number;
     radius: number;
+    stuck: boolean = false; /// Whether the object is stuck to the parent object, typically as a result of collision
     apoapsis?: THREE.Sprite = null;
     periapsis?: THREE.Sprite = null;
     vertex?: THREE.Vector3 = null;
@@ -122,6 +125,7 @@ export class CelestialBody{
             velocity: this.velocity,
             quaternion: this.quaternion,
             angularVelocity: this.angularVelocity,
+            stuck: this.stuck || undefined,
             totalDeltaV: this.totalDeltaV || undefined,
             ignitionCount: this.ignitionCount || undefined,
         };
@@ -142,6 +146,7 @@ export class CelestialBody{
         this.velocity = deserializeVector3(json.velocity);
         this.quaternion = deserializeQuaternion(json.quaternion);
         this.angularVelocity = deserializeVector3(json.angularVelocity);
+        this.stuck = json.stuck ?? false;
         this.totalDeltaV = json.totalDeltaV || 0;
         this.ignitionCount = json.ignitionCount || 0;
     }
@@ -342,7 +347,7 @@ export class CelestialBody{
 
     };
 
-    simulateBody(deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
+    simulateBody(gameState: GameState, deltaTime: number, div: number, timescale: number, buttons: RotationButtons, sendMessage?: SendMessageCallback){
 
         function checkCollision(source: CelestialBody, target: CelestialBody, destination: THREE.Vector3,
             targetPositionLocal: THREE.Vector3)
@@ -353,101 +358,111 @@ export class CelestialBody{
             const delta = destination.clone().sub(targetPositionLocal);
             const rad2 = (source.radius + target.radius) * (source.radius + target.radius) / AU / AU;
             if(delta.lengthSq() < rad2 && delta.dot(source.velocity) < 0.){
-                const normal = delta.normalize();
-                // Perfect elastic collision (coefficient of restitution = 1.)
-                source.velocity.add(normal.multiplyScalar(-2. * normal.dot(source.velocity)));
+                if(gameState.simulationSettings.bounce_on_collision){
+                    const normal = delta.normalize();
+                    // Perfect elastic collision (coefficient of restitution = 1.)
+                    source.velocity.add(normal.multiplyScalar(-2. * normal.dot(source.velocity)));
+                }
+                else{
+                    source.stuck = true;
+                    sendMessage('The rocket has crashed to an object!', 20);
+                }
             }
         }
+
+        const select_obj = gameState.select_obj;
 
         const children = this.children;
         for(let i = 0; i < children.length;){
             const a = children[i];
             const sl = a.position.lengthSq();
-            if(sl !== 0){
-                const angleAcceleration = 1e-0;
-                const accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
-                if(select_obj === a && select_obj.controllable && timescale <= 1){
-                    if(buttons.up) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-                    if(buttons.down) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-                    if(buttons.left) select_obj.angularVelocity.add(new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-                    if(buttons.right) select_obj.angularVelocity.add(new THREE.Vector3(0, -1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-                    if(buttons.counterclockwise) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-                    if(buttons.clockwise) select_obj.angularVelocity.add(new THREE.Vector3(-1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
-                    if(!buttons.up && !buttons.down && !buttons.left && !buttons.right && !buttons.counterclockwise && !buttons.clockwise){
-                        // Immediately stop micro-rotation if the body is controlled.
-                        // This is done to make it still in larger timescale, since micro-rotation cannot be canceled
-                        // by product of angularVelocity and quaternion which underflows by square.
-                        // Think that the vehicle has a momentum wheels that cancels micro-rotation continuously working.
-                        if(1e-6 < select_obj.angularVelocity.lengthSq())
-                            select_obj.angularVelocity.add(select_obj.angularVelocity.clone().normalize().multiplyScalar(-angleAcceleration * deltaTime / div));
-                        else
-                            select_obj.angularVelocity.set(0, 0, 0);
+            if(!a.stuck){
+                if(sl !== 0){
+                    const angleAcceleration = 1e-0;
+                    const accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
+                    if(select_obj === a && select_obj.controllable && timescale <= 1){
+                        if(buttons.up) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+                        if(buttons.down) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+                        if(buttons.left) select_obj.angularVelocity.add(new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+                        if(buttons.right) select_obj.angularVelocity.add(new THREE.Vector3(0, -1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+                        if(buttons.counterclockwise) select_obj.angularVelocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+                        if(buttons.clockwise) select_obj.angularVelocity.add(new THREE.Vector3(-1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
+                        if(!buttons.up && !buttons.down && !buttons.left && !buttons.right && !buttons.counterclockwise && !buttons.clockwise){
+                            // Immediately stop micro-rotation if the body is controlled.
+                            // This is done to make it still in larger timescale, since micro-rotation cannot be canceled
+                            // by product of angularVelocity and quaternion which underflows by square.
+                            // Think that the vehicle has a momentum wheels that cancels micro-rotation continuously working.
+                            if(1e-6 < select_obj.angularVelocity.lengthSq())
+                                select_obj.angularVelocity.add(select_obj.angularVelocity.clone().normalize().multiplyScalar(-angleAcceleration * deltaTime / div));
+                            else
+                                select_obj.angularVelocity.set(0, 0, 0);
+                        }
+                        if(0 < select_obj.throttle){
+                            const deltaV = acceleration * select_obj.throttle * deltaTime / div;
+                            select_obj.velocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(deltaV));
+                            select_obj.totalDeltaV += deltaV;
+                        }
                     }
-                    if(0 < select_obj.throttle){
-                        const deltaV = acceleration * select_obj.throttle * deltaTime / div;
-                        select_obj.velocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(deltaV));
-                        select_obj.totalDeltaV += deltaV;
+                    const dvelo = accel.clone().multiplyScalar(0.5);
+                    const vec0 = a.position.clone().add(a.velocity.clone().multiplyScalar(deltaTime / div / 2.));
+                    const accel1 = vec0.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / vec0.lengthSq());
+                    const deltaPosition = a.velocity.clone().add(dvelo);
+                    const destination = a.position.clone().add(deltaPosition);
+
+                    checkCollision(a, this, destination, new THREE.Vector3(0, 0, 0));
+                    for(let j = 0; j < children.length; j++){
+                        const child = children[j];
+                        if(child === a)
+                            continue;
+                        checkCollision(a, child, destination, child.position);
+                    }
+
+                    a.velocity.add(accel1);
+                    a.position.add(deltaPosition.multiplyScalar(deltaTime / div));
+                    if(0 < a.angularVelocity.lengthSq()){
+                        const axis = a.angularVelocity.clone().normalize();
+                        // We have to multiply in this order!
+                        a.quaternion.multiplyQuaternions(AxisAngleQuaternion(axis.x, axis.y, axis.z, a.angularVelocity.length() * deltaTime / div), a.quaternion);
                     }
                 }
-                const dvelo = accel.clone().multiplyScalar(0.5);
-                const vec0 = a.position.clone().add(a.velocity.clone().multiplyScalar(deltaTime / div / 2.));
-                const accel1 = vec0.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / vec0.lengthSq());
-                const deltaPosition = a.velocity.clone().add(dvelo);
-                const destination = a.position.clone().add(deltaPosition);
-
-                checkCollision(a, this, destination, new THREE.Vector3(0, 0, 0));
-                for(let j = 0; j < children.length; j++){
-                    const child = children[j];
-                    if(child === a)
-                        continue;
-                    checkCollision(a, child, destination, child.position);
-                }
-
-                a.velocity.add(accel1);
-                a.position.add(deltaPosition.multiplyScalar(deltaTime / div));
-                if(0 < a.angularVelocity.lengthSq()){
-                    const axis = a.angularVelocity.clone().normalize();
-                    // We have to multiply in this order!
-                    a.quaternion.multiplyQuaternions(AxisAngleQuaternion(axis.x, axis.y, axis.z, a.angularVelocity.length() * deltaTime / div), a.quaternion);
+                // Only controllable objects can change orbiting body
+                if(a.controllable){
+                    // Check if we are leaving sphere of influence of current parent.
+                    if(a.parent.parent && a.parent.soi && a.parent.soi * 1.01 < a.position.length()){
+                        a.position.add(this.position);
+                        a.velocity.add(this.velocity);
+                        const j = children.indexOf(a);
+                        if(0 <= j)
+                            children.splice(j, 1);
+                        a.parent = this.parent;
+                        a.parent.children.push(a);
+                        continue; // Continue but not increment i
+                    }
+                    let skip = false;
+                    // Check if we are entering sphere of influence of another sibling.
+                    for(let j = 0; j < children.length; j++){
+                        const aj = children[j];
+                        if(aj === a)
+                            continue;
+                        if(!aj.soi)
+                            continue;
+                        if(aj.position.distanceTo(a.position) < aj.soi * .99){
+                            a.position.sub(aj.position);
+                            a.velocity.sub(aj.velocity);
+                            const k = children.indexOf(a);
+                            if(0 <= k)
+                                children.splice(k, 1);
+                            a.parent = aj;
+                            aj.children.push(a);
+                            skip = true;
+                            break;
+                        }
+                    }
+                    if(skip)
+                        continue; // Continue but not increment i
                 }
             }
-            // Only controllable objects can change orbiting body
-            if(a.controllable){
-                // Check if we are leaving sphere of influence of current parent.
-                if(a.parent.parent && a.parent.soi && a.parent.soi * 1.01 < a.position.length()){
-                    a.position.add(this.position);
-                    a.velocity.add(this.velocity);
-                    const j = children.indexOf(a);
-                    if(0 <= j)
-                        children.splice(j, 1);
-                    a.parent = this.parent;
-                    a.parent.children.push(a);
-                    continue; // Continue but not increment i
-                }
-                let skip = false;
-                // Check if we are entering sphere of influence of another sibling.
-                for(let j = 0; j < children.length; j++){
-                    const aj = children[j];
-                    if(aj === a)
-                        continue;
-                    if(!aj.soi)
-                        continue;
-                    if(aj.position.distanceTo(a.position) < aj.soi * .99){
-                        a.position.sub(aj.position);
-                        a.velocity.sub(aj.velocity);
-                        const k = children.indexOf(a);
-                        if(0 <= k)
-                            children.splice(k, 1);
-                        a.parent = aj;
-                        aj.children.push(a);
-                        skip = true;
-                        break;
-                    }
-                }
-                if(skip)
-                    continue; // Continue but not increment i
-            }
-            a.simulateBody(deltaTime, div, timescale, buttons, select_obj);
+            a.simulateBody(gameState, deltaTime, div, timescale, buttons, sendMessage);
             i++;
         }
     }

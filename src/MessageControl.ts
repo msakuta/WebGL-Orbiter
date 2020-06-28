@@ -1,5 +1,7 @@
 
 
+export type SendMessageCallback = (text: string, timeout: number) => void;
+
 export class MessageControl{
     protected element: HTMLElement;
     get domElement(): HTMLElement{ return this.element; }
@@ -22,13 +24,13 @@ export class MessageControl{
         element.onselectstart = () => false;
     }
 
-    setText(text: string){
+    setText(text: string, timeout: number = 5){
         this.element.innerHTML = text;
         this.element.style.display = 'block';
         this.element.style.opacity = '1';
         this.element.style.marginTop = -this.element.getBoundingClientRect().height / 2 + 'px';
         this.element.style.marginLeft = -this.element.getBoundingClientRect().width / 2 + 'px';
-        this.showTime = 5; // Seconds to show should depend on text length!
+        this.showTime = timeout; // Seconds to show should depend on text length!
     }
 
     timeStep(deltaTime: number){
