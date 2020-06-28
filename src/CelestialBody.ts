@@ -254,13 +254,6 @@ export class CelestialBody{
             // Total rotation of the orbit
             const rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, this.argument_of_perihelion));
 
-            // Show orbit information
-            if(this === select_obj){
-                // Yes, building a whole table markup by string manipulation.
-                // I know it's inefficient, but it's easy to implement. I'm lazy.
-
-            }
-
             // If eccentricity is over 1, the trajectory is a hyperbola.
             // It could be parabola in case of eccentricity == 1, but we ignore
             // this impractical case for now.
@@ -350,6 +343,16 @@ export class CelestialBody{
     };
 
     simulateBody(deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
+
+        function checkCollision(source: CelestialBody, target: CelestialBody, destination: THREE.Vector3){
+            const delta = destination.clone().sub(target.position);
+            const rad2 = (source.radius + target.radius) * (source.radius + target.radius) / AU / AU;
+            if(delta.lengthSq() < rad2){
+                const normal = delta.normalize();
+                source.velocity.add(normal.multiplyScalar(-2. * normal.dot(source.velocity)));
+            }
+        }
+
         const children = this.children;
         for(let i = 0; i < children.length;){
             const a = children[i];
@@ -383,10 +386,19 @@ export class CelestialBody{
                 const dvelo = accel.clone().multiplyScalar(0.5);
                 const vec0 = a.position.clone().add(a.velocity.clone().multiplyScalar(deltaTime / div / 2.));
                 const accel1 = vec0.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / vec0.lengthSq());
-                const velo1 = a.velocity.clone().add(dvelo);
+                const deltaPosition = a.velocity.clone().add(dvelo);
+                const destination = a.position.clone().add(deltaPosition);
+
+                checkCollision(a, this, destination);
+                for(let j = 0; j < children.length; j++){
+                    const child = children[j];
+                    if(child === a)
+                        continue;
+                    checkCollision(a, child, destination);
+                }
 
                 a.velocity.add(accel1);
-                a.position.add(velo1.multiplyScalar(deltaTime / div));
+                a.position.add(deltaPosition.multiplyScalar(deltaTime / div));
                 if(0 < a.angularVelocity.lengthSq()){
                     const axis = a.angularVelocity.clone().normalize();
                     // We have to multiply in this order!
