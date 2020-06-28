@@ -241,6 +241,8 @@ Characters in parentheses indicate shortcut keys.
 * Chase camera - If it's turned on, the camera will automatically face the directon of vehicle's acceleration.
 * Nonlinear scale - Renders objects in a fake scale so that they appear even if they would be smaller than a pixel in real scale. Don't worry - the simulation will always be performed in real scale.
 * Units in KM - Shows distances in Orbital Elements panel in Kilometers instead of AUs.
+* Bounce on Collision - If checked, the rocket will bounce off the surface of an object instead of crashing.
+  This is a state of saved game, so if you save it, it will be restored on load.
 
 
 ## How to build
