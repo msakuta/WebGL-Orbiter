@@ -32,14 +32,16 @@ export default class Universe{
         const orbitGeometry = new THREE.Geometry().setFromPoints( curve.getPoints(256) );
 
         const group = new THREE.Object3D();
-        const material = new THREE.PointsMaterial( { size: 0.1 } );
+        const material = new THREE.MeshBasicMaterial( { color: "#ffffff" } );
 
-        // Sun
         const Rsun = 695800.;
-        const sgeometry = new THREE.SphereGeometry( Rsun / AU * viewScale, 20, 20 );
+        const sunGeometry = new THREE.SphereGeometry( 1, 20, 20 );
 
-        const sunMesh = new THREE.Mesh( sgeometry, material );
+        const sunMesh = new THREE.Mesh( sunGeometry, material );
+        sunMesh.scale.setScalar(viewScale * Rsun / AU);
         group.add( sunMesh );
+
+        scene.add(group);
 
         const AddPlanet = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: any, name: string) =>
             AddPlanetArg(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name, orbitGeometry);
