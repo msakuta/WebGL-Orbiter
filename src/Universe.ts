@@ -1,6 +1,6 @@
 import * as THREE from 'three/src/Three';
 
-import { CelestialBody, AU, AxisAngleQuaternion } from './CelestialBody';
+import { CelestialBody, AU, AxisAngleQuaternion, AddPlanetParams } from './CelestialBody';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
 
@@ -16,13 +16,15 @@ import perlinUrl from './images/perlin.jpg';
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 const rad_per_deg = Math.PI / 180; // Radians per degrees
 
+type AddPlanetArgType = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: AddPlanetParams, name: string, orbitGeometry: THREE.Geometry) => CelestialBody;
+
 
 export default class Universe{
     sun: CelestialBody;
     rocket: CelestialBody;
     light: THREE.PointLight;
 
-    constructor(scene: THREE.Scene, AddPlanetArg: any, center_select: boolean, viewScale: number, settings: Settings, camera: THREE.Camera, windowHalfX: number, windowHalfY: number){
+    constructor(scene: THREE.Scene, AddPlanetArg: AddPlanetArgType, center_select: boolean, viewScale: number, settings: Settings, camera: THREE.Camera, windowHalfX: number, windowHalfY: number){
         this.light = new THREE.PointLight( 0xffffff, 1, 0, 1e-6 );
         scene.add( this.light );
         scene.add( new THREE.AmbientLight( 0x202020 ) );
@@ -43,7 +45,7 @@ export default class Universe{
 
         scene.add(group);
 
-        const AddPlanet = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: any, name: string) =>
+        const AddPlanet = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: AddPlanetParams, name: string) =>
             AddPlanetArg(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name, orbitGeometry);
 
         this.sun = new CelestialBody(null, new THREE.Vector3(), null, "#ffffff", GMsun, "sun");

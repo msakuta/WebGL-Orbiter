@@ -440,10 +440,20 @@ export class CelestialBody{
 }
 
 
+export interface AddPlanetParams{
+    modelName?: string;
+    controllable?: boolean;
+    soi?: number;
+    axialTilt?: number;
+    rotationPeriod?: number;
+    quaternion?: THREE.Quaternion;
+    angularVelocity?: THREE.Vector3;
+}
+
 // Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 // It's a bit difficult to calculate in Newtonian dynamics simulation.
 export function addPlanet(semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number,
-    color: string, GM: number, parent: CelestialBody | null, texture: string, radius: number, params: any, name: string, scene: THREE.Scene,
+    color: string, GM: number, parent: CelestialBody | null, texture: string, radius: number, params: AddPlanetParams, name: string, scene: THREE.Scene,
     viewScale: number, overlay: THREE.Scene, orbitGeometry: THREE.Geometry, center_select: boolean, settings: Settings, camera: THREE.Camera,
     windowHalfX: number, windowHalfY: number)
 {
