@@ -97,11 +97,13 @@ function init() {
     gameState = new GameState(scene, viewScale, overlay.overlay, settings, camera, windowHalfX, windowHalfY, function(msg){ messageControl.setText(msg); });
 
     const meshMaterial = new THREE.LineBasicMaterial({color: 0x3f3f3f});
-    const meshGeometry = new THREE.Geometry();
+    const meshGeometry = new THREE.BufferGeometry();
+    const meshVertices = [];
     for(let x = -10; x <= 10; x++)
-        meshGeometry.vertices.push( new THREE.Vector3( -10, x, 0 ), new THREE.Vector3(10, x, 0));
+        meshVertices.push( -10, x, 0, 10, x, 0);
     for(let x = -10; x <= 10; x++)
-        meshGeometry.vertices.push( new THREE.Vector3( x, -10, 0 ), new THREE.Vector3(x, 10, 0));
+        meshVertices.push(   x, -10, 0, x, 10, 0);
+    meshGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(meshVertices), 3));
     grids = new THREE.Object3D();
     const mesh = new THREE.LineSegments(meshGeometry, meshMaterial);
     mesh.scale.x = mesh.scale.y = 100;
@@ -112,8 +114,9 @@ function init() {
 
     function addAxis(axisVector: THREE.Vector3, color: number){
         const axisXMaterial = new THREE.LineBasicMaterial({color: color});
-        const axisXGeometry = new THREE.Geometry();
-        axisXGeometry.vertices.push(new THREE.Vector3(0,0,0), axisVector);
+        const axisXGeometry = new THREE.BufferGeometry();
+        axisXGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(
+            [0, 0, 0, axisVector.x, axisVector.y, axisVector.z]), 3));
         const axisX = new THREE.Line(axisXGeometry, axisXMaterial);
         axisX.scale.multiplyScalar(100);
         grids.add(axisX);

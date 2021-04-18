@@ -16,7 +16,9 @@ import perlinUrl from './images/perlin.jpg';
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 const rad_per_deg = Math.PI / 180; // Radians per degrees
 
-type AddPlanetArgType = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: AddPlanetParams, name: string, orbitGeometry: THREE.Geometry) => CelestialBody;
+type AddPlanetArgType = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number,
+    argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number,
+    params: AddPlanetParams, name: string, orbitGeometry: THREE.BufferGeometry) => CelestialBody;
 
 
 export default class Universe{
@@ -31,7 +33,7 @@ export default class Universe{
 
         const curve = new THREE.EllipseCurve(0, 0, 1, 1,
             0, Math.PI * 2, false, 90);
-        const orbitGeometry = new THREE.Geometry().setFromPoints( curve.getPoints(256) );
+        const orbitGeometry = new THREE.BufferGeometry().setFromPoints( curve.getPoints(256) );
 
         const group = new THREE.Object3D();
         const material = new THREE.MeshBasicMaterial( { color: "#ffffff" } );
@@ -66,12 +68,20 @@ export default class Universe{
 
         // Use icosahedron instead of sphere to make it look like uniform
         const asteroidGeometry = new THREE.IcosahedronGeometry( 1, 2 );
+        // const asteroidVertices = asteroidGeometry.getAttribute('position') as THREE.BufferAttribute;
+        // const asteroidArray = new Float32Array();
+        // asteroidVertices.copyArray(asteroidArray);
         // Modulate the vertices randomly to make it look like an asteroid. Simplex noise is desirable.
-        for(let i = 0; i < asteroidGeometry.vertices.length; i++){
-            asteroidGeometry.vertices[i].multiplyScalar(0.3 * (Math.random() - 0.5) + 1);
-        }
+        // for(let i = 0; i < asteroidArray.length; i += 3){
+        //     const vec = new THREE.Vector3(asteroidArray[i], asteroidArray[i+1], asteroidArray[i+2]);
+        //     vec.multiplyScalar(0.3 * (Math.random() - 0.5) + 1);
+        //     asteroidArray[i] = vec.x;
+        //     asteroidArray[i+1] = vec.y;
+        //     asteroidArray[i+2] = vec.z;
+        // }
+        // asteroidGeometry.setAttribute('position', new THREE.BufferAttribute(asteroidArray, 3));
         // Recalculate normal vectors according to updated vertices
-        asteroidGeometry.computeFaceNormals();
+        // asteroidGeometry.computeFaceNormals();
         asteroidGeometry.computeVertexNormals();
 
         // Perlin noise is applied as detail texture.
