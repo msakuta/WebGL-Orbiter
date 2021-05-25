@@ -200,7 +200,7 @@ function init() {
     orbitalElementsControl = new OrbitalElementsControl();
     container.appendChild( orbitalElementsControl.domElement );
 
-    settingsControl = new SettingsControl(settings);
+    settingsControl = new SettingsControl(settings, gameState.simulationSettings);
     statsControl = new StatsControl(settingsControl, function() { return gameState.getSelectObj(); });
     container.appendChild( statsControl.domElement );
     container.appendChild( settingsControl.domElement );
@@ -268,8 +268,8 @@ function init() {
     gameState.onStateLoad = () => throttleControl.setThrottle(gameState.select_obj.throttle);
 
     loadControl = new LoadControl(
-        function(state){ gameState.loadState(state) },
-        function(msg){ messageControl.setText(msg); },
+        state => { gameState.loadState(state); settingsControl.setText() },
+        msg => messageControl.setText(msg),
         function(){
             [scenarioSelectorControl, saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
         }
@@ -333,7 +333,7 @@ function render() {
         if(accelerate) throttleControl.increment(deltaTime / div);
         if(decelerate) throttleControl.decrement(deltaTime / div);
 
-        gameState.simulateBody(deltaTime, div, buttons);
+        gameState.simulateBody(deltaTime, div, buttons, function(){messageControl.setText.apply(messageControl, arguments)});
     }
 
     const select_obj = gameState.getSelectObj();

@@ -69,6 +69,7 @@ export class ScenarioSelectorControl extends MenuControl{
                     select_obj.setOrbitingVelocity(scenario.semimajor_axis, rotation);
                     select_obj.totalDeltaV = 0.;
                     select_obj.ignitionCount = 0;
+                    select_obj.stuck = false;
                     resetTime();
                     sendMessage('Scenario ' + scenario.title + ' Loaded!');
                     this.title.style.display = 'none';

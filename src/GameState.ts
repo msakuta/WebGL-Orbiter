@@ -1,6 +1,7 @@
 import * as THREE from 'three/src/Three';
 import { CelestialBody, addPlanet } from './CelestialBody';
-import { Settings } from './SettingsControl';
+import { Settings, SimulationSettings } from './SettingsControl';
+import { SendMessageCallback } from './MessageControl';
 import Universe from './Universe';
 import { RotationButtons } from './RotationControl';
 
@@ -16,6 +17,7 @@ export default class GameState{
     universe: Universe;
     onStateLoad?: () => void = null;
     sendMessage: (text: string) => void;
+    readonly simulationSettings: SimulationSettings;
 
     constructor(scene: THREE.Scene, viewScale: number, overlay: THREE.Scene, settings: Settings, camera: THREE.Camera, windowHalfX: number, windowHalfY: number, sendMessage: (text: string) => void){
         this.sendMessage = sendMessage;
@@ -26,6 +28,7 @@ export default class GameState{
 
         this.universe = new Universe(scene, AddPlanet, settings.center_select, viewScale, settings, camera, windowHalfX, windowHalfY);
         this.select_obj = this.universe.rocket;
+        this.simulationSettings = new SimulationSettings;
         window.addEventListener( 'keydown', (event: KeyboardEvent) => this.onKeyDown(event), false );
     }
 
@@ -40,6 +43,7 @@ export default class GameState{
             simTime: this.simTime,
             startTime: this.startTime,
             bodies: this.universe.sun.serializeTree(),
+            simulationSettings: this.simulationSettings,
         };
     }
 
@@ -55,6 +59,10 @@ export default class GameState{
         }
         if(this.select_obj && this.onStateLoad)
             this.onStateLoad();
+        const merger = state.simulationSettings ?? new SimulationSettings();
+        const names = Object.keys(this.simulationSettings);
+        for(let key of names)
+            (this.simulationSettings as any)[key] = merger[key];
     }
 
     startTicking(){
@@ -79,8 +87,8 @@ export default class GameState{
         return this.simTime.getTime() - this.startTime.getTime();
     }
 
-    simulateBody(deltaTime: number, div: number, buttons: RotationButtons){
-        this.universe.simulateBody(deltaTime, div, this.timescale, buttons, this.select_obj);
+    simulateBody(deltaTime: number, div: number, buttons: RotationButtons, sendMessage?: SendMessageCallback){
+        this.universe.simulateBody(this, deltaTime, div, this.timescale, buttons, sendMessage);
     }
 
     setTimeScale(scale: number){

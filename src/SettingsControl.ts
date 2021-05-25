@@ -21,22 +21,28 @@ export class Settings{
     center_select = true;
 }
 
+export class SimulationSettings{
+    bounce_on_collision = false;
+}
+
 export class SettingsControl{
     config = new Config();
     protected settings: Settings;
+    protected simulationSettings: SimulationSettings;
     protected element: HTMLElement;
     get domElement(): HTMLElement{ return this.element; }
     protected valueElement: HTMLDivElement;
     protected checkElements: HTMLInputElement[] = [];
     protected visible = false;
 
-    constructor(settings: Settings, config?: Config){
+    constructor(settings: Settings, simulationSettings: SimulationSettings, config?: Config){
         const setSize = () => {
             this.element.style.left = (window.innerWidth - this.config.buttonWidth) + 'px';
             rightTitleSetSize(title, icon);
         }
 
         this.settings = settings;
+        this.simulationSettings = simulationSettings;
         if(config) this.config = config;
         this.element = document.createElement('div');
         const element = this.domElement;
@@ -67,33 +73,43 @@ export class SettingsControl{
         this.valueElement.style.border = '3px ridge #7f3f3f';
         this.valueElement.style.padding = '3px';
         const names = Object.keys(this.settings);
-        for(const i in names){
-            const name = names[i];
+
+        let counter = 0;
+        const addButton = (name: string, caption: string, onclick: (event: MouseEvent) => void) => {
             // Hide center_select from visible options
-            if(name === 'center_select')
-                continue;
             const lineElement = document.createElement('div');
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
-            checkbox.onclick = ((a: any, field) => (event: MouseEvent) => a[field] = !a[field])(this.settings, name);
-            const id = 'settings_check_' + i;
+            checkbox.onclick = onclick;
+            const id = 'settings_check_' + counter++;
             checkbox.setAttribute('id', id);
             lineElement.appendChild(checkbox);
             this.checkElements.push(checkbox);
             const label = document.createElement('label');
             label.setAttribute('for', id);
-            label.innerHTML = [
-                'Show&nbsp;grid&nbsp;(G)',
-                'Chase&nbsp;camera&nbsp;(H)',
-                'Nonlinear&nbsp;scale&nbsp;(N)',
-                'Units in KM&nbsp;(K)',
-                'Center selected&nbsp;(C)'][i];
+            label.innerHTML = caption;
             lineElement.appendChild(label);
             lineElement.style.fontWeight = 'bold';
             lineElement.style.paddingRight = '1em';
             lineElement.style.whiteSpace = 'nowrap';
             this.valueElement.appendChild(lineElement);
+        };
+
+        for(const i in names){
+            const name = names[i];
+            if(name === 'center_select')
+                continue;
+            addButton(name, [
+                'Show&nbsp;grid&nbsp;(G)',
+                'Chase&nbsp;camera&nbsp;(H)',
+                'Nonlinear&nbsp;scale&nbsp;(N)',
+                'Units in KM&nbsp;(K)',
+                'Center selected&nbsp;(C)'][i],
+                ((a: any, field) => (_event: MouseEvent) => a[field] = !a[field])(this.settings, name));
         }
+
+        addButton('bounce_on_collision', 'Bounce on Collision (B)',
+            (_event: MouseEvent) => this.simulationSettings.bounce_on_collision = !this.simulationSettings.bounce_on_collision);
 
         setSize();
 
@@ -127,10 +143,10 @@ export class SettingsControl{
     setText(){
         if(!this.visible)
             return;
-        this.checkElements[0].checked = this.settings.grid_enable;
-        this.checkElements[1].checked = this.settings.sync_rotate;
-        this.checkElements[2].checked = this.settings.nlips_enable;
-        this.checkElements[3].checked = this.settings.units_km;
+        for(let pair of [[0, "grid_enable"], [1, "sync_rotate"], [2, "nlips_enable"], [3, "units_km"], [4, "bounce_on_collision"]] as [number, string][])
+            this.checkElements[pair[0]].checked = (this.settings as any)[pair[1]];
+        for(let pair of [[4, "bounce_on_collision"]] as [number, string][])
+            this.checkElements[pair[0]].checked = (this.simulationSettings as any)[pair[1]];
         this.valueElement.style.marginLeft = (this.config.buttonWidth - this.valueElement.getBoundingClientRect().width) + 'px';
     }
 
@@ -155,6 +171,10 @@ export class SettingsControl{
 
         case 'k':
             this.settings.units_km = !this.settings.units_km;
+            break;
+
+        case 'b':
+            this.simulationSettings.bounce_on_collision = !this.simulationSettings.bounce_on_collision;
             break;
         }
     }
