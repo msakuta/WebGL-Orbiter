@@ -2,7 +2,7 @@ import * as THREE from 'three/src/Three';
 
 /// Copied from three.js IcosahedronGeometry
 export class ModulatedIcosahedronGeometry extends THREE.BufferGeometry {
-    constructor(radius = 1, detail = 3){
+    constructor(radius = 1, detail = 3, modulator: ((a: THREE.Vector3) => void)){
         super();
         const t = ( 1 + Math.sqrt( 5 ) ) / 2;
 
@@ -29,6 +29,7 @@ export class ModulatedIcosahedronGeometry extends THREE.BufferGeometry {
         // };
 
         const vertexBuffer: number[] = [];
+        const indexBuffer: number[] = [];
 
         // the subdivision creates the vertex buffer data
 
@@ -41,6 +42,7 @@ export class ModulatedIcosahedronGeometry extends THREE.BufferGeometry {
         // build non-indexed geometry
 
         this.setAttribute( 'position', new THREE.Float32BufferAttribute( vertexBuffer, 3 ) );
+        this.setIndex( indexBuffer );
         this.setAttribute( 'normal', new THREE.Float32BufferAttribute( vertexBuffer.slice(), 3 ) );
         // this.setAttribute( 'uv', new THREE.Float32BufferAttribute( uvBuffer, 2 ) );
 
@@ -56,8 +58,16 @@ export class ModulatedIcosahedronGeometry extends THREE.BufferGeometry {
 
         function pushVertex( vertex: THREE.Vector3 ) {
 
+            for(let i = 0; i < vertexBuffer.length / 3; i++){
+                if(vertexBuffer[i * 3] === vertex.x &&
+                    vertexBuffer[i * 3 + 1] === vertex.y &&
+                    vertexBuffer[i * 3 + 2] === vertex.z){
+                        indexBuffer.push(i);
+                        return;
+                    }
+            }
             vertexBuffer.push( vertex.x, vertex.y, vertex.z );
-
+            indexBuffer.push( vertexBuffer.length-1 );
         }
 
         function getVertexByIndex( index: number, vertex: THREE.Vector3 ) {
@@ -170,6 +180,8 @@ export class ModulatedIcosahedronGeometry extends THREE.BufferGeometry {
                 vertex.z = vertexBuffer[ i + 2 ];
 
                 vertex.normalize().multiplyScalar( radius );
+
+                modulator(vertex);
 
                 vertexBuffer[ i + 0 ] = vertex.x;
                 vertexBuffer[ i + 1 ] = vertex.y;
