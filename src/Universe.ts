@@ -3,6 +3,7 @@ import * as THREE from 'three/src/Three';
 import { CelestialBody, AU, AxisAngleQuaternion, AddPlanetParams } from './CelestialBody';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
+import { ModulatedIcosahedronGeometry } from './ModulatedIcosahedronGeometry';
 
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
@@ -67,7 +68,8 @@ export default class Universe{
         const jupiter = AddPlanet(5.204267, 0.048775, 1.305 * rad_per_deg, 100.492 * rad_per_deg, 275.066 * rad_per_deg, "#7f7f3f", 126686534 / AU / AU / AU, this.sun, jupiterUrl, 69911, {soi: 10e6}, "jupiter");
 
         // Use icosahedron instead of sphere to make it look like uniform
-        const asteroidGeometry = new THREE.IcosahedronGeometry( 1, 2 );
+        // const asteroidGeometry = new THREE.IcosahedronGeometry( 1, 2 );
+        const asteroidGeometry = new ModulatedIcosahedronGeometry( 1, 2 );
         // const asteroidVertices = asteroidGeometry.getAttribute('position') as THREE.BufferAttribute;
         // const asteroidArray = new Float32Array();
         // asteroidVertices.copyArray(asteroidArray);
