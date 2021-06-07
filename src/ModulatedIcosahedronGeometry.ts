@@ -59,9 +59,9 @@ export class ModulatedIcosahedronGeometry extends THREE.BufferGeometry {
         function pushVertex( vertex: THREE.Vector3 ) {
 
             for(let i = 0; i < vertexBuffer.length / 3; i++){
-                if(vertexBuffer[i * 3] === vertex.x &&
-                    vertexBuffer[i * 3 + 1] === vertex.y &&
-                    vertexBuffer[i * 3 + 2] === vertex.z){
+                if(Math.pow(vertexBuffer[i * 3] - vertex.x, 2) +
+                    Math.pow(vertexBuffer[i * 3 + 1] - vertex.y, 2) +
+                    Math.pow(vertexBuffer[i * 3 + 2] - vertex.z, 2) < 1e-3 * 1e-3){
                         indexBuffer.push(i);
                         return;
                     }

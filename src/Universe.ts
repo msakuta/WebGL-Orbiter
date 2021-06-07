@@ -70,6 +70,7 @@ export default class Universe{
         // Use icosahedron instead of sphere to make it look like uniform
         // const asteroidGeometry = new THREE.IcosahedronGeometry( 1, 2 );
         const asteroidGeometry = new ModulatedIcosahedronGeometry( 1, 2, (vec) => {}/*vec.multiplyScalar(0.3 * (Math.random() - 0.5) + 1)*/ );
+        const asteroidGeometry = new ModulatedIcosahedronGeometry( 1, 2, (vec) => vec.multiplyScalar(0.3 * (Math.random() - 0.5) + 1) );
         // const asteroidVertices = asteroidGeometry.getAttribute('position') as THREE.BufferAttribute;
         // const asteroidArray = new Float32Array();
         // asteroidVertices.copyArray(asteroidArray);
