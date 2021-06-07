@@ -68,23 +68,8 @@ export default class Universe{
         const jupiter = AddPlanet(5.204267, 0.048775, 1.305 * rad_per_deg, 100.492 * rad_per_deg, 275.066 * rad_per_deg, "#7f7f3f", 126686534 / AU / AU / AU, this.sun, jupiterUrl, 69911, {soi: 10e6}, "jupiter");
 
         // Use icosahedron instead of sphere to make it look like uniform
-        // const asteroidGeometry = new THREE.IcosahedronGeometry( 1, 2 );
-        const asteroidGeometry = new ModulatedIcosahedronGeometry( 1, 2, (vec) => {}/*vec.multiplyScalar(0.3 * (Math.random() - 0.5) + 1)*/ );
+        // TODO: use simplex noise to make more smooth asteroid
         const asteroidGeometry = new ModulatedIcosahedronGeometry( 1, 2, (vec) => vec.multiplyScalar(0.3 * (Math.random() - 0.5) + 1) );
-        // const asteroidVertices = asteroidGeometry.getAttribute('position') as THREE.BufferAttribute;
-        // const asteroidArray = new Float32Array();
-        // asteroidVertices.copyArray(asteroidArray);
-        // Modulate the vertices randomly to make it look like an asteroid. Simplex noise is desirable.
-        // for(let i = 0; i < asteroidArray.length; i += 3){
-        //     const vec = new THREE.Vector3(asteroidArray[i], asteroidArray[i+1], asteroidArray[i+2]);
-        //     vec.multiplyScalar(0.3 * (Math.random() - 0.5) + 1);
-        //     asteroidArray[i] = vec.x;
-        //     asteroidArray[i+1] = vec.y;
-        //     asteroidArray[i+2] = vec.z;
-        // }
-        // asteroidGeometry.setAttribute('position', new THREE.BufferAttribute(asteroidArray, 3));
-        // Recalculate normal vectors according to updated vertices
-        // asteroidGeometry.computeFaceNormals();
         asteroidGeometry.computeVertexNormals();
 
         // Perlin noise is applied as detail texture.
