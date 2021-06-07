@@ -1,9 +1,20 @@
 import * as THREE from 'three/src/Three';
 
-/// Copied from three.js IcosahedronGeometry
+/// Copied from three.js IcosahedronGeometry and PolyhedronGeometry
+///
+/// Note that UV coordinates generation is omitted.
 export class ModulatedIcosahedronGeometry extends THREE.BufferGeometry {
+    public parameters = {
+        radius: 1,
+        detail: 3,
+    };
+
     constructor(radius = 1, detail = 3, modulator: ((a: THREE.Vector3) => void)){
         super();
+
+        // Right now we are merging IcosahedronGeometry and PolyhedronGeometry into one class hierarchy,
+        // but in theory we could separate them like three.js does. In that we would have more flexibility
+        // to support other polyhedra, but we don't need it now.
         const t = ( 1 + Math.sqrt( 5 ) ) / 2;
 
         const vertices = [
@@ -19,14 +30,12 @@ export class ModulatedIcosahedronGeometry extends THREE.BufferGeometry {
             4, 9, 5, 	2, 4, 11,	6, 2, 10,	8, 6, 7,	9, 8, 1
         ];
 
-        // super( vertices, indices, radius, detail );
+        this.type = 'ModulatedIcosahedronGeometry';
 
-        // this.type = 'IcosahedronGeometry';
-
-        // this.parameters = {
-        //     radius: radius,
-        //     detail: detail
-        // };
+        this.parameters = {
+            radius: radius,
+            detail: detail
+        };
 
         const vertexBuffer: number[] = [];
         const indexBuffer: number[] = [];
@@ -44,7 +53,6 @@ export class ModulatedIcosahedronGeometry extends THREE.BufferGeometry {
         this.setAttribute( 'position', new THREE.Float32BufferAttribute( vertexBuffer, 3 ) );
         this.setIndex( indexBuffer );
         this.setAttribute( 'normal', new THREE.Float32BufferAttribute( vertexBuffer.slice(), 3 ) );
-        // this.setAttribute( 'uv', new THREE.Float32BufferAttribute( uvBuffer, 2 ) );
 
         if ( detail === 0 ) {
 
