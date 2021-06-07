@@ -67,7 +67,7 @@ export class ModulatedIcosahedronGeometry extends THREE.BufferGeometry {
                     }
             }
             vertexBuffer.push( vertex.x, vertex.y, vertex.z );
-            indexBuffer.push( vertexBuffer.length-1 );
+            indexBuffer.push( vertexBuffer.length / 3 - 1 );
         }
 
         function getVertexByIndex( index: number, vertex: THREE.Vector3 ) {
