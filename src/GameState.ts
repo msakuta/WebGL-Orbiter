@@ -20,7 +20,7 @@ export default class GameState{
     constructor(scene: THREE.Scene, viewScale: number, overlay: THREE.Scene, settings: Settings, camera: THREE.Camera, windowHalfX: number, windowHalfY: number, sendMessage: (text: string) => void){
         this.sendMessage = sendMessage;
 
-        const AddPlanet = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: any, name: string, orbitGeometry: THREE.Geometry) =>
+        const AddPlanet = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: any, name: string, orbitGeometry: THREE.BufferGeometry) =>
             addPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name,
                 scene, viewScale, overlay, orbitGeometry, settings.center_select, settings, camera, windowHalfX, windowHalfY);
 

@@ -15,7 +15,7 @@
     "file-loader": "^6.0.0",
     "html-webpack-plugin": "^4.3.0",
     "style-loader": "^1.2.1",
-    "three": "^0.117.1",
+    "three": "^0.125.0",
     "url-loader": "^4.1.0",
     "webpack-dev-server": "^3.11.0",
     "webpack-merge": "^4.2.2"

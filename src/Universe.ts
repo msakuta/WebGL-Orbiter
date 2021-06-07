@@ -3,6 +3,7 @@ import * as THREE from 'three/src/Three';
 import { CelestialBody, AU, AxisAngleQuaternion, AddPlanetParams } from './CelestialBody';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
+import { ModulatedIcosahedronGeometry } from './ModulatedIcosahedronGeometry';
 
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
@@ -16,7 +17,9 @@ import perlinUrl from './images/perlin.jpg';
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 const rad_per_deg = Math.PI / 180; // Radians per degrees
 
-type AddPlanetArgType = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: AddPlanetParams, name: string, orbitGeometry: THREE.Geometry) => CelestialBody;
+type AddPlanetArgType = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number,
+    argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number,
+    params: AddPlanetParams, name: string, orbitGeometry: THREE.BufferGeometry) => CelestialBody;
 
 
 export default class Universe{
@@ -31,7 +34,7 @@ export default class Universe{
 
         const curve = new THREE.EllipseCurve(0, 0, 1, 1,
             0, Math.PI * 2, false, 90);
-        const orbitGeometry = new THREE.Geometry().setFromPoints( curve.getPoints(256) );
+        const orbitGeometry = new THREE.BufferGeometry().setFromPoints( curve.getPoints(256) );
 
         const group = new THREE.Object3D();
         const material = new THREE.MeshBasicMaterial( { color: "#ffffff" } );
@@ -65,13 +68,8 @@ export default class Universe{
         const jupiter = AddPlanet(5.204267, 0.048775, 1.305 * rad_per_deg, 100.492 * rad_per_deg, 275.066 * rad_per_deg, "#7f7f3f", 126686534 / AU / AU / AU, this.sun, jupiterUrl, 69911, {soi: 10e6}, "jupiter");
 
         // Use icosahedron instead of sphere to make it look like uniform
-        const asteroidGeometry = new THREE.IcosahedronGeometry( 1, 2 );
-        // Modulate the vertices randomly to make it look like an asteroid. Simplex noise is desirable.
-        for(let i = 0; i < asteroidGeometry.vertices.length; i++){
-            asteroidGeometry.vertices[i].multiplyScalar(0.3 * (Math.random() - 0.5) + 1);
-        }
-        // Recalculate normal vectors according to updated vertices
-        asteroidGeometry.computeFaceNormals();
+        // TODO: use simplex noise to make more smooth asteroid
+        const asteroidGeometry = new ModulatedIcosahedronGeometry( 1, 2, (vec) => vec.multiplyScalar(0.3 * (Math.random() - 0.5) + 1) );
         asteroidGeometry.computeVertexNormals();
 
         // Perlin noise is applied as detail texture.

@@ -43,7 +43,7 @@ export class CelestialBody{
     periapsis?: THREE.Sprite = null;
     vertex?: THREE.Vector3 = null;
     model?: THREE.Object3D = null;
-    hyperbolicGeometry?: THREE.Geometry = null;
+    hyperbolicGeometry?: THREE.BufferGeometry = null;
     hyperbolicMesh?: THREE.Line = null;
     orbit?: THREE.Line = null;
     blastModel?: THREE.Object3D = null;
@@ -267,24 +267,27 @@ export class CelestialBody{
             if(1 < this.eccentricity){
                 // Allocate the hyperbolic shape and mesh only if necessary,
                 // since most of celestial bodies are all on permanent elliptical orbit.
-                if(!this.hyperbolicGeometry)
-                    this.hyperbolicGeometry = new THREE.Geometry();
+                
+                if(!this.hyperbolicGeometry){
+                    this.hyperbolicGeometry = new THREE.BufferGeometry();
+                }
+                let hyperbolicGeometryVertices = [];
 
                 // Calculate the vertices every frame since the hyperbola changes shape
                 // depending on orbital elements.
                 const thetaInf = Math.acos(-1 / this.eccentricity);
-                this.hyperbolicGeometry.vertices.length = 0;
                 const h2 = ang.lengthSq();
                 for(let i = -19; i < 20; i++){
                     // Transform by square root to make far side of the hyperbola less "polygonic"
                     const isign = i < 0 ? -1 : 1;
                     const theta = thetaInf * isign * Math.sqrt(Math.abs(i) / 20);
-                    this.hyperbolicGeometry.vertices.push(
-                        new THREE.Vector3( Math.sin(theta), Math.cos(theta), 0 )
-                        .multiplyScalar(h2 / this.parent.GM / (1 + this.eccentricity * Math.cos(theta))) );
+                    const vec = new THREE.Vector3( Math.sin(theta), Math.cos(theta), 0 )
+                        .multiplyScalar(h2 / this.parent.GM / (1 + this.eccentricity * Math.cos(theta)));
+                    hyperbolicGeometryVertices.push(vec.x, vec.y, vec.z);
                 }
+                this.hyperbolicGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(hyperbolicGeometryVertices), 3));
                 // Signal three.js to update the vertices
-                this.hyperbolicGeometry.verticesNeedUpdate = true;
+                // this.hyperbolicGeometry.verticesNeedUpdate = true;
 
                 // Allocate hyperbola mesh and add it to the scene.
                 if(!this.hyperbolicMesh){
@@ -454,7 +457,7 @@ export interface AddPlanetParams{
 // It's a bit difficult to calculate in Newtonian dynamics simulation.
 export function addPlanet(semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number,
     color: string, GM: number, parent: CelestialBody | null, texture: string, radius: number, params: AddPlanetParams, name: string, scene: THREE.Scene,
-    viewScale: number, overlay: THREE.Scene, orbitGeometry: THREE.Geometry, center_select: boolean, settings: Settings, camera: THREE.Camera,
+    viewScale: number, overlay: THREE.Scene, orbitGeometry: THREE.BufferGeometry, center_select: boolean, settings: Settings, camera: THREE.Camera,
     windowHalfX: number, windowHalfY: number)
 {
     const rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
