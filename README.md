@@ -8,7 +8,7 @@ which can be manipulated like amazing game Kerbal Space Program.
 
 Try it now on your browser!
 
-http://msakuta.github.io/WebGL-Orbiter/index.html
+https://msakuta.github.io/WebGL-Orbiter/index.html
 
 ## Screenshots
 
