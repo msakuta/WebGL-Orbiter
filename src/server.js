@@ -2,7 +2,7 @@ const fs = require("fs");
 const http = require("http");
 const nstatic = require('node-static');
 
-const host = "localhost";
+const host = "0.0.0.0";
 const port = 80;
 
 const books = JSON.stringify([
@@ -15,7 +15,7 @@ const authors = JSON.stringify([
     { name: "Kahlil Gibran", countryOfBirth: "Lebanon", yearOfBirth: 1883 }
 ]);
 
-let state = {};
+let state = null;
 
 const file = new(nstatic.Server)(__dirname + "/../dist");
 
@@ -38,8 +38,14 @@ const requestListener = function (req, res) {
         case "/load":
             res.setHeader("Content-Type", "application/json");
             console.log(`load received: ${req.method}`);
-            res.writeHead(200, headers);
-            res.end(JSON.stringify(state));
+            if(state === null){
+                res.writeHead(400, headers);
+                res.end();
+            }
+            else{
+                res.writeHead(200, headers);
+                res.end(JSON.stringify(state));
+            }
             break;
         case "/save":
             res.setHeader("Content-Type", "application/json");

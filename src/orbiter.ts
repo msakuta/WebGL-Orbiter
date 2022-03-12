@@ -285,12 +285,14 @@ function init() {
     window.addEventListener( 'keydown', onKeyDown, false );
     window.addEventListener( 'keyup', onKeyUp, false );
     window.addEventListener( 'pageshow', async function(){
-        const res = await fetch(`http://localhost:${port}/load`, {
+        const res = await fetch(`http://${location.hostname}:${port}/load`, {
             method: "GET"
         });
-        const data = await res.json();
-        console.log(data);
-        gameState.loadState(data);
+        if(res.status === 200){
+            const data = await res.json();
+            console.log(data);
+            gameState.loadState(data);
+        }
         // const state = localStorage.getItem('WebGLOrbiterAutoSave');
         // if(state){
         //     gameState.loadState(JSON.parse(state));
@@ -299,7 +301,7 @@ function init() {
     window.addEventListener( 'beforeunload', function(){
         const gameSerialized = JSON.stringify(gameState.serializeState());
         localStorage.setItem('WebGLOrbiterAutoSave', gameSerialized);
-        fetch(`http://localhost:${port}/save`, {
+        fetch(`http://${location.hostname}:${port}/save`, {
             method: "POST",
             body: gameSerialized
         });
