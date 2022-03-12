@@ -5,16 +5,6 @@ const nstatic = require('node-static');
 const host = "0.0.0.0";
 const port = 80;
 
-const books = JSON.stringify([
-    { title: "The Alchemist", author: "Paulo Coelho", year: 1988 },
-    { title: "The Prophet", author: "Kahlil Gibran", year: 1923 }
-]);
-
-const authors = JSON.stringify([
-    { name: "Paulo Coelho", countryOfBirth: "Brazil", yearOfBirth: 1947 },
-    { name: "Kahlil Gibran", countryOfBirth: "Lebanon", yearOfBirth: 1883 }
-]);
-
 let state = null;
 
 const file = new(nstatic.Server)(__dirname + "/../dist");
@@ -52,11 +42,18 @@ const requestListener = function (req, res) {
             console.log(`save received: ${req.method} readable: ${req.readable}`);
             if(req.method === "POST"){
                 req.on("data", (chunk) => {
-                    console.log(`saving: ${chunk}`);
-                    state = JSON.parse(chunk);
+                    try{
+                        console.log(`saving: ${chunk}`);
+                        state = JSON.parse(chunk);
+                        res.writeHead(200, headers);
+                        res.end('{result: "ok"}');
+                    }
+                    catch(e){
+                        console.log(`error: ${e}`);
+                        res.writeHead(500, headers);
+                        res.end('{result: "error"}');
+                    }
                 });
-                res.writeHead(200, headers);
-                res.end(JSON.stringify(state));
             }
             break;
         default:
