@@ -282,14 +282,25 @@ function init() {
     window.addEventListener( 'resize', onWindowResize, false );
     window.addEventListener( 'keydown', onKeyDown, false );
     window.addEventListener( 'keyup', onKeyUp, false );
-    window.addEventListener( 'pageshow', function(){
-        const state = localStorage.getItem('WebGLOrbiterAutoSave');
-        if(state){
-            gameState.loadState(JSON.parse(state));
-        }
+    window.addEventListener( 'pageshow', async function(){
+        const res = await fetch("http://localhost:8000/load", {
+            method: "GET"
+        });
+        const data = await res.json();
+        console.log(data);
+        gameState.loadState(data);
+        // const state = localStorage.getItem('WebGLOrbiterAutoSave');
+        // if(state){
+        //     gameState.loadState(JSON.parse(state));
+        // }
     });
     window.addEventListener( 'beforeunload', function(){
-        localStorage.setItem('WebGLOrbiterAutoSave', JSON.stringify(gameState.serializeState()));
+        const gameSerialized = JSON.stringify(gameState.serializeState());
+        localStorage.setItem('WebGLOrbiterAutoSave', gameSerialized);
+        fetch("http://localhost:8000/save", {
+            method: "POST",
+            body: gameSerialized
+        });
     });
 
     gameState.startTicking();
