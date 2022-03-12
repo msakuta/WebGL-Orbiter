@@ -41,18 +41,22 @@ const requestListener = function (req, res) {
             res.setHeader("Content-Type", "application/json");
             console.log(`save received: ${req.method} readable: ${req.readable}`);
             if(req.method === "POST"){
+                const chunks = [];
                 req.on("data", (chunk) => {
                     try{
                         console.log(`saving: ${chunk}`);
-                        state = JSON.parse(chunk);
-                        res.writeHead(200, headers);
-                        res.end('{result: "ok"}');
+                        chunks.push(Buffer.from(chunk));
                     }
                     catch(e){
                         console.log(`error: ${e}`);
                         res.writeHead(500, headers);
                         res.end('{result: "error"}');
                     }
+                });
+                req.on("end", () => {
+                    state = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+                    res.writeHead(200, headers);
+                    res.end('{result: "ok"}');
                 });
             }
             break;
