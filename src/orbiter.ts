@@ -53,6 +53,8 @@ let buttons = new RotationButtons();
 let accelerate = false;
 let decelerate = false;
 
+const port = 80;
+
 function init() {
 
     container = document.createElement( 'div' );
@@ -283,7 +285,7 @@ function init() {
     window.addEventListener( 'keydown', onKeyDown, false );
     window.addEventListener( 'keyup', onKeyUp, false );
     window.addEventListener( 'pageshow', async function(){
-        const res = await fetch("http://localhost:8000/load", {
+        const res = await fetch(`http://localhost:${port}/load`, {
             method: "GET"
         });
         const data = await res.json();
@@ -297,7 +299,7 @@ function init() {
     window.addEventListener( 'beforeunload', function(){
         const gameSerialized = JSON.stringify(gameState.serializeState());
         localStorage.setItem('WebGLOrbiterAutoSave', gameSerialized);
-        fetch("http://localhost:8000/save", {
+        fetch(`http://localhost:${port}/save`, {
             method: "POST",
             body: gameSerialized
         });

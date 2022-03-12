@@ -1,8 +1,9 @@
 const fs = require("fs");
 const http = require("http");
+const nstatic = require('node-static');
 
 const host = "localhost";
-const port = 8000;
+const port = 80;
 
 const books = JSON.stringify([
     { title: "The Alchemist", author: "Paulo Coelho", year: 1988 },
@@ -16,6 +17,7 @@ const authors = JSON.stringify([
 
 let state = {};
 
+const file = new(nstatic.Server)(__dirname + "/../dist");
 
 const requestListener = function (req, res) {
 
@@ -52,17 +54,7 @@ const requestListener = function (req, res) {
             }
             break;
         default:
-            const path = req.url === "/" ? "/index.html" : req.url;
-            console.log(`attempting to load ${path}`);
-            fs.readFile(__dirname + "/../dist" + path, (err, data) => {
-                if(err){
-                    res.writeHead(404);
-                    res.end(JSON.stringify(err));
-                    return;
-                }
-                res.writeHead(200);
-                res.end(data);
-            });
+            file.serve(req, res);
     }
 };
 
