@@ -1,4 +1,5 @@
-import http from "http";
+const fs = require("fs");
+const http = require("http");
 
 const host = "localhost";
 const port = 8000;
@@ -30,15 +31,16 @@ const requestListener = function (req, res) {
         res.end();
         return;
     }
-    
-    res.setHeader("Content-Type", "application/json");
+
     switch(req.url){
         case "/load":
+            res.setHeader("Content-Type", "application/json");
             console.log(`load received: ${req.method}`);
             res.writeHead(200, headers);
             res.end(JSON.stringify(state));
             break;
         case "/save":
+            res.setHeader("Content-Type", "application/json");
             console.log(`save received: ${req.method} readable: ${req.readable}`);
             if(req.method === "POST"){
                 req.on("data", (chunk) => {
@@ -50,7 +52,17 @@ const requestListener = function (req, res) {
             }
             break;
         default:
-            res.end(`{"count": ${state}}`);
+            const path = req.url === "/" ? "/index.html" : req.url;
+            console.log(`attempting to load ${path}`);
+            fs.readFile(__dirname + "/../dist" + path, (err, data) => {
+                if(err){
+                    res.writeHead(404);
+                    res.end(JSON.stringify(err));
+                    return;
+                }
+                res.writeHead(200);
+                res.end(data);
+            });
     }
 };
 
