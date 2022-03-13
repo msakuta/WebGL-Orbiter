@@ -1,15 +1,15 @@
 const fs = require("fs");
-const http = require("http");
+import http, {IncomingMessage, ServerResponse} from "http";
 const nstatic = require('node-static');
 
 const host = "0.0.0.0";
 const port = 80;
 
-let state = null;
+let state: any = null;
 
 const file = new(nstatic.Server)(__dirname + "/../dist");
 
-const requestListener = function (req, res) {
+const requestListener = function (req: IncomingMessage, res: ServerResponse) {
 
     const headers = {
         'Access-Control-Allow-Origin': '*',
@@ -41,7 +41,7 @@ const requestListener = function (req, res) {
             res.setHeader("Content-Type", "application/json");
             console.log(`save received: ${req.method} readable: ${req.readable}`);
             if(req.method === "POST"){
-                const chunks = [];
+                const chunks: Buffer[] = [];
                 req.on("data", (chunk) => {
                     try{
                         console.log(`saving: ${chunk}`);
