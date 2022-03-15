@@ -1,4 +1,3 @@
-const fs = require("fs");
 import http, {IncomingMessage, ServerResponse} from "http";
 const nstatic = require('node-static');
 
