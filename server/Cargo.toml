@@ -15,6 +15,27 @@ clap = { version = "3.1.6", features = ["derive"] }
 serde_json = "1.0.64"
 serde = "1.0.100"
 
+[package.metadata.deb]
+maintainer = "masahiro.sakuta"
+copyright = "2022, Masahiro Sakuta."
+extended-description = "web server application for WebGL-Orbiter"
+depends = "$auto"
+priority = "optional"
+assets = [
+    # binary
+    ["target/release/server", "usr/bin/server", "755"],
+    # assets
+    ["../dist/*", "var/lib/webgl-orbiter", "644"],
+]
+default-features = false
+features = ["example_debian_build"]
+
+[package.metadata.deb.variants.debug]
+assets =  [
+    # assets
+    ["../dist/*", "var/lib/webgl-orbiter", "644"],
+]
+
 [features]
 default = ["example_non_debian_build"]
 example_non_debian_build = []
