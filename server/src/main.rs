@@ -72,13 +72,16 @@ async fn main() -> std::io::Result<()> {
         let mut interval = actix_web::rt::time::interval(std::time::Duration::from_secs(1));
         loop {
             interval.tick().await;
-            std::thread::sleep(std::time::Duration::from_secs(1));
+
+            let start = std::time::Instant::now();
+
             data_copy.universe.write().unwrap().update();
             let universe = data_copy.universe.read().unwrap();
             println!(
-                "Tick {}, time {}",
+                "Tick {}, time {}, calc: {}",
                 universe.get_time(),
-                universe.get_sim_time()
+                universe.get_sim_time(),
+                start.elapsed().as_micros() as f64 * 1e-6,
             );
         }
     });

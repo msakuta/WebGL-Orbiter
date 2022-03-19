@@ -139,7 +139,7 @@ impl Universe {
 
         let mut bodies = std::mem::take(&mut self.bodies);
 
-        let div = 10;
+        let div = 100;
         for _ in 0..div {
             for i in 0..bodies.len() {
                 let (center, chained) = split_bodies(&mut bodies, i);
