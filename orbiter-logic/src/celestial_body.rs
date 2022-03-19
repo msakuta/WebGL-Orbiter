@@ -1,5 +1,8 @@
+mod builder;
+
 use super::{Quaternion, Universe, Vector3};
 use crate::dyn_iter::DynIterMut;
+use builder::CelestialBodyBuilder;
 use cgmath::{InnerSpace, Rad, Rotation3, Zero};
 use serde::{ser::SerializeMap, Serialize, Serializer};
 
@@ -46,78 +49,6 @@ pub struct CelestialBody {
     radius: f64,
 
     orbital_elements: OrbitalElements,
-}
-
-#[derive(Default)]
-pub struct CelestialBodyBuilder {
-    name: Option<String>,
-    parent: Option<CelestialId>,
-    position: Option<Vector3>,
-    velocity: Option<Vector3>,
-    orbit_color: Option<String>,
-    gm: Option<f64>,
-    radius: Option<f64>,
-}
-
-impl CelestialBodyBuilder {
-    fn new() -> Self {
-        Self::default()
-    }
-
-    fn name(&mut self, name: String) -> &mut Self {
-        self.name = Some(name);
-        self
-    }
-
-    fn parent(&mut self, parent: CelestialId) -> &mut Self {
-        self.parent = Some(parent);
-        self
-    }
-
-    fn position(&mut self, position: Vector3) -> &mut Self {
-        self.position = Some(position);
-        self
-    }
-
-    fn velocity(&mut self, velocity: Vector3) -> &mut Self {
-        self.velocity = Some(velocity);
-        self
-    }
-
-    fn orbit_color(&mut self, orbit_color: String) -> &mut Self {
-        self.orbit_color = Some(orbit_color);
-        self
-    }
-
-    fn gm(&mut self, gm: f64) -> &mut Self {
-        self.gm = Some(gm);
-        self
-    }
-
-    fn radius(&mut self, radius: f64) -> &mut Self {
-        self.radius = Some(radius);
-        self
-    }
-
-    fn build(self, universe: &mut Universe, orbital_elements: OrbitalElements) -> CelestialBody {
-        let id = universe.id_gen;
-        universe.id_gen += 1;
-
-        CelestialBody {
-            id,
-            name: self.name.unwrap(),
-            position: self.position.unwrap_or_else(Vector3::zero),
-            velocity: self.velocity.unwrap_or_else(Vector3::zero),
-            quaternion: Quaternion::new(0., 0., 0., 1.),
-            angular_velocity: Vector3::new(0., 0., 0.),
-            orbit_color: self.orbit_color.unwrap_or_else(String::new),
-            children: vec![],
-            parent: self.parent,
-            GM: self.gm.unwrap(),
-            orbital_elements,
-            radius: self.radius.unwrap_or(1. / super::AU),
-        }
-    }
 }
 
 impl CelestialBody {
