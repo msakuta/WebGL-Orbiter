@@ -1,6 +1,6 @@
 use actix_web::{web, App, HttpResponse, HttpServer};
 use clap::Parser;
-use orbiter_logic::Universe;
+use orbiter_logic::{CelestialBody, Universe};
 use std::sync::RwLock;
 
 #[derive(Parser, Debug)]
@@ -31,11 +31,18 @@ struct OrbiterData {
 async fn get_state(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResponse> {
     let universe = data.universe.read().unwrap();
 
-    let sun = universe.sun.as_ref();
+    println!("Trying to acquire mutex");
+    let bodies: Vec<_> = universe
+        .bodies
+        .iter()
+        .map(|body| body.lock().unwrap())
+        .collect();
+
+    let bodies_refs: Vec<_> = bodies.iter().map(|p| p as &CelestialBody).collect();
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
-        .body(serde_json::to_string(sun)?))
+        .body(serde_json::to_string(&bodies_refs)?))
 }
 
 #[actix_web::main]
@@ -53,7 +60,6 @@ async fn main() -> std::io::Result<()> {
         let mut interval = actix_web::rt::time::interval(std::time::Duration::from_secs(1));
         loop {
             interval.tick().await;
-            println!("do something");
             std::thread::sleep(std::time::Duration::from_secs(1));
             data_copy.universe.write().unwrap().update();
             let universe = data_copy.universe.read().unwrap();

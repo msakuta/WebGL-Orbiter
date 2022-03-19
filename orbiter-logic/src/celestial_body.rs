@@ -4,9 +4,7 @@ use serde::{
     ser::{SerializeMap, SerializeSeq},
     Serialize, Serializer,
 };
-use std::{
-    sync::{Arc, Mutex, Weak},
-};
+use std::sync::{Arc, Mutex, Weak};
 
 const Rsun: f64 = 695800.;
 const epsilon: f64 = 1e-40; // Doesn't the machine epsilon depend on browsers!??
@@ -14,14 +12,21 @@ const acceleration: f64 = 5e-10;
 
 #[derive(Serialize, Default, Debug)]
 pub struct OrbitalElements {
-    semimajor_axis: f64,
-    ascending_node: f64,
-    inclination: f64,
-    eccentricity: f64,
-    epoch: f64,
-    mean_anomaly: f64,
-    argument_of_perihelion: f64,
-    soi: f64,
+    pub semimajor_axis: f64,
+    pub ascending_node: f64,
+    pub inclination: f64,
+    pub eccentricity: f64,
+    pub epoch: f64,
+    pub mean_anomaly: f64,
+    pub argument_of_perihelion: f64,
+    pub soi: f64,
+}
+
+pub struct AddPlanetParams {
+    pub axial_tilt: f64,
+    pub rotation_period: f64,
+    pub quaternion: Quaternion,
+    pub angular_velocity: Vector3,
 }
 
 #[allow(non_snake_case)]
@@ -52,6 +57,7 @@ impl CelestialBody {
         orbit_color: String,
         GM: f64,
         name: String,
+        orbital_elements: OrbitalElements,
     ) -> Arc<Mutex<Self>> {
         let id = *id_gen;
         *id_gen += 1;
@@ -71,7 +77,7 @@ impl CelestialBody {
                 .map(|parent| Arc::downgrade(&parent))
                 .unwrap_or_else(Weak::new),
             GM,
-            orbital_elements: OrbitalElements::default(),
+            orbital_elements,
             radius: 1. / super::AU,
         }));
 
@@ -82,6 +88,33 @@ impl CelestialBody {
         }
 
         ret
+    }
+
+    pub(crate) fn from_orbital_elements(
+        id_gen: &mut usize,
+        parent: Option<Arc<Mutex<CelestialBody>>>,
+        orbital_elements: OrbitalElements,
+        GM: f64,
+        radius: f64,
+        name: String,
+    ) -> Arc<Mutex<Self>> {
+        let rotation =
+            Quaternion::from_angle_z(Rad(
+                orbital_elements.ascending_node - std::f64::consts::PI / 2.
+            )) * (Quaternion::from_angle_y(Rad(
+                std::f64::consts::PI - orbital_elements.inclination
+            ))) * (Quaternion::from_angle_z(Rad(orbital_elements.argument_of_perihelion)));
+        let axis = Vector3::new(0., 1. - orbital_elements.eccentricity, 0.)
+            * orbital_elements.semimajor_axis;
+        Self::new(
+            id_gen,
+            parent,
+            rotation * axis,
+            "#fff".to_string(),
+            GM,
+            name,
+            orbital_elements,
+        )
     }
 
     /// Update orbital elements from position and velocity.
