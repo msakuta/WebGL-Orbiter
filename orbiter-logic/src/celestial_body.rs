@@ -208,7 +208,6 @@ impl CelestialBody {
         mut bodies: impl DynIterMut<Item = CelestialBody>,
         delta_time: f64,
         div: f64,
-        timescale: f64,
     ) {
         // let children = &self.children;
         for body in bodies.dyn_iter_mut() {

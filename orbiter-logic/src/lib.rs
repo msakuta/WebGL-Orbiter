@@ -21,6 +21,7 @@ pub struct Universe {
     sim_time: f64,
     start_time: f64,
     time: usize,
+    pub time_scale: f64,
 }
 
 impl Universe {
@@ -32,6 +33,7 @@ impl Universe {
             sim_time: 0.,
             start_time: 0.,
             time: 0,
+            time_scale: 1.,
         };
 
         let sun = CelestialBody::new(
@@ -141,7 +143,7 @@ impl Universe {
         for _ in 0..div {
             for i in 0..bodies.len() {
                 let (center, chained) = split_bodies(&mut bodies, i);
-                center.simulate_body(chained, 1., div as f64, 1.);
+                center.simulate_body(chained, self.time_scale, div as f64);
             }
         }
         for i in 0..bodies.len() {
@@ -150,11 +152,15 @@ impl Universe {
         }
         self.bodies = bodies;
         self.time += 1;
-        self.sim_time += 1.0;
+        self.sim_time += self.time_scale;
     }
 
     pub fn get_time(&self) -> usize {
         self.time
+    }
+
+    pub fn get_sim_time(&self) -> f64 {
+        self.sim_time
     }
 }
 

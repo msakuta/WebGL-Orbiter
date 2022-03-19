@@ -1,6 +1,8 @@
-use actix_web::{web, App, HttpResponse, HttpServer};
+use actix_cors::Cors;
+use actix_web::{http, web, App, HttpResponse, HttpResponseBuilder, HttpServer};
 use clap::Parser;
 use orbiter_logic::{serialize, CelestialBody, Universe};
+use serde::Deserialize;
 use std::sync::RwLock;
 
 #[derive(Parser, Debug)]
@@ -33,14 +35,26 @@ async fn get_state(data: web::Data<OrbiterData>) -> actix_web::Result<HttpRespon
 
     let serialized = serialize(&universe)?;
 
-    println!("Serialized: {}", serialized);
-
     Ok(HttpResponse::Ok()
-        .append_header(("Access-Control-Allow-Origin", "*"))
-        .append_header(("Access-Control-Allow-Methods", "OPTIONS, POST, GET"))
-        .append_header(("Access-Control-Max-Age", 2592000)) // 30 days
         .content_type("application/json")
         .body(serialized))
+}
+
+#[derive(Deserialize)]
+struct SetTimeScale {
+    time_scale: f64,
+}
+
+async fn set_timescale(
+    data: web::Data<OrbiterData>,
+    payload: web::Json<SetTimeScale>,
+) -> HttpResponse {
+    let mut universe = data.universe.write().unwrap();
+
+    println!("Set timescale to: {}", payload.time_scale);
+    universe.time_scale = payload.time_scale;
+
+    HttpResponse::Ok().body("Ok")
 }
 
 #[actix_web::main]
@@ -61,14 +75,26 @@ async fn main() -> std::io::Result<()> {
             std::thread::sleep(std::time::Duration::from_secs(1));
             data_copy.universe.write().unwrap().update();
             let universe = data_copy.universe.read().unwrap();
-            println!("Tick {}: {:?}", universe.get_time(), universe);
+            println!(
+                "Tick {}, time {}",
+                universe.get_time(),
+                universe.get_sim_time()
+            );
         }
     });
 
     let result = HttpServer::new(move || {
+        let cors = Cors::permissive()
+            // .allowed_methods(vec!["GET", "POST"])
+            // .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
+            // .allowed_header(http::header::CONTENT_TYPE)
+            .max_age(3600);
+
         App::new()
+            .wrap(cors)
             .app_data(data.clone())
             .route("/load", web::get().to(get_state))
+            .route("/time_scale", web::post().to(set_timescale))
     })
     .bind((args.host.as_str(), args.port))?
     .run()

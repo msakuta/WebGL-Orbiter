@@ -53,7 +53,7 @@ let buttons = new RotationButtons();
 let accelerate = false;
 let decelerate = false;
 
-const port = 8088;
+export const port = 8088;
 
 function init() {
 
