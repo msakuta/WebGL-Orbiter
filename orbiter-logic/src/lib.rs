@@ -2,7 +2,7 @@ mod celestial_body;
 mod dyn_iter;
 
 pub use crate::celestial_body::{AddPlanetParams, CelestialBody, OrbitalElements};
-use crate::dyn_iter::{Chained, MutRef};
+use crate::dyn_iter::{Chained, DynIterMut, MutRef};
 use cgmath::{Rad, Rotation3, Zero};
 use serde::{ser::SerializeMap, Serialize, Serializer};
 use std::sync::{Arc, Mutex};
@@ -78,14 +78,29 @@ impl Universe {
 
         this.add_body(earth);
 
-        let mut rocket = CelestialBody::new(
+        let mut rocket = CelestialBody::from_orbital_elements(
             &mut this,
             Some(earth_id),
-            Vector3::new(104200., 0., 0.),
-            "#3f7f7f".to_string(),
+            OrbitalElements {
+                semimajor_axis: 10000. / AU,
+                eccentricity: 0.,
+                inclination: 0.,
+                ascending_node: 0.,
+                argument_of_perihelion: 0.,
+                epoch: 0.,
+                mean_anomaly: 0.,
+                soi: 1.,
+            },
+            AddPlanetParams {
+                axial_tilt: 0.,
+                rotation_period: 0.,
+                // soi: 5e5,
+                quaternion: Quaternion::new(1., 0., 0., 0.),
+                angular_velocity: Vector3::zero(),
+            },
             100. / AU / AU / AU,
+            0.1,
             "rocket".to_string(),
-            OrbitalElements::default(),
         );
 
         let rot = <Quaternion as Rotation3>::from_angle_x(Rad(std::f64::consts::PI / 2.))
@@ -108,20 +123,32 @@ impl Universe {
     }
 
     pub fn update(&mut self) {
+        fn split_bodies(
+            bodies: &'_ mut [CelestialBody],
+            i: usize,
+        ) -> (
+            &mut CelestialBody,
+            impl DynIterMut<Item = CelestialBody> + '_,
+        ) {
+            let (first, mid) = bodies.split_at_mut(i);
+            let (center, last) = mid.split_first_mut().unwrap();
+            (center, Chained(MutRef(first), MutRef(last)))
+        }
+
         let mut bodies = std::mem::take(&mut self.bodies);
 
         let div = 10;
         for _ in 0..div {
             for i in 0..bodies.len() {
-                let (first, mid) = bodies.split_at_mut(i);
-                let (center, last) = mid.split_first_mut().unwrap();
-                let chained = Chained(MutRef(first), MutRef(last));
-
+                let (center, chained) = split_bodies(&mut bodies, i);
                 center.simulate_body(chained, 1., div as f64, 1.);
             }
         }
+        for i in 0..bodies.len() {
+            let (center, chained) = split_bodies(&mut bodies, i);
+            center.update(chained);
+        }
         self.bodies = bodies;
-        // self.bodies[0].update(self);
         self.time += 1;
         self.sim_time += 1.0;
     }

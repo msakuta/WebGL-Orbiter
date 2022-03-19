@@ -112,11 +112,15 @@ impl CelestialBody {
             rotation,
         );
         ret.quaternion = Quaternion::from_angle_x(Rad(params.axial_tilt));
-        ret.angular_velocity = ret.quaternion.rotate_vector(Vector3::new(
-            0.,
-            0.,
-            2. * std::f64::consts::PI / params.rotation_period,
-        ));
+        ret.angular_velocity = if params.rotation_period != 0. {
+            ret.quaternion.rotate_vector(Vector3::new(
+                0.,
+                0.,
+                2. * std::f64::consts::PI / params.rotation_period,
+            ))
+        } else {
+            Vector3::zero()
+        };
 
         ret
     }
@@ -131,7 +135,8 @@ impl CelestialBody {
             if let Some(parent) = bodies.find(|body| body.id == parent) {
                 self.velocity = rotation.rotate_vector(
                     Vector3::new(1., 0., 0.)
-                        * (parent.GM * (2. / self.position.magnitude() - 1. / semimajor_axis)),
+                        * (parent.GM * (2. / self.position.magnitude() - 1. / semimajor_axis))
+                            .sqrt(),
                 );
             }
         }
@@ -140,9 +145,11 @@ impl CelestialBody {
     /// Update orbital elements from position and velocity.
     /// The whole discussion is found in chapter 4.4 in
     /// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
-    pub(crate) fn update(&mut self, universe: &mut Universe) {
-        if let Some(parent) = self.parent {
-            let parent = &universe.bodies[parent];
+    pub(crate) fn update(&mut self, mut bodies: impl DynIterMut<Item = CelestialBody>) {
+        if let Some(parent) = self
+            .parent
+            .and_then(|parent| bodies.dyn_iter_mut().find(|body| body.id == parent))
+        {
             // Angular momentum vectors
             let ang = self.velocity.cross(self.position);
             let r = self.position.magnitude();
@@ -210,10 +217,10 @@ impl CelestialBody {
             }
             let a = body;
             let sl = a.position.magnitude2();
-            println!(
-                "Body {} simulating with {}... sl: {}",
-                a.name, delta_time, sl
-            );
+            // println!(
+            //     "Body {} simulating with {}... sl: {}",
+            //     a.name, delta_time, sl
+            // );
             if sl != 0. {
                 let accel = -a.position.normalize() * (delta_time / div * self.GM / sl);
                 let dvelo = accel * 0.5;
