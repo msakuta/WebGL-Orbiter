@@ -1,11 +1,7 @@
 use super::{Quaternion, Universe, Vector3};
 use crate::dyn_iter::DynIterMut;
-use cgmath::{InnerSpace, Rad, Rotation3};
-use serde::{
-    ser::{SerializeMap, SerializeSeq},
-    Serialize, Serializer,
-};
-use std::sync::{Arc, Mutex, Weak};
+use cgmath::{InnerSpace, Rad, Rotation3, Zero};
+use serde::{ser::SerializeMap, Serialize, Serializer};
 
 const Rsun: f64 = 695800.;
 const epsilon: f64 = 1e-40; // Doesn't the machine epsilon depend on browsers!??
@@ -52,44 +48,104 @@ pub struct CelestialBody {
     orbital_elements: OrbitalElements,
 }
 
+#[derive(Default)]
+pub struct CelestialBodyBuilder {
+    name: Option<String>,
+    parent: Option<CelestialId>,
+    position: Option<Vector3>,
+    velocity: Option<Vector3>,
+    orbit_color: Option<String>,
+    gm: Option<f64>,
+    radius: Option<f64>,
+}
+
+impl CelestialBodyBuilder {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn name(&mut self, name: String) -> &mut Self {
+        self.name = Some(name);
+        self
+    }
+
+    fn parent(&mut self, parent: CelestialId) -> &mut Self {
+        self.parent = Some(parent);
+        self
+    }
+
+    fn position(&mut self, position: Vector3) -> &mut Self {
+        self.position = Some(position);
+        self
+    }
+
+    fn velocity(&mut self, velocity: Vector3) -> &mut Self {
+        self.velocity = Some(velocity);
+        self
+    }
+
+    fn orbit_color(&mut self, orbit_color: String) -> &mut Self {
+        self.orbit_color = Some(orbit_color);
+        self
+    }
+
+    fn gm(&mut self, gm: f64) -> &mut Self {
+        self.gm = Some(gm);
+        self
+    }
+
+    fn radius(&mut self, radius: f64) -> &mut Self {
+        self.radius = Some(radius);
+        self
+    }
+
+    fn build(self, universe: &mut Universe, orbital_elements: OrbitalElements) -> CelestialBody {
+        let id = universe.id_gen;
+        universe.id_gen += 1;
+
+        CelestialBody {
+            id,
+            name: self.name.unwrap(),
+            position: self.position.unwrap_or_else(Vector3::zero),
+            velocity: self.velocity.unwrap_or_else(Vector3::zero),
+            quaternion: Quaternion::new(0., 0., 0., 1.),
+            angular_velocity: Vector3::new(0., 0., 0.),
+            orbit_color: self.orbit_color.unwrap_or_else(String::new),
+            children: vec![],
+            parent: self.parent,
+            GM: self.gm.unwrap(),
+            orbital_elements,
+            radius: self.radius.unwrap_or(1. / super::AU),
+        }
+    }
+}
+
 impl CelestialBody {
     pub(super) fn new(
         universe: &mut Universe,
         parent: Option<CelestialId>,
         position: Vector3,
         orbit_color: String,
-        GM: f64,
+        gm: f64,
         name: String,
         orbital_elements: OrbitalElements,
     ) -> Self {
-        let id = universe.id_gen;
-        universe.id_gen += 1;
-
-        let mut parent_clone = parent.clone();
-
-        let ret = Self {
-            id,
-            name,
-            position,
-            velocity: Vector3::new(0., 0., 0.),
-            quaternion: Quaternion::new(0., 0., 0., 1.),
-            angular_velocity: Vector3::new(0., 0., 0.),
-            orbit_color,
-            children: vec![],
-            parent,
-            GM,
-            orbital_elements,
-            radius: 1. / super::AU,
-        };
-
-        ret
+        let mut builder = CelestialBodyBuilder::new();
+        if let Some(parent) = parent {
+            builder.parent(parent);
+        }
+        builder.name(name);
+        builder.position(position);
+        builder.orbit_color(orbit_color);
+        builder.gm(gm);
+        builder.build(universe, orbital_elements)
     }
 
     pub(crate) fn from_orbital_elements(
         universe: &mut Universe,
         parent: Option<usize>,
         orbital_elements: OrbitalElements,
-        GM: f64,
+        gm: f64,
         radius: f64,
         name: String,
     ) -> Self {
@@ -101,15 +157,16 @@ impl CelestialBody {
             ))) * (Quaternion::from_angle_z(Rad(orbital_elements.argument_of_perihelion)));
         let axis = Vector3::new(0., 1. - orbital_elements.eccentricity, 0.)
             * orbital_elements.semimajor_axis;
-        Self::new(
-            universe,
-            parent,
-            rotation * axis,
-            "#fff".to_string(),
-            GM,
-            name,
-            orbital_elements,
-        )
+
+        let mut builder = CelestialBodyBuilder::new();
+        if let Some(parent) = parent {
+            builder.parent(parent);
+        }
+        builder.name(name);
+        builder.position(rotation * axis);
+        builder.orbit_color("#fff".to_string());
+        builder.gm(gm);
+        builder.build(universe, orbital_elements)
     }
 
     /// Update orbital elements from position and velocity.
@@ -212,18 +269,20 @@ impl CelestialBody {
     }
 }
 
-struct ChildrenList<'a>(&'a [Arc<Mutex<CelestialBody>>]);
+/// A wrapper struct to serialize a quaternion to THREE.js friendly format.
+struct QuaternionSerial(Quaternion);
 
-impl Serialize for ChildrenList<'_> {
+impl Serialize for QuaternionSerial {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let mut children = serializer.serialize_seq(Some(self.0.len()))?;
-        for child in self.0.iter() {
-            children.serialize_element(&child.lock().unwrap().id)?;
-        }
-        children.end()
+        let mut map = serializer.serialize_map(None)?;
+        map.serialize_entry("_x", &self.0.v.x)?;
+        map.serialize_entry("_y", &self.0.v.y)?;
+        map.serialize_entry("_z", &self.0.v.z)?;
+        map.serialize_entry("_w", &self.0.s)?;
+        map.end()
     }
 }
 
@@ -232,18 +291,19 @@ impl Serialize for CelestialBody {
     where
         S: Serializer,
     {
-        let mut map = serializer.serialize_map(Some(4))?;
+        let mut map = serializer.serialize_map(None)?;
         map.serialize_entry("id", &self.id)?;
+        map.serialize_entry("name", &self.name)?;
         map.serialize_entry("position", &self.position)?;
         map.serialize_entry("velocity", &self.velocity)?;
-        map.serialize_entry("quaternion", &self.quaternion)?;
-        map.serialize_entry("angular_velocity", &self.angular_velocity)?;
-        map.serialize_entry("orbit_color", &self.orbit_color)?;
+        map.serialize_entry("quaternion", &QuaternionSerial(self.quaternion))?;
+        map.serialize_entry("angularVelocity", &self.angular_velocity)?;
+        map.serialize_entry("orbitColor", &self.orbit_color)?;
         map.serialize_entry("children", &self.children)?;
         map.serialize_entry("parent", &self.parent)?;
         map.serialize_entry("radius", &self.radius)?;
         map.serialize_entry("GM", &self.GM)?;
-        map.serialize_entry("orbital_elements", &self.orbital_elements)?;
+        map.serialize_entry("orbitalElements", &self.orbital_elements)?;
         map.end()
     }
 }

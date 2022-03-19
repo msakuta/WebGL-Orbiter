@@ -1,6 +1,6 @@
 use actix_web::{web, App, HttpResponse, HttpServer};
 use clap::Parser;
-use orbiter_logic::{CelestialBody, Universe};
+use orbiter_logic::{serialize, CelestialBody, Universe};
 use std::sync::RwLock;
 
 #[derive(Parser, Debug)]
@@ -11,7 +11,7 @@ struct Args {
     #[clap(
         short,
         long,
-        default_value = "80",
+        default_value = "8088",
         help = "The port number to listen to."
     )]
     port: u16,
@@ -31,11 +31,14 @@ struct OrbiterData {
 async fn get_state(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResponse> {
     let universe = data.universe.read().unwrap();
 
-    let serialized = universe.serialize()?;
+    let serialized = serialize(&universe)?;
 
     println!("Serialized: {}", serialized);
 
     Ok(HttpResponse::Ok()
+        .append_header(("Access-Control-Allow-Origin", "*"))
+        .append_header(("Access-Control-Allow-Methods", "OPTIONS, POST, GET"))
+        .append_header(("Access-Control-Max-Age", 2592000)) // 30 days
         .content_type("application/json")
         .body(serialized))
 }
@@ -65,7 +68,7 @@ async fn main() -> std::io::Result<()> {
     let result = HttpServer::new(move || {
         App::new()
             .app_data(data.clone())
-            .route("/", web::get().to(get_state))
+            .route("/load", web::get().to(get_state))
     })
     .bind((args.host.as_str(), args.port))?
     .run()

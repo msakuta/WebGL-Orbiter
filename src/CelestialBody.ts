@@ -135,9 +135,11 @@ export class CelestialBody{
         return ret;
     }
 
-    deserialize(json: any){
+    deserialize(json: any, bodies: [any]){
         this.name = json.name;
-        this.setParent(CelestialBody.celestialBodies.get(json.parent));
+        if(json.parent !== null){
+            this.setParent(CelestialBody.celestialBodies.get(bodies[json.parent].name));
+        }
         this.position = deserializeVector3(json.position);
         this.velocity = deserializeVector3(json.velocity);
         this.quaternion = deserializeQuaternion(json.quaternion);

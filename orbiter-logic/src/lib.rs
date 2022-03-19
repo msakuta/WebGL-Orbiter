@@ -4,6 +4,7 @@ mod dyn_iter;
 pub use crate::celestial_body::{AddPlanetParams, CelestialBody, OrbitalElements};
 use crate::dyn_iter::{Chained, MutRef};
 use cgmath::{Rad, Rotation3, Zero};
+use serde::{ser::SerializeMap, Serialize, Serializer};
 use std::sync::{Arc, Mutex};
 
 type Vector3 = cgmath::Vector3<f64>;
@@ -17,6 +18,8 @@ pub struct Universe {
     pub bodies: Vec<CelestialBody>,
     pub root: usize,
     id_gen: usize,
+    sim_time: f64,
+    start_time: f64,
     time: usize,
 }
 
@@ -26,6 +29,8 @@ impl Universe {
             bodies: vec![],
             root: 0,
             id_gen: 0,
+            sim_time: 0.,
+            start_time: 0.,
             time: 0,
         };
 
@@ -117,17 +122,31 @@ impl Universe {
         self.bodies = bodies;
         // self.bodies[0].update(self);
         self.time += 1;
+        self.sim_time += 1.0;
     }
 
     pub fn get_time(&self) -> usize {
         self.time
     }
+}
 
-    pub fn serialize(&self) -> serde_json::Result<String> {
+impl Serialize for Universe {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
         println!("Trying to acquire mutex");
         println!("Serializing vec...");
-        serde_json::to_string(&self.bodies)
+        let mut map = serializer.serialize_map(Some(3))?;
+        map.serialize_entry("simTime", &self.sim_time)?;
+        map.serialize_entry("startTime", &self.start_time)?;
+        map.serialize_entry("bodies", &self.bodies)?;
+        map.end()
     }
+}
+
+pub fn serialize(this: &Universe) -> serde_json::Result<String> {
+    serde_json::to_string(&this)
 }
 
 #[test]

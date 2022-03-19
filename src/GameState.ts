@@ -50,7 +50,7 @@ export default class GameState{
         for(let i = 0; i < bodies.length; i++){
             const body = bodies[i];
             if(CelestialBody.celestialBodies.has(body.name)){
-                CelestialBody.celestialBodies.get(body.name).deserialize(body);
+                CelestialBody.celestialBodies.get(body.name).deserialize(body, bodies);
             }
         }
         if(this.select_obj && this.onStateLoad)
