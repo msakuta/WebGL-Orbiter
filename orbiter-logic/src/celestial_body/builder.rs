@@ -53,7 +53,7 @@ impl CelestialBodyBuilder {
     }
 
     pub(super) fn build(
-        self,
+        &mut self,
         universe: &mut Universe,
         orbital_elements: OrbitalElements,
     ) -> CelestialBody {
@@ -62,12 +62,12 @@ impl CelestialBodyBuilder {
 
         CelestialBody {
             id,
-            name: self.name.unwrap(),
+            name: self.name.take().unwrap(),
             position: self.position.unwrap_or_else(Vector3::zero),
             velocity: self.velocity.unwrap_or_else(Vector3::zero),
             quaternion: Quaternion::new(0., 0., 0., 1.),
             angular_velocity: Vector3::new(0., 0., 0.),
-            orbit_color: self.orbit_color.unwrap_or_else(String::new),
+            orbit_color: self.orbit_color.take().unwrap_or_else(String::new),
             children: vec![],
             parent: self.parent,
             GM: self.gm.unwrap(),

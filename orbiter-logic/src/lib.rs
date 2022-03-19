@@ -69,6 +69,7 @@ impl Universe {
                 mean_anomaly: 0.,
                 soi: 1.,
             },
+            params,
             398600. / AU / AU / AU,
             6534.,
             "earth".to_string(),

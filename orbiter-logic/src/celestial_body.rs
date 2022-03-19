@@ -3,7 +3,7 @@ mod builder;
 use super::{Quaternion, Universe, Vector3};
 use crate::dyn_iter::DynIterMut;
 use builder::CelestialBodyBuilder;
-use cgmath::{InnerSpace, Rad, Rotation3, Zero};
+use cgmath::{InnerSpace, Rad, Rotation, Rotation3, Zero};
 use serde::{ser::SerializeMap, Serialize, Serializer};
 
 const Rsun: f64 = 695800.;
@@ -65,17 +65,19 @@ impl CelestialBody {
         if let Some(parent) = parent {
             builder.parent(parent);
         }
-        builder.name(name);
-        builder.position(position);
-        builder.orbit_color(orbit_color);
-        builder.gm(gm);
-        builder.build(universe, orbital_elements)
+        builder
+            .name(name)
+            .position(position)
+            .orbit_color(orbit_color)
+            .gm(gm)
+            .build(universe, orbital_elements)
     }
 
     pub(crate) fn from_orbital_elements(
         universe: &mut Universe,
         parent: Option<usize>,
         orbital_elements: OrbitalElements,
+        params: AddPlanetParams,
         gm: f64,
         radius: f64,
         name: String,
@@ -93,11 +95,46 @@ impl CelestialBody {
         if let Some(parent) = parent {
             builder.parent(parent);
         }
-        builder.name(name);
-        builder.position(rotation * axis);
-        builder.orbit_color("#fff".to_string());
-        builder.gm(gm);
-        builder.build(universe, orbital_elements)
+
+        let mut ret = builder
+            .name(name)
+            .position(rotation * axis)
+            .radius(radius)
+            .orbit_color("#fff".to_string())
+            .gm(gm)
+            .build(universe, orbital_elements);
+
+        // Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
+        // https://en.wikipedia.org/wiki/Orbital_speed
+        ret.set_orbiting_velocity(
+            universe.bodies.iter(),
+            ret.orbital_elements.semimajor_axis,
+            rotation,
+        );
+        ret.quaternion = Quaternion::from_angle_x(Rad(params.axial_tilt));
+        ret.angular_velocity = ret.quaternion.rotate_vector(Vector3::new(
+            0.,
+            0.,
+            2. * std::f64::consts::PI / params.rotation_period,
+        ));
+
+        ret
+    }
+
+    fn set_orbiting_velocity<'a>(
+        &'a mut self,
+        mut bodies: impl Iterator<Item = &'a CelestialBody>,
+        semimajor_axis: f64,
+        rotation: Quaternion,
+    ) {
+        if let Some(parent) = self.parent {
+            if let Some(parent) = bodies.find(|body| body.id == parent) {
+                self.velocity = rotation.rotate_vector(
+                    Vector3::new(1., 0., 0.)
+                        * (parent.GM * (2. / self.position.magnitude() - 1. / semimajor_axis)),
+                );
+            }
+        }
     }
 
     /// Update orbital elements from position and velocity.
