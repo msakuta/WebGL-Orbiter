@@ -31,18 +31,13 @@ struct OrbiterData {
 async fn get_state(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResponse> {
     let universe = data.universe.read().unwrap();
 
-    println!("Trying to acquire mutex");
-    let bodies: Vec<_> = universe
-        .bodies
-        .iter()
-        .map(|body| body.lock().unwrap())
-        .collect();
+    let serialized = universe.serialize()?;
 
-    let bodies_refs: Vec<_> = bodies.iter().map(|p| p as &CelestialBody).collect();
+    println!("Serialized: {}", serialized);
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
-        .body(serde_json::to_string(&bodies_refs)?))
+        .body(serialized))
 }
 
 #[actix_web::main]

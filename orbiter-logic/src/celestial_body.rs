@@ -1,4 +1,5 @@
-use super::{Quaternion, Vector3};
+use super::{Quaternion, Universe, Vector3};
+use crate::dyn_iter::DynIterMut;
 use cgmath::{InnerSpace, Rad, Rotation3};
 use serde::{
     ser::{SerializeMap, SerializeSeq},
@@ -29,19 +30,21 @@ pub struct AddPlanetParams {
     pub angular_velocity: Vector3,
 }
 
+pub type CelestialId = usize;
+
 #[allow(non_snake_case)]
 #[derive(Debug)]
 pub struct CelestialBody {
-    id: usize,
-    name: String,
+    pub id: CelestialId,
+    pub name: String,
     position: Vector3,
     velocity: Vector3,
     pub quaternion: Quaternion,
     angular_velocity: Vector3,
     orbit_color: String,
     // orbitMaterial: THREE.LineBasicMaterial;
-    children: Vec<Arc<Mutex<CelestialBody>>>,
-    parent: Weak<Mutex<CelestialBody>>,
+    pub children: Vec<CelestialId>,
+    pub parent: Option<CelestialId>,
 
     GM: f64,
     radius: f64,
@@ -51,20 +54,20 @@ pub struct CelestialBody {
 
 impl CelestialBody {
     pub(super) fn new(
-        id_gen: &mut usize,
-        parent: Option<Arc<Mutex<CelestialBody>>>,
+        universe: &mut Universe,
+        parent: Option<CelestialId>,
         position: Vector3,
         orbit_color: String,
         GM: f64,
         name: String,
         orbital_elements: OrbitalElements,
-    ) -> Arc<Mutex<Self>> {
-        let id = *id_gen;
-        *id_gen += 1;
+    ) -> Self {
+        let id = universe.id_gen;
+        universe.id_gen += 1;
 
         let mut parent_clone = parent.clone();
 
-        let ret = Arc::new(Mutex::new(Self {
+        let ret = Self {
             id,
             name,
             position,
@@ -73,31 +76,23 @@ impl CelestialBody {
             angular_velocity: Vector3::new(0., 0., 0.),
             orbit_color,
             children: vec![],
-            parent: parent
-                .map(|parent| Arc::downgrade(&parent))
-                .unwrap_or_else(Weak::new),
+            parent,
             GM,
             orbital_elements,
             radius: 1. / super::AU,
-        }));
-
-        if let Some(parent) = parent_clone.as_mut() {
-            let mut parent = parent.lock().unwrap();
-            println!("Add {} to {}", ret.lock().unwrap().name, parent.name);
-            parent.children.push(ret.clone());
-        }
+        };
 
         ret
     }
 
     pub(crate) fn from_orbital_elements(
-        id_gen: &mut usize,
-        parent: Option<Arc<Mutex<CelestialBody>>>,
+        universe: &mut Universe,
+        parent: Option<usize>,
         orbital_elements: OrbitalElements,
         GM: f64,
         radius: f64,
         name: String,
-    ) -> Arc<Mutex<Self>> {
+    ) -> Self {
         let rotation =
             Quaternion::from_angle_z(Rad(
                 orbital_elements.ascending_node - std::f64::consts::PI / 2.
@@ -107,7 +102,7 @@ impl CelestialBody {
         let axis = Vector3::new(0., 1. - orbital_elements.eccentricity, 0.)
             * orbital_elements.semimajor_axis;
         Self::new(
-            id_gen,
+            universe,
             parent,
             rotation * axis,
             "#fff".to_string(),
@@ -120,9 +115,9 @@ impl CelestialBody {
     /// Update orbital elements from position and velocity.
     /// The whole discussion is found in chapter 4.4 in
     /// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
-    pub(crate) fn update(&mut self) {
-        if let Some(parent) = self.parent.upgrade() {
-            let parent = parent.lock().unwrap();
+    pub(crate) fn update(&mut self, universe: &mut Universe) {
+        if let Some(parent) = self.parent {
+            let parent = &universe.bodies[parent];
             // Angular momentum vectors
             let ang = self.velocity.cross(self.position);
             let r = self.position.magnitude();
@@ -176,36 +171,43 @@ impl CelestialBody {
         }
     }
 
-    pub(crate) fn simulate_body(&mut self, delta_time: f64, div: f64, timescale: f64) {
-        let children = &self.children;
-        for body in children.iter() {
-            if let Ok(mut a) = body.lock() {
-                let sl = a.position.magnitude2();
-                println!(
-                    "Body {} simulating with {}... sl: {}",
-                    a.name, delta_time, sl
-                );
-                if sl != 0. {
-                    let accel = -a.position.normalize() * (delta_time / div * self.GM / sl);
-                    let dvelo = accel * 0.5;
-                    let vec0 = a.position + a.velocity.clone() * (delta_time / div / 2.);
-                    let accel1 =
-                        -vec0.normalize() * (delta_time / div * self.GM / vec0.magnitude2());
-                    let velo1 = a.velocity + dvelo;
-
-                    a.velocity += accel1;
-                    a.position += velo1 * (delta_time / div);
-                    if 0. < a.angular_velocity.magnitude2() {
-                        let axis = a.angular_velocity.normalize();
-                        // We have to multiply in this order!
-                        a.quaternion = <Quaternion as Rotation3>::from_axis_angle(
-                            axis,
-                            Rad(a.angular_velocity.magnitude() * delta_time / div),
-                        ) * a.quaternion;
-                    }
-                }
-                a.simulate_body(delta_time, div, timescale);
+    pub(crate) fn simulate_body(
+        &self,
+        mut bodies: impl DynIterMut<Item = CelestialBody>,
+        delta_time: f64,
+        div: f64,
+        timescale: f64,
+    ) {
+        // let children = &self.children;
+        for body in bodies.dyn_iter_mut() {
+            if self.children.iter().find(|id| **id == body.id).is_none() {
+                continue;
             }
+            let a = body;
+            let sl = a.position.magnitude2();
+            println!(
+                "Body {} simulating with {}... sl: {}",
+                a.name, delta_time, sl
+            );
+            if sl != 0. {
+                let accel = -a.position.normalize() * (delta_time / div * self.GM / sl);
+                let dvelo = accel * 0.5;
+                let vec0 = a.position + a.velocity.clone() * (delta_time / div / 2.);
+                let accel1 = -vec0.normalize() * (delta_time / div * self.GM / vec0.magnitude2());
+                let velo1 = a.velocity + dvelo;
+
+                a.velocity += accel1;
+                a.position += velo1 * (delta_time / div);
+                if 0. < a.angular_velocity.magnitude2() {
+                    let axis = a.angular_velocity.normalize();
+                    // We have to multiply in this order!
+                    a.quaternion = <Quaternion as Rotation3>::from_axis_angle(
+                        axis,
+                        Rad(a.angular_velocity.magnitude() * delta_time / div),
+                    ) * a.quaternion;
+                }
+            }
+            // a.simulate_body(bodies, delta_time, div, timescale);
         }
     }
 }
@@ -237,15 +239,8 @@ impl Serialize for CelestialBody {
         map.serialize_entry("quaternion", &self.quaternion)?;
         map.serialize_entry("angular_velocity", &self.angular_velocity)?;
         map.serialize_entry("orbit_color", &self.orbit_color)?;
-        map.serialize_entry("children", &ChildrenList(&self.children))?;
-        map.serialize_entry(
-            "parent",
-            &self
-                .parent
-                .upgrade()
-                .map(|p| p.lock().unwrap().id)
-                .unwrap_or(0),
-        )?;
+        map.serialize_entry("children", &self.children)?;
+        map.serialize_entry("parent", &self.parent)?;
         map.serialize_entry("radius", &self.radius)?;
         map.serialize_entry("GM", &self.GM)?;
         map.serialize_entry("orbital_elements", &self.orbital_elements)?;
@@ -264,7 +259,7 @@ fn serialize_cel() {
         angular_velocity: Vector3::new(0., 0., 0.),
         orbit_color: "".to_string(),
         children: vec![],
-        parent: Weak::new(),
+        parent: None,
         GM: super::GMsun,
         radius: Rsun,
         orbital_elements: OrbitalElements::default(),

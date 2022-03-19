@@ -1,6 +1,8 @@
 mod celestial_body;
+mod dyn_iter;
 
 pub use crate::celestial_body::{AddPlanetParams, CelestialBody, OrbitalElements};
+use crate::dyn_iter::{Chained, MutRef};
 use cgmath::{Rad, Rotation3, Zero};
 use std::sync::{Arc, Mutex};
 
@@ -12,7 +14,7 @@ const GMsun: f64 = 1.327124400e11 / AU / AU / AU; // Product of gravitational co
 
 #[derive(Debug)]
 pub struct Universe {
-    pub bodies: Vec<Arc<Mutex<CelestialBody>>>,
+    pub bodies: Vec<CelestialBody>,
     pub root: usize,
     id_gen: usize,
     time: usize,
@@ -20,9 +22,15 @@ pub struct Universe {
 
 impl Universe {
     pub fn new() -> Self {
-        let mut id_gen = 0;
+        let mut this = Self {
+            bodies: vec![],
+            root: 0,
+            id_gen: 0,
+            time: 0,
+        };
+
         let sun = CelestialBody::new(
-            &mut id_gen,
+            &mut this,
             None,
             Vector3::zero(),
             "#ffffff".to_string(),
@@ -30,6 +38,8 @@ impl Universe {
             "sun".to_string(),
             OrbitalElements::default(),
         );
+        let sun_id = sun.id;
+        this.add_body(sun);
 
         let rad_per_deg = std::f64::consts::PI / 180.;
 
@@ -42,8 +52,8 @@ impl Universe {
         };
 
         let earth = CelestialBody::from_orbital_elements(
-            &mut id_gen,
-            Some(sun.clone()),
+            &mut this,
+            Some(sun_id),
             OrbitalElements {
                 semimajor_axis: 1.,
                 eccentricity: 0.0167086,
@@ -58,10 +68,13 @@ impl Universe {
             6534.,
             "earth".to_string(),
         );
+        let earth_id = earth.id;
 
-        let rocket = CelestialBody::new(
-            &mut id_gen,
-            Some(earth.clone()),
+        this.add_body(earth);
+
+        let mut rocket = CelestialBody::new(
+            &mut this,
+            Some(earth_id),
             Vector3::new(104200., 0., 0.),
             "#3f7f7f".to_string(),
             100. / AU / AU / AU,
@@ -71,35 +84,49 @@ impl Universe {
 
         let rot = <Quaternion as Rotation3>::from_angle_x(Rad(std::f64::consts::PI / 2.))
             * <Quaternion as Rotation3>::from_angle_y(Rad(std::f64::consts::PI / 2.));
-        rocket.lock().unwrap().quaternion = rot;
+        rocket.quaternion = rot;
 
-        let bodies = vec![sun, earth, rocket];
+        this.add_body(rocket);
 
-        Self {
-            bodies,
-            root: 0,
-            id_gen,
-            time: 0,
+        this
+    }
+
+    fn add_body(&mut self, body: CelestialBody) {
+        let body_id = body.id;
+        if let Some(parent) = body.parent {
+            let parent = &mut self.bodies[parent];
+            // println!("Add {} to {}", ret.lock().unwrap().name, parent.name);
+            parent.children.push(body_id);
         }
+        self.bodies.push(body);
     }
 
     pub fn update(&mut self) {
-        let mut sun = self.bodies[0].lock().unwrap();
+        let mut bodies = std::mem::take(&mut self.bodies);
+
         let div = 10;
         for _ in 0..div {
-            sun.simulate_body(1., div as f64, 1.);
+            for i in 0..bodies.len() {
+                let (first, mid) = bodies.split_at_mut(i);
+                let (center, last) = mid.split_first_mut().unwrap();
+                let chained = Chained(MutRef(first), MutRef(last));
+
+                center.simulate_body(chained, 1., div as f64, 1.);
+            }
         }
-        sun.update();
-        println!(
-            "Sun refs: {}/{}",
-            Arc::strong_count(&self.bodies[0]),
-            Arc::weak_count(&self.bodies[0])
-        );
+        self.bodies = bodies;
+        // self.bodies[0].update(self);
         self.time += 1;
     }
 
     pub fn get_time(&self) -> usize {
         self.time
+    }
+
+    pub fn serialize(&self) -> serde_json::Result<String> {
+        println!("Trying to acquire mutex");
+        println!("Serializing vec...");
+        serde_json::to_string(&self.bodies)
     }
 }
 
