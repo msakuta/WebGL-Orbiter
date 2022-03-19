@@ -175,6 +175,7 @@ impl Serialize for Universe {
         map.serialize_entry("simTime", &self.sim_time)?;
         map.serialize_entry("startTime", &self.start_time)?;
         map.serialize_entry("bodies", &self.bodies)?;
+        map.serialize_entry("timeScale", &self.time_scale)?;
         map.end()
     }
 }

@@ -47,6 +47,7 @@ export default class GameState{
     loadState(state: any){
         this.simTime = new Date(state.simTime);
         this.startTime = new Date(state.startTime);
+        this.timescale = state.timeScale;
         const bodies = state.bodies;
         for(let i = 0; i < bodies.length; i++){
             const body = bodies[i];
@@ -90,7 +91,7 @@ export default class GameState{
             return false;
         }
         this.timescale = scale;
-        fetch(`http://${location.hostname}:${port}/time_scale`, {
+        fetch(`http://${location.hostname}:${port}/api/time_scale`, {
             method: 'POST',
             mode: 'cors',
             headers: {

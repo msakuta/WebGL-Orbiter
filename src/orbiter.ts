@@ -285,7 +285,7 @@ function init() {
     window.addEventListener( 'keydown', onKeyDown, false );
     window.addEventListener( 'keyup', onKeyUp, false );
     window.addEventListener( 'pageshow', async function(){
-        const res = await fetch(`http://${location.hostname}:${port}/load`, {
+        const res = await fetch(`http://${location.hostname}:${port}/api/load`, {
             method: "GET"
         });
         if(res.status === 200){

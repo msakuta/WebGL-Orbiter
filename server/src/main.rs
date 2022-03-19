@@ -1,10 +1,10 @@
 use ::actix_cors::Cors;
-use ::actix_web::{web, App, HttpResponse, HttpServer, HttpRequest};
 use ::actix_files::NamedFile;
+use ::actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
 use clap::Parser;
 use orbiter_logic::{serialize, Universe};
 use serde::Deserialize;
-use std::{path::{PathBuf}, sync::RwLock};
+use std::{path::PathBuf, sync::RwLock};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -61,20 +61,14 @@ async fn set_timescale(
     HttpResponse::Ok().body("Ok")
 }
 
-macro_rules! implement_static_bytes {
-    ($func:ident, $path:literal) => {
-        async fn $func() -> &'static [u8] {
-            include_bytes!($path)
-        }
-    };
-}
-
+#[cfg(not(debug_assertions))]
 async fn get_bundle() -> HttpResponse {
     HttpResponse::Ok()
         .content_type("text/javascript")
         .body(include_str!("../../dist/bundle.js"))
 }
 
+#[cfg(not(debug_assertions))]
 async fn get_index() -> HttpResponse {
     HttpResponse::Ok()
         .content_type("text/html")
@@ -125,14 +119,19 @@ async fn main() -> std::io::Result<()> {
             // .allowed_header(http::header::CONTENT_TYPE)
             .max_age(3600);
 
-        App::new()
+        let app = App::new()
             .wrap(cors)
             .app_data(data.clone())
-            .route("/load", web::get().to(get_state))
-            .route("/time_scale", web::post().to(set_timescale))
-            .route("/", web::get().to(get_index))
-            .route("/bundle.js", web::get().to(get_bundle))
-            .route("/{filename:.*}", web::get().to(get_file))
+            .route("/api/load", web::get().to(get_state))
+            .route("/api/time_scale", web::post().to(set_timescale));
+        #[cfg(not(debug_assertions))]
+        {
+            app.route("/", web::get().to(get_index))
+                .route("/bundle.js", web::get().to(get_bundle))
+                .route("/{filename:.*}", web::get().to(get_file))
+        }
+        #[cfg(debug_assertions)]
+        app.route("/{filename:.*}", web::get().to(get_file))
     })
     .bind((args.host.as_str(), args.port))?
     .run()
