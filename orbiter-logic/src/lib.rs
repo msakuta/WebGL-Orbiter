@@ -2,7 +2,10 @@ mod celestial_body;
 
 use celestial_body::CelestialBody;
 use cgmath::{Rad, Rotation3, Zero};
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    sync::{Arc, Mutex},
+};
 
 type Vector3 = cgmath::Vector3<f64>;
 type Quaternion = cgmath::Quaternion<f64>;
@@ -12,9 +15,10 @@ const GMsun: f64 = 1.327124400e11 / AU / AU / AU; // Product of gravitational co
 
 #[derive(Debug)]
 pub struct Universe {
-    sun: Rc<RefCell<CelestialBody>>,
-    rocket: Rc<RefCell<CelestialBody>>,
+    pub sun: Arc<Mutex<CelestialBody>>,
+    rocket: Arc<Mutex<CelestialBody>>,
     id_gen: usize,
+    time: usize,
 }
 
 impl Universe {
@@ -39,17 +43,18 @@ impl Universe {
 
         let rot = <Quaternion as Rotation3>::from_angle_x(Rad(std::f64::consts::PI / 2.))
             * <Quaternion as Rotation3>::from_angle_y(Rad(std::f64::consts::PI / 2.));
-        rocket.borrow_mut().quaternion = rot;
+        rocket.lock().unwrap().quaternion = rot;
 
         Self {
             sun,
             rocket,
             id_gen,
+            time: 0,
         }
     }
 
     pub fn update(&mut self) {
-        let mut sun = self.sun.borrow_mut();
+        let mut sun = self.sun.lock().unwrap();
         let div = 10;
         for _ in 0..div {
             sun.simulate_body(1., div as f64, 1.);
@@ -57,13 +62,18 @@ impl Universe {
         sun.update();
         println!(
             "Sun refs: {}/{}",
-            Rc::strong_count(&self.sun),
-            Rc::weak_count(&self.sun)
+            Arc::strong_count(&self.sun),
+            Arc::weak_count(&self.sun)
         );
+        self.time += 1;
+    }
+
+    pub fn get_time(&self) -> usize {
+        self.time
     }
 }
 
 #[test]
 fn test_universe() {
-    let mut universe = Universe::new();
+    let _ = Universe::new();
 }

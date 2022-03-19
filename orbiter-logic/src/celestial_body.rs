@@ -1,12 +1,11 @@
 use super::{Quaternion, Vector3};
-use cgmath::{EuclideanSpace, InnerSpace, Rad, Rotation3};
+use cgmath::{InnerSpace, Rad, Rotation3};
 use serde::{
     ser::{SerializeMap, SerializeSeq},
     Serialize, Serializer,
 };
 use std::{
-    cell::RefCell,
-    rc::{Rc, Weak},
+    sync::{Arc, Mutex, Weak},
 };
 
 const Rsun: f64 = 695800.;
@@ -36,8 +35,8 @@ pub struct CelestialBody {
     angular_velocity: Vector3,
     orbit_color: String,
     // orbitMaterial: THREE.LineBasicMaterial;
-    children: Vec<Rc<RefCell<CelestialBody>>>,
-    parent: Weak<RefCell<CelestialBody>>,
+    children: Vec<Arc<Mutex<CelestialBody>>>,
+    parent: Weak<Mutex<CelestialBody>>,
 
     GM: f64,
     radius: f64,
@@ -48,18 +47,18 @@ pub struct CelestialBody {
 impl CelestialBody {
     pub(super) fn new(
         id_gen: &mut usize,
-        parent: Option<Rc<RefCell<CelestialBody>>>,
+        parent: Option<Arc<Mutex<CelestialBody>>>,
         position: Vector3,
         orbit_color: String,
         GM: f64,
         name: String,
-    ) -> Rc<RefCell<Self>> {
+    ) -> Arc<Mutex<Self>> {
         let id = *id_gen;
         *id_gen += 1;
 
         let mut parent_clone = parent.clone();
 
-        let ret = Rc::new(RefCell::new(Self {
+        let ret = Arc::new(Mutex::new(Self {
             id,
             name,
             position,
@@ -69,7 +68,7 @@ impl CelestialBody {
             orbit_color,
             children: vec![],
             parent: parent
-                .map(|parent| Rc::downgrade(&parent))
+                .map(|parent| Arc::downgrade(&parent))
                 .unwrap_or_else(Weak::new),
             GM,
             orbital_elements: OrbitalElements::default(),
@@ -77,8 +76,8 @@ impl CelestialBody {
         }));
 
         if let Some(parent) = parent_clone.as_mut() {
-            let mut parent = parent.borrow_mut();
-            println!("Add {} to {}", ret.borrow().name, parent.name);
+            let mut parent = parent.lock().unwrap();
+            println!("Add {} to {}", ret.lock().unwrap().name, parent.name);
             parent.children.push(ret.clone());
         }
 
@@ -90,7 +89,7 @@ impl CelestialBody {
     /// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
     pub(crate) fn update(&mut self) {
         if let Some(parent) = self.parent.upgrade() {
-            let parent = parent.borrow();
+            let parent = parent.lock().unwrap();
             // Angular momentum vectors
             let ang = self.velocity.cross(self.position);
             let r = self.position.magnitude();
@@ -147,7 +146,7 @@ impl CelestialBody {
     pub(crate) fn simulate_body(&mut self, delta_time: f64, div: f64, timescale: f64) {
         let children = &self.children;
         for body in children.iter() {
-            if let Ok(mut a) = body.try_borrow_mut() {
+            if let Ok(mut a) = body.lock() {
                 let sl = a.position.magnitude2();
                 println!(
                     "Body {} simulating with {}... sl: {}",
@@ -178,7 +177,7 @@ impl CelestialBody {
     }
 }
 
-struct ChildrenList<'a>(&'a [Rc<RefCell<CelestialBody>>]);
+struct ChildrenList<'a>(&'a [Arc<Mutex<CelestialBody>>]);
 
 impl Serialize for ChildrenList<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -187,7 +186,7 @@ impl Serialize for ChildrenList<'_> {
     {
         let mut children = serializer.serialize_seq(Some(self.0.len()))?;
         for child in self.0.iter() {
-            children.serialize_element(&child.borrow().id)?;
+            children.serialize_element(&child.lock().unwrap().id)?;
         }
         children.end()
     }
@@ -208,7 +207,11 @@ impl Serialize for CelestialBody {
         map.serialize_entry("children", &ChildrenList(&self.children))?;
         map.serialize_entry(
             "parent",
-            &self.parent.upgrade().map(|p| p.borrow().id).unwrap_or(0),
+            &self
+                .parent
+                .upgrade()
+                .map(|p| p.lock().unwrap().id)
+                .unwrap_or(0),
         )?;
         map.serialize_entry("radius", &self.radius)?;
         map.serialize_entry("GM", &self.GM)?;
