@@ -1,0 +1,1 @@
+sudo webgl-orbiter-server -p 80 -h 0.0.0.0 -a /var/lib/webgl-orbiter/

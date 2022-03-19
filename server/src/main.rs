@@ -1,10 +1,10 @@
 use ::actix_cors::Cors;
-use ::actix_web::{http, web, App, HttpResponse, HttpResponseBuilder, HttpServer, HttpRequest};
+use ::actix_web::{web, App, HttpResponse, HttpServer, HttpRequest};
 use ::actix_files::NamedFile;
 use clap::Parser;
-use orbiter_logic::{serialize, CelestialBody, Universe};
+use orbiter_logic::{serialize, Universe};
 use serde::Deserialize;
-use std::{path::{Path, PathBuf}, sync::RwLock};
+use std::{path::{PathBuf}, sync::RwLock};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -25,10 +25,13 @@ struct Args {
         help = "The host address to listen to. By default, only the localhost can access."
     )]
     host: String,
+    #[clap(short, long, default_value = "../dist")]
+    asset_path: PathBuf,
 }
 
 struct OrbiterData {
     universe: RwLock<Universe>,
+    asset_path: PathBuf,
 }
 
 async fn get_state(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResponse> {
@@ -78,9 +81,10 @@ async fn get_index() -> HttpResponse {
         .body(include_str!("../../dist/index.html"))
 }
 
-async fn get_file(req: HttpRequest) -> actix_web::Result<NamedFile> {
+async fn get_file(data: web::Data<OrbiterData>, req: HttpRequest) -> actix_web::Result<NamedFile> {
+    let asset_path = &data.asset_path;
     let filename: PathBuf = req.match_info().query("filename").parse().unwrap();
-    let path: PathBuf = Path::new("../dist").join(&filename);
+    let path: PathBuf = asset_path.join(&filename);
     Ok(NamedFile::open(path)?)
 }
 
@@ -92,6 +96,7 @@ async fn main() -> std::io::Result<()> {
 
     let data = web::Data::new(OrbiterData {
         universe: RwLock::new(universe),
+        asset_path: args.asset_path,
     });
     let data_copy = data.clone();
 
@@ -113,7 +118,7 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
-    let result = HttpServer::new(move || {
+    let _result = HttpServer::new(move || {
         let cors = Cors::permissive()
             // .allowed_methods(vec!["GET", "POST"])
             // .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])

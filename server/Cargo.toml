@@ -23,7 +23,8 @@ depends = "$auto"
 priority = "optional"
 assets = [
     # binary
-    ["target/release/server", "usr/bin/server", "755"],
+    ["target/release/server", "usr/bin/webgl-orbiter-server", "755"],
+    ["start.sh", "usr/bin/webgl-orbiter", "755"],
     # assets
     ["../dist/*", "var/lib/webgl-orbiter", "644"],
 ]
