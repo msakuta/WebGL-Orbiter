@@ -1,9 +1,10 @@
-use actix_cors::Cors;
-use actix_web::{http, web, App, HttpResponse, HttpResponseBuilder, HttpServer};
+use ::actix_cors::Cors;
+use ::actix_web::{http, web, App, HttpResponse, HttpResponseBuilder, HttpServer, HttpRequest};
+use ::actix_files::NamedFile;
 use clap::Parser;
 use orbiter_logic::{serialize, CelestialBody, Universe};
 use serde::Deserialize;
-use std::sync::RwLock;
+use std::{path::{Path, PathBuf}, sync::RwLock};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -57,6 +58,32 @@ async fn set_timescale(
     HttpResponse::Ok().body("Ok")
 }
 
+macro_rules! implement_static_bytes {
+    ($func:ident, $path:literal) => {
+        async fn $func() -> &'static [u8] {
+            include_bytes!($path)
+        }
+    };
+}
+
+async fn get_bundle() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("text/javascript")
+        .body(include_str!("../../dist/bundle.js"))
+}
+
+async fn get_index() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("text/html")
+        .body(include_str!("../../dist/index.html"))
+}
+
+async fn get_file(req: HttpRequest) -> actix_web::Result<NamedFile> {
+    let filename: PathBuf = req.match_info().query("filename").parse().unwrap();
+    let path: PathBuf = Path::new("../dist").join(&filename);
+    Ok(NamedFile::open(path)?)
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let args = Args::parse();
@@ -98,6 +125,9 @@ async fn main() -> std::io::Result<()> {
             .app_data(data.clone())
             .route("/load", web::get().to(get_state))
             .route("/time_scale", web::post().to(set_timescale))
+            .route("/", web::get().to(get_index))
+            .route("/bundle.js", web::get().to(get_bundle))
+            .route("/{filename:.*}", web::get().to(get_file))
     })
     .bind((args.host.as_str(), args.port))?
     .run()
