@@ -56,7 +56,7 @@ export class OrbitalElementsControl{
         };
     }
 
-    setText(o: CelestialBody, headingApoapsis: number, units_km: boolean){
+    setText(body: CelestialBody, headingApoapsis: number, units_km: boolean){
         // Convert length of unit au into a fixed-length string considering user unit selection.
         // Also appends unit string for clarity.
         function unitConvLength(au: number){
@@ -65,6 +65,8 @@ export class OrbitalElementsControl{
             else
                 return au.toFixed(10) + ' AU';
         }
+
+        const o = body.orbitalElements;
 
         this.valueElement.innerHTML = '<table class="table1">'
             + ' <tr><td>e</td><td>' + (o.eccentricity || 0).toFixed(10) + '</td></tr>'

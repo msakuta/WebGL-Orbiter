@@ -1,5 +1,5 @@
 import * as THREE from 'three/src/Three';
-import { CelestialBody, addPlanet } from './CelestialBody';
+import { CelestialBody, addPlanet, OrbitalElements } from './CelestialBody';
 import { Settings } from './SettingsControl';
 import Universe from './Universe';
 import { RotationButtons } from './RotationControl';
@@ -20,8 +20,8 @@ export default class GameState{
     constructor(scene: THREE.Scene, viewScale: number, overlay: THREE.Scene, settings: Settings, camera: THREE.Camera, windowHalfX: number, windowHalfY: number, sendMessage: (text: string) => void){
         this.sendMessage = sendMessage;
 
-        const AddPlanet = (semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: any, name: string, orbitGeometry: THREE.BufferGeometry) =>
-            addPlanet(semimajor_axis, eccentricity, inclination, ascending_node, argument_of_perihelion, color, GM, parent, texture, radius, params, name,
+        const AddPlanet = (orbitalElements: OrbitalElements, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: any, name: string, orbitGeometry: THREE.BufferGeometry) =>
+            addPlanet(orbitalElements, color, GM, parent, texture, radius, params, name,
                 scene, viewScale, overlay, orbitGeometry, settings.center_select, settings, camera, windowHalfX, windowHalfY);
 
         this.universe = new Universe(scene, AddPlanet, settings.center_select, viewScale, settings, camera, windowHalfX, windowHalfY);
