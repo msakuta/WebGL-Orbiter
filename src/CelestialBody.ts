@@ -5,6 +5,7 @@ import apoapsisUrl from './images/apoapsis.png';
 import periapsisUrl from './images/periapsis.png';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
+import { GraphicsParams } from './GameState';
 
 export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
@@ -477,10 +478,10 @@ export interface AddPlanetParams{
 // Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 // It's a bit difficult to calculate in Newtonian dynamics simulation.
 export function addPlanet(orbitalElements: OrbitalElements,
-    params: AddPlanetParams, scene: THREE.Scene,
-    viewScale: number, overlay: THREE.Scene, orbitGeometry: THREE.BufferGeometry, center_select: boolean, settings: Settings, camera: THREE.Camera,
-    windowHalfX: number, windowHalfY: number)
+    params: AddPlanetParams, graphicsParams: GraphicsParams,
+    orbitGeometry: THREE.BufferGeometry, settings: Settings)
 {
+    const { scene, viewScale, overlay } = graphicsParams;
     const rotation = AxisAngleQuaternion(0, 0, 1, orbitalElements.ascending_node - Math.PI / 2)
         .multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - orbitalElements.inclination))
         .multiply(AxisAngleQuaternion(0, 0, 1, orbitalElements.argument_of_perihelion));
@@ -571,7 +572,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     ret.orbit = orbitMesh;
     scene.add(orbitMesh);
     ret.init();
-    ret.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
+    ret.update(settings.center_select, graphicsParams.viewScale, settings.nlips_enable, graphicsParams.camera, graphicsParams.windowHalfX, graphicsParams.windowHalfY,
         settings.units_km, (_) => {}, scene);
     return ret;
 }

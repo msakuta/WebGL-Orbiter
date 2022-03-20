@@ -7,6 +7,15 @@ import { port } from './orbiter';
 
 const selectedOrbitMaterial = new THREE.LineBasicMaterial({color: 0xff7fff});
 
+export interface GraphicsParams {
+    scene: THREE.Scene;
+    viewScale: number;
+    overlay: THREE.Scene;
+    camera: THREE.Camera;
+    windowHalfX: number;
+    windowHalfY: number;
+}
+
 export default class GameState{
     simTime: Date;
     startTime: Date;
@@ -17,15 +26,13 @@ export default class GameState{
     universe: Universe;
     onStateLoad?: () => void = null;
     sendMessage: (text: string) => void;
+    graphicsParams: GraphicsParams;
 
-    constructor(scene: THREE.Scene, viewScale: number, overlay: THREE.Scene, settings: Settings, camera: THREE.Camera, windowHalfX: number, windowHalfY: number, sendMessage: (text: string) => void){
+    constructor(graphicsParams: GraphicsParams, settings: Settings, sendMessage: (text: string) => void){
         this.sendMessage = sendMessage;
+        this.graphicsParams = graphicsParams;
 
-        const AddPlanet = (orbitalElements: OrbitalElements, params: AddPlanetParams, orbitGeometry: THREE.BufferGeometry) =>
-            addPlanet(orbitalElements, params,
-                scene, viewScale, overlay, orbitGeometry, settings.center_select, settings, camera, windowHalfX, windowHalfY);
-
-        this.universe = new Universe(scene, AddPlanet, settings.center_select, viewScale, settings, camera, windowHalfX, windowHalfY);
+        this.universe = new Universe(graphicsParams, settings);
         this.select_obj = this.universe.rocket;
         window.addEventListener( 'keydown', (event: KeyboardEvent) => this.onKeyDown(event), false );
     }

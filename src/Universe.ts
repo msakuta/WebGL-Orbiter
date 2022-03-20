@@ -1,9 +1,10 @@
 import * as THREE from 'three/src/Three';
 
-import { CelestialBody, OrbitalElements, AU, AxisAngleQuaternion, AddPlanetParams } from './CelestialBody';
+import { CelestialBody, OrbitalElements, AU, AxisAngleQuaternion, AddPlanetParams, addPlanet } from './CelestialBody';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
 import { ModulatedIcosahedronGeometry } from './ModulatedIcosahedronGeometry';
+import { GraphicsParams } from './GameState';
 
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
@@ -26,7 +27,8 @@ export default class Universe{
     rocket: CelestialBody;
     light: THREE.PointLight;
 
-    constructor(scene: THREE.Scene, AddPlanetArg: AddPlanetArgType, center_select: boolean, viewScale: number, settings: Settings, camera: THREE.Camera, windowHalfX: number, windowHalfY: number){
+    constructor(graphicsParams: GraphicsParams, settings: Settings){
+        const { scene, viewScale, camera, windowHalfX, windowHalfY } = graphicsParams;
         this.light = new THREE.PointLight( 0xffffff, 1, 0, 1e-6 );
         scene.add( this.light );
         scene.add( new THREE.AmbientLight( 0x202020 ) );
@@ -47,13 +49,14 @@ export default class Universe{
 
         scene.add(group);
 
-        const AddPlanet = (orbitalElements: OrbitalElements, params: AddPlanetParams) =>
-            AddPlanetArg(orbitalElements, params, orbitGeometry);
+        const addPlanetLocal = (orbitalElements: OrbitalElements, params: AddPlanetParams) =>
+            addPlanet(orbitalElements, params, graphicsParams, orbitGeometry, settings);
 
         this.sun = new CelestialBody(null, new THREE.Vector3(), null, "#ffffff", GMsun, "sun");
         this.sun.radius = Rsun;
         this.sun.model = group;
-        const mercury = AddPlanet({
+
+        const mercury = addPlanetLocal({
             semimajor_axis: 0.387098,
             eccentricity: 0.205630,
             inclination: 7.005 * rad_per_deg,
@@ -70,7 +73,7 @@ export default class Universe{
             soi: 2e5,
         });
 
-        const venus = AddPlanet({
+        const venus = addPlanetLocal({
             semimajor_axis: 0.723332,
             eccentricity: 0.00677323,
             inclination: 3.39458 * rad_per_deg,
@@ -88,7 +91,7 @@ export default class Universe{
         });
 
         // Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
-        const earth = AddPlanet({
+        const earth = addPlanetLocal({
             semimajor_axis: 1,
             eccentricity: 0.0167086,
             inclination: 0,
@@ -107,7 +110,7 @@ export default class Universe{
             soi: 5e5
         });
 
-        this.rocket = AddPlanet({
+        this.rocket = addPlanetLocal({
             semimajor_axis: 10000 / AU,
             eccentricity: 0.,
             inclination: 0,
@@ -125,7 +128,7 @@ export default class Universe{
         });
         this.rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
 
-        const moon = AddPlanet({
+        const moon = addPlanetLocal({
             semimajor_axis: 384399 / AU,
             eccentricity: 0.0167086,
             inclination: 0,
@@ -142,7 +145,7 @@ export default class Universe{
             soi: 1e5,
         });
 
-        const mars = AddPlanet({
+        const mars = addPlanetLocal({
             semimajor_axis: 1.523679,
             eccentricity: 0.0935,
             inclination: 1.850 * rad_per_deg,
@@ -159,7 +162,7 @@ export default class Universe{
             soi: 3e5
         });
 
-        const jupiter = AddPlanet({
+        const jupiter = addPlanetLocal({
             semimajor_axis: 5.204267,
             eccentricity: 0.048775,
             inclination: 1.305 * rad_per_deg,
@@ -224,7 +227,7 @@ export default class Universe{
             scene.add(orbitMesh);
 
             asteroid.init();
-            asteroid.update(center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
+            asteroid.update(settings.center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
                 settings.units_km, (_) => {}, scene);
 
         }
