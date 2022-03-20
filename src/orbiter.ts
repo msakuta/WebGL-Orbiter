@@ -94,7 +94,14 @@ function init() {
     const orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
     CelestialBody.prototype.orbitMaterial = orbitMaterial; // Default orbit material
 
-    gameState = new GameState(scene, viewScale, overlay.overlay, settings, camera, windowHalfX, windowHalfY, function(msg){ messageControl.setText(msg); });
+    gameState = new GameState({
+        scene,
+        viewScale,
+        overlay: overlay.overlay,
+        camera,
+        windowHalfX,
+        windowHalfY,
+     }, settings, (msg) => messageControl.setText(msg));
 
     const meshMaterial = new THREE.LineBasicMaterial({color: 0x3f3f3f});
     const meshGeometry = new THREE.BufferGeometry();

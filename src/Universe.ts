@@ -4,6 +4,7 @@ import { CelestialBody, OrbitalElements, AU, AxisAngleQuaternion, AddPlanetParam
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
 import { ModulatedIcosahedronGeometry } from './ModulatedIcosahedronGeometry';
+import { GraphicsParams } from './GameState';
 
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
@@ -26,7 +27,8 @@ export default class Universe{
     rocket: CelestialBody;
     light: THREE.PointLight;
 
-    constructor(scene: THREE.Scene, AddPlanetArg: AddPlanetArgType, center_select: boolean, viewScale: number, settings: Settings, camera: THREE.Camera, windowHalfX: number, windowHalfY: number){
+    constructor(graphicsParams: GraphicsParams, AddPlanetArg: AddPlanetArgType, center_select: boolean, settings: Settings){
+        const { scene, viewScale, camera, windowHalfX, windowHalfY } = graphicsParams;
         this.light = new THREE.PointLight( 0xffffff, 1, 0, 1e-6 );
         scene.add( this.light );
         scene.add( new THREE.AmbientLight( 0x202020 ) );
