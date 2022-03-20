@@ -26,6 +26,7 @@ export default class Universe{
     sun: CelestialBody;
     rocket: CelestialBody;
     light: THREE.PointLight;
+    orbitGeometry: THREE.BufferGeometry;
 
     constructor(graphicsParams: GraphicsParams, settings: Settings){
         const { scene, viewScale, camera, windowHalfX, windowHalfY } = graphicsParams;
@@ -36,6 +37,7 @@ export default class Universe{
         const curve = new THREE.EllipseCurve(0, 0, 1, 1,
             0, Math.PI * 2, false, 90);
         const orbitGeometry = new THREE.BufferGeometry().setFromPoints( curve.getPoints(256) );
+        this.orbitGeometry = orbitGeometry;
 
         const group = new THREE.Object3D();
         const material = new THREE.MeshBasicMaterial( { color: "#ffffff" } );
@@ -110,23 +112,16 @@ export default class Universe{
             soi: 5e5
         });
 
-        this.rocket = addPlanetLocal({
+        this.rocket = this.addRocket({
             semimajor_axis: 10000 / AU,
             eccentricity: 0.,
             inclination: 0,
             ascending_node: 0,
             argument_of_perihelion: 0
         },
-        {
-            name: "rocket",
-            parent: earth,
-            color: "#3f7f7f",
-            GM: 100 / AU / AU / AU,
-            radius: 0.1,
-            modelName: rocketModelUrl,
-            controllable: true
-        });
-        this.rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
+        earth, 
+        graphicsParams,
+        settings);
 
         const moon = addPlanetLocal({
             semimajor_axis: 384399 / AU,
@@ -232,6 +227,23 @@ export default class Universe{
 
         }
 
+    }
+
+    addRocket(orbitalElements: OrbitalElements, parent: CelestialBody, graphicsParams: GraphicsParams, settings: Settings){
+        const rocket = addPlanet(orbitalElements,
+        {
+            name: "rocket",
+            parent,
+            color: "#3f7f7f",
+            GM: 100 / AU / AU / AU,
+            radius: 0.1,
+            modelName: rocketModelUrl,
+            controllable: true
+        },
+        graphicsParams, this.orbitGeometry, settings);
+        rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
+
+        return rocket;
     }
 
     update(center_select: boolean, viewScale: number, nlips_enable: boolean,

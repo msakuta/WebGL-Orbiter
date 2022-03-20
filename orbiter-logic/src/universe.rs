@@ -1,11 +1,11 @@
 use crate::{
-    celestial_body::{AddPlanetParams, CelestialBody, OrbitalElements},
+    celestial_body::{AddPlanetParams, CelestialBody, OrbitalElements, CelestialId},
     dyn_iter::{Chained, DynIterMut, MutRef},
     GMsun, Quaternion, Vector3, AU,
 };
 use cgmath::{Rad, Rotation3, Zero};
 use serde::{ser::SerializeMap, Serialize, Serializer};
-use std::sync::{Arc, Mutex};
+use rand::prelude::*;
 
 #[derive(Debug)]
 pub struct Universe {
@@ -90,7 +90,6 @@ impl Universe {
             AddPlanetParams {
                 axial_tilt: 0.,
                 rotation_period: 0.,
-                // soi: 5e5,
                 quaternion: Quaternion::new(1., 0., 0., 0.),
                 angular_velocity: Vector3::zero(),
             },
@@ -121,7 +120,6 @@ impl Universe {
             AddPlanetParams {
                 axial_tilt: 0.,
                 rotation_period: 0.,
-                // soi: 5e5,
                 quaternion: Quaternion::new(1., 0., 0., 0.),
                 angular_velocity: Vector3::zero(),
             },
@@ -132,7 +130,75 @@ impl Universe {
 
         this.add_body(moon);
 
+        let mars = CelestialBody::from_orbital_elements(
+            &mut this,
+            Some(sun_id),
+            OrbitalElements {
+                semimajor_axis: 1.523679,
+                eccentricity: 0.0935,
+                inclination: 1.850 * rad_per_deg,
+                ascending_node: 49.562 * rad_per_deg,
+                argument_of_perihelion: 286.537 * rad_per_deg,
+                epoch: 0.,
+                mean_anomaly: 0.,
+                soi: 3e5,
+            },
+            AddPlanetParams {
+                axial_tilt: 0.,
+                rotation_period: 0.,
+                quaternion: Quaternion::new(1., 0., 0., 0.),
+                angular_velocity: Vector3::zero(),
+            },
+            42828. / AU / AU / AU,
+            3389.5,
+            "mars".to_string(),
+        );
+
+        this.add_body(mars);
+
         this
+    }
+
+    pub fn new_rocket(&mut self) -> CelestialId {
+        let earth_id = self.bodies.iter().find(|body| body.name == "earth").map(|body| body.id);
+
+        let rad_per_deg = std::f64::consts::PI / 180.;
+
+        let mut rng = thread_rng();
+
+        let mut rocket = CelestialBody::from_orbital_elements(
+            self,
+            earth_id,
+            OrbitalElements {
+                semimajor_axis:  rng.gen_range(10000.0..20000.) / AU,
+                eccentricity: rng.gen_range(0.0..0.5),
+                inclination: rng.gen_range(0.0..30. * rad_per_deg),
+                ascending_node: rng.gen_range(0.0..360. * rad_per_deg),
+                argument_of_perihelion: rng.gen_range(0.0..360. * rad_per_deg),
+                epoch: 0.,
+                mean_anomaly: 0.,
+                soi: 1.,
+            },
+            AddPlanetParams {
+                axial_tilt: 0.,
+                rotation_period: 0.,
+                quaternion: Quaternion::new(1., 0., 0., 0.),
+                angular_velocity: Vector3::zero(),
+            },
+            100. / AU / AU / AU,
+            0.1,
+            format!("rocket{}", self.id_gen),
+        );
+    
+        let rot = <Quaternion as Rotation3>::from_angle_x(Rad(std::f64::consts::PI / 2.))
+            * <Quaternion as Rotation3>::from_angle_y(Rad(std::f64::consts::PI / 2.));
+        rocket.quaternion = rot;
+
+        let rocket_id = rocket.id;
+    
+        self.add_body(rocket);
+
+        rocket_id
     }
 
     fn add_body(&mut self, body: CelestialBody) {

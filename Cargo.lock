@@ -835,6 +835,7 @@ name = "orbiter-logic"
 version = "0.1.0"
 dependencies = [
  "cgmath",
+ "rand",
  "serde",
  "serde_json",
 ]

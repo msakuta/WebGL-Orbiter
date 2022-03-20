@@ -4,6 +4,7 @@ import { Settings } from './SettingsControl';
 import Universe from './Universe';
 import { RotationButtons } from './RotationControl';
 import { port } from './orbiter';
+import rocketModelUrl from './rocket.obj';
 
 const selectedOrbitMaterial = new THREE.LineBasicMaterial({color: 0xff7fff});
 
@@ -27,6 +28,7 @@ export default class GameState{
     onStateLoad?: () => void = null;
     sendMessage: (text: string) => void;
     graphicsParams: GraphicsParams;
+    sessionId?: number;
 
     constructor(graphicsParams: GraphicsParams, settings: Settings, sendMessage: (text: string) => void){
         this.sendMessage = sendMessage;
@@ -51,17 +53,32 @@ export default class GameState{
         };
     }
 
-    loadState(state: any){
+    loadState(state: any, settings: Settings){
         this.simTime = new Date(state.simTime);
         this.startTime = new Date(state.startTime);
         this.timescale = state.timeScale;
+
         const bodies = state.bodies;
         for(let i = 0; i < bodies.length; i++){
             const body = bodies[i];
+            let obj = null;
             if(CelestialBody.celestialBodies.has(body.name)){
-                CelestialBody.celestialBodies.get(body.name).deserialize(body, bodies);
+                obj = CelestialBody.celestialBodies.get(body.name);
+                obj.deserialize(body, bodies);
+            }
+            else if(body.name.match(/rocket\d+/)){
+                const parent = body.parent !== null ? CelestialBody.celestialBodies.get(bodies[body.parent].name) : undefined;
+                obj = this.universe.addRocket(
+                    body.orbitalElements,
+                    parent,
+                    this.graphicsParams,
+                    settings);
+            }
+            if(this.sessionId === i){
+                this.select_obj = obj;
             }
         }
+
         if(this.select_obj && this.onStateLoad)
             this.onStateLoad();
     }

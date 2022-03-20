@@ -34,6 +34,18 @@ struct OrbiterData {
     asset_path: PathBuf,
 }
 
+async fn new_session(
+    data: web::Data<OrbiterData>,
+) -> HttpResponse {
+    let mut universe = data.universe.write().unwrap();
+
+    let new_session = universe.new_rocket();
+
+    println!("New session id: {}", new_session);
+
+    HttpResponse::Ok().body(format!("{}", new_session))
+}
+
 async fn get_state(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResponse> {
     let universe = data.universe.read().unwrap();
 
@@ -122,6 +134,7 @@ async fn main() -> std::io::Result<()> {
         let app = App::new()
             .wrap(cors)
             .app_data(data.clone())
+            .route("/api/session", web::post().to(new_session))
             .route("/api/load", web::get().to(get_state))
             .route("/api/time_scale", web::post().to(set_timescale));
         #[cfg(not(debug_assertions))]

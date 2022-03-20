@@ -280,7 +280,7 @@ function init() {
     gameState.onStateLoad = () => throttleControl.setThrottle(gameState.select_obj.throttle);
 
     loadControl = new LoadControl(
-        function(state){ gameState.loadState(state) },
+        function(state){ gameState.loadState(state, settings) },
         function(msg){ messageControl.setText(msg); },
         function(){
             [scenarioSelectorControl, saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
@@ -292,13 +292,19 @@ function init() {
     window.addEventListener( 'keydown', onKeyDown, false );
     window.addEventListener( 'keyup', onKeyUp, false );
     window.addEventListener( 'pageshow', async function(){
+        const sessionRes = await fetch(`http://${location.hostname}:${port}/api/session`, {
+            method: "POST"
+        });
+        const sessionId = parseInt(await sessionRes.text());
+        gameState.sessionId = sessionId;
+
         const res = await fetch(`http://${location.hostname}:${port}/api/load`, {
             method: "GET"
         });
         if(res.status === 200){
             const data = await res.json();
             console.log(data);
-            gameState.loadState(data);
+            gameState.loadState(data, settings);
         }
         // const state = localStorage.getItem('WebGLOrbiterAutoSave');
         // if(state){

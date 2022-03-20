@@ -1,5 +1,7 @@
 import http, {IncomingMessage, ServerResponse} from "http";
 const nstatic = require('node-static');
+import GameState from './GameState';
+import { RotationButtons } from "./RotationControl";
 
 const host = "0.0.0.0";
 const port = 80;
@@ -7,6 +9,16 @@ const port = 80;
 let state: any = null;
 
 const file = new(nstatic.Server)(__dirname + "/../dist");
+
+const gameState = new GameState(null, null, null);
+
+setTimeout(() => {
+    const div = 100; // We should pick subdivide simulation step count by angular speed!
+
+    for(let d = 0; d < div; d++){
+        gameState.simulateBody(1., div, new RotationButtons());
+    }
+}, 1000);
 
 const requestListener = function (req: IncomingMessage, res: ServerResponse) {
 
