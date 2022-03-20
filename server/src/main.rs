@@ -4,7 +4,12 @@ use ::actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer};
 use clap::Parser;
 use orbiter_logic::{serialize, Universe};
 use serde::Deserialize;
-use std::{path::PathBuf, sync::RwLock};
+use std::{
+    fs,
+    path::PathBuf,
+    sync::{Mutex, RwLock},
+    time::Instant,
+};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -27,11 +32,19 @@ struct Args {
     host: String,
     #[clap(short, long, default_value = "../dist")]
     asset_path: PathBuf,
+    #[clap(long, default_value = "save.json")]
+    autosave_file: PathBuf,
+    #[clap(long, default_value = "5")]
+    autosave_period_s: f64,
+    #[clap(long)]
+    autosave_pretty: bool,
 }
 
 struct OrbiterData {
     universe: RwLock<Universe>,
     asset_path: PathBuf,
+    last_saved: Mutex<Instant>,
+    autosave_file: PathBuf,
 }
 
 async fn new_session(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResponse> {
@@ -45,7 +58,7 @@ async fn new_session(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResp
 }
 
 async fn get_state(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResponse> {
-    let start = std::time::Instant::now();
+    let start = Instant::now();
 
     let universe = data.universe.read().unwrap();
 
@@ -109,20 +122,54 @@ async fn main() -> std::io::Result<()> {
     let data = web::Data::new(OrbiterData {
         universe: RwLock::new(universe),
         asset_path: args.asset_path,
+        last_saved: Mutex::new(Instant::now()),
+        autosave_file: args.autosave_file,
     });
     let data_copy = data.clone();
+
+    let autosave_period_s = args.autosave_period_s;
+    let autosave_pretty = args.autosave_pretty;
 
     actix_web::rt::spawn(async move {
         let mut interval = actix_web::rt::time::interval(std::time::Duration::from_secs(1));
         loop {
             interval.tick().await;
 
-            let start = std::time::Instant::now();
+            let start = Instant::now();
 
-            data_copy.universe.write().unwrap().update();
-            let universe = data_copy.universe.read().unwrap();
+            let mut universe = data_copy.universe.write().unwrap();
+            universe.update();
+
+            let mut last_saved = data_copy.last_saved.lock().unwrap();
+            if autosave_period_s < last_saved.elapsed().as_micros() as f64 * 1e-6 {
+                let serialized = if autosave_pretty {
+                    serde_json::to_string_pretty(&universe as &Universe)
+                } else {
+                    serde_json::to_string(&universe as &Universe)
+                };
+                if let Ok(serialized) = serialized {
+                    let autosave_file = data_copy.autosave_file.clone();
+                    actix_web::rt::spawn(async move {
+                        println!(
+                            "[{:?}] Writing {}",
+                            std::thread::current().id(),
+                            serialized.len()
+                        );
+                        let start = Instant::now();
+                        fs::write(&autosave_file, serialized.as_bytes())
+                            .expect("Write to save file should succeed");
+                        println!(
+                            "Wrote in {:.3}ms",
+                            start.elapsed().as_micros() as f64 * 1e-3
+                        );
+                    });
+                }
+                *last_saved = Instant::now();
+            }
+
             println!(
-                "Tick {}, time {}, calc: {:.3}ms",
+                "[{:?}]Tick {}, time {}, calc: {:.3}ms",
+                std::thread::current().id(),
                 universe.get_time(),
                 universe.get_sim_time(),
                 start.elapsed().as_micros() as f64 * 1e-3,
