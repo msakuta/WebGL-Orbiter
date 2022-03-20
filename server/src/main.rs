@@ -34,16 +34,14 @@ struct OrbiterData {
     asset_path: PathBuf,
 }
 
-async fn new_session(
-    data: web::Data<OrbiterData>,
-) -> HttpResponse {
+async fn new_session(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResponse> {
     let mut universe = data.universe.write().unwrap();
 
     let new_session = universe.new_rocket();
 
-    println!("New session id: {}", new_session);
+    println!("New session id: {:?}", new_session);
 
-    HttpResponse::Ok().body(format!("{}", new_session))
+    Ok(HttpResponse::Ok().body(new_session.to_string()))
 }
 
 async fn get_state(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResponse> {

@@ -1,5 +1,6 @@
 mod celestial_body;
 mod dyn_iter;
+mod session;
 mod universe;
 
 pub use crate::celestial_body::{AddPlanetParams, CelestialBody, OrbitalElements};

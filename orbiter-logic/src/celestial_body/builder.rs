@@ -1,10 +1,12 @@
 use super::{CelestialBody, CelestialId, OrbitalElements, Quaternion, Universe, Vector3};
+use crate::session::SessionId;
 use cgmath::{InnerSpace, Rad, Rotation3, Zero};
 
 #[derive(Default)]
 pub(super) struct CelestialBodyBuilder {
     name: Option<String>,
     parent: Option<CelestialId>,
+    session_id: Option<SessionId>,
     position: Option<Vector3>,
     velocity: Option<Vector3>,
     orbit_color: Option<String>,
@@ -24,6 +26,11 @@ impl CelestialBodyBuilder {
 
     pub(super) fn parent(&mut self, parent: CelestialId) -> &mut Self {
         self.parent = Some(parent);
+        self
+    }
+
+    pub(super) fn session_id(&mut self, session_id: SessionId) -> &mut Self {
+        self.session_id = Some(session_id);
         self
     }
 
@@ -70,6 +77,7 @@ impl CelestialBodyBuilder {
             orbit_color: self.orbit_color.take().unwrap_or_else(String::new),
             children: vec![],
             parent: self.parent,
+            session_id: self.session_id,
             GM: self.gm.unwrap(),
             orbital_elements,
             radius: self.radius.unwrap_or(1. / crate::AU),

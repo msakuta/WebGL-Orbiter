@@ -296,22 +296,33 @@ function init() {
         if(restoredSession){
             gameState.sessionId = JSON.parse(restoredSession).sessionId;
         }
+
+        async function tryLoadState(){
+            const res = await fetch(`http://${location.hostname}:${port}/api/load`, {
+                method: "GET"
+            });
+            if(res.status === 200){
+                const data = await res.json();
+                console.log(data);
+                gameState.loadState(data, settings);
+            }
+        }
+
+        await tryLoadState();
+
+        const sessionRocket = gameState.findSessionRocket(gameState.sessionId);
+        if(sessionRocket){
+            gameState.select_obj = sessionRocket;
+        }
         else{
             const sessionRes = await fetch(`http://${location.hostname}:${port}/api/session`, {
                 method: "POST"
             });
-            const sessionId = parseInt(await sessionRes.text());
+            const sessionId = await sessionRes.text();
             gameState.sessionId = sessionId;
+            await tryLoadState();
         }
 
-        const res = await fetch(`http://${location.hostname}:${port}/api/load`, {
-            method: "GET"
-        });
-        if(res.status === 200){
-            const data = await res.json();
-            console.log(data);
-            gameState.loadState(data, settings);
-        }
         // const state = localStorage.getItem('WebGLOrbiterAutoSave');
         // if(state){
         //     gameState.loadState(JSON.parse(state));

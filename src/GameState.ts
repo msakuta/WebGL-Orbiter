@@ -28,7 +28,7 @@ export default class GameState{
     onStateLoad?: () => void = null;
     sendMessage: (text: string) => void;
     graphicsParams: GraphicsParams;
-    sessionId?: number;
+    sessionId?: string;
 
     constructor(graphicsParams: GraphicsParams, settings: Settings, sendMessage: (text: string) => void){
         this.sendMessage = sendMessage;
@@ -73,14 +73,19 @@ export default class GameState{
                     parent,
                     this.graphicsParams,
                     settings);
+                obj.deserialize(body, bodies);
             }
-            if(this.sessionId === i){
+            if(this.sessionId && this.sessionId === body.sessionId){
                 this.select_obj = obj;
             }
         }
 
         if(this.select_obj && this.onStateLoad)
             this.onStateLoad();
+    }
+
+    findSessionRocket(sessionId: string){
+        return this.universe.sun.findSessionRocket(sessionId);
     }
 
     startTicking(){

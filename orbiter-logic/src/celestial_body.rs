@@ -1,8 +1,8 @@
 mod builder;
 
+use self::builder::CelestialBodyBuilder;
 use super::{Quaternion, Universe, Vector3};
-use crate::dyn_iter::DynIterMut;
-use builder::CelestialBodyBuilder;
+use crate::{dyn_iter::DynIterMut, session::SessionId};
 use cgmath::{InnerSpace, Rad, Rotation, Rotation3, Zero};
 use serde::{ser::SerializeMap, Serialize, Serializer};
 
@@ -44,6 +44,7 @@ pub struct CelestialBody {
     // orbitMaterial: THREE.LineBasicMaterial;
     pub children: Vec<CelestialId>,
     pub parent: Option<CelestialId>,
+    pub(crate) session_id: Option<SessionId>,
 
     GM: f64,
     radius: f64,
@@ -275,6 +276,7 @@ impl Serialize for CelestialBody {
         map.serialize_entry("orbitColor", &self.orbit_color)?;
         map.serialize_entry("children", &self.children)?;
         map.serialize_entry("parent", &self.parent)?;
+        map.serialize_entry("sessionId", &self.session_id)?;
         map.serialize_entry("radius", &self.radius)?;
         map.serialize_entry("GM", &self.GM)?;
         map.serialize_entry("orbitalElements", &self.orbital_elements)?;
@@ -287,13 +289,14 @@ fn serialize_cel() {
     let cel = CelestialBody {
         id: 0,
         name: "".to_string(),
-        position: Vector3::new(0., 0., 0.),
-        velocity: Vector3::new(0., 0., 0.),
+        position: Vector3::zero(),
+        velocity: Vector3::zero(),
         quaternion: Quaternion::new(1., 0., 0., 0.),
-        angular_velocity: Vector3::new(0., 0., 0.),
+        angular_velocity: Vector3::zero(),
         orbit_color: "".to_string(),
         children: vec![],
         parent: None,
+        session_id: None,
         GM: super::GMsun,
         radius: Rsun,
         orbital_elements: OrbitalElements::default(),

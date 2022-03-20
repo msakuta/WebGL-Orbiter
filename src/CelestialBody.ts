@@ -47,6 +47,7 @@ export class CelestialBody{
     getChildren(){ return this.children; }
     protected parent: CelestialBody;
     getParent(){ return this.parent; }
+    sessionId?: string;
     GM: number;
     radius: number;
     apoapsis?: THREE.Sprite = null;
@@ -153,6 +154,7 @@ export class CelestialBody{
         if(json.parent !== null){
             this.setParent(CelestialBody.celestialBodies.get(bodies[json.parent].name));
         }
+        this.sessionId = json.sessionId;
         this.position = deserializeVector3(json.position);
         this.velocity = deserializeVector3(json.velocity);
         this.quaternion = deserializeQuaternion(json.quaternion);
@@ -455,6 +457,18 @@ export class CelestialBody{
 
     static findBody(name: string){
         return this.celestialBodies.get(name);
+    }
+
+    findSessionRocket(sessionId: string): CelestialBody | null {
+        for(let i = 0; i < this.children.length; i++){
+            const obj = this.children[i];
+            if(obj.sessionId === sessionId)
+                return obj;
+            const res = obj.findSessionRocket(sessionId);
+            if(res)
+                return res;
+        }
+        return null;
     }
 }
 

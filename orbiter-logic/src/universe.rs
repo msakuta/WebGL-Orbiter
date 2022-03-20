@@ -1,11 +1,12 @@
 use crate::{
-    celestial_body::{AddPlanetParams, CelestialBody, OrbitalElements, CelestialId},
+    celestial_body::{AddPlanetParams, CelestialBody, OrbitalElements},
     dyn_iter::{Chained, DynIterMut, MutRef},
+    session::SessionId,
     GMsun, Quaternion, Vector3, AU,
 };
 use cgmath::{Rad, Rotation3, Zero};
-use serde::{ser::SerializeMap, Serialize, Serializer};
 use rand::prelude::*;
+use serde::{ser::SerializeMap, Serialize, Serializer};
 
 #[derive(Debug)]
 pub struct Universe {
@@ -159,8 +160,12 @@ impl Universe {
         this
     }
 
-    pub fn new_rocket(&mut self) -> CelestialId {
-        let earth_id = self.bodies.iter().find(|body| body.name == "earth").map(|body| body.id);
+    pub fn new_rocket(&mut self) -> SessionId {
+        let earth_id = self
+            .bodies
+            .iter()
+            .find(|body| body.name == "earth")
+            .map(|body| body.id);
 
         let rad_per_deg = std::f64::consts::PI / 180.;
 
@@ -170,7 +175,7 @@ impl Universe {
             self,
             earth_id,
             OrbitalElements {
-                semimajor_axis:  rng.gen_range(10000.0..20000.) / AU,
+                semimajor_axis: rng.gen_range(10000.0..20000.) / AU,
                 eccentricity: rng.gen_range(0.0..0.5),
                 inclination: rng.gen_range(0.0..30. * rad_per_deg),
                 ascending_node: rng.gen_range(0.0..360. * rad_per_deg),
@@ -189,16 +194,17 @@ impl Universe {
             0.1,
             format!("rocket{}", self.id_gen),
         );
-    
+
         let rot = <Quaternion as Rotation3>::from_angle_x(Rad(std::f64::consts::PI / 2.))
             * <Quaternion as Rotation3>::from_angle_y(Rad(std::f64::consts::PI / 2.));
         rocket.quaternion = rot;
 
-        let rocket_id = rocket.id;
-    
+        let session_id = SessionId::new();
+        rocket.session_id = Some(session_id);
+
         self.add_body(rocket);
 
-        rocket_id
+        session_id
     }
 
     fn add_body(&mut self, body: CelestialBody) {
