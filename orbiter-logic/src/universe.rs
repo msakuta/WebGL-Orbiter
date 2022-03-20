@@ -6,7 +6,7 @@ use crate::{
 };
 use cgmath::{Rad, Rotation3, Zero};
 use rand::prelude::*;
-use serde::{ser::SerializeMap, Serialize, Serializer};
+use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug)]
 pub struct Universe {
@@ -276,6 +276,32 @@ impl Serialize for Universe {
         map.serialize_entry("bodies", &self.bodies)?;
         map.serialize_entry("timeScale", &self.time_scale)?;
         map.end()
+    }
+}
+
+impl Universe {
+    pub fn deserialize(&mut self, json: serde_json::Value) -> anyhow::Result<()> {
+        if let serde_json::Value::Object(map) = json {
+            if let Some(v) = map.get("simTime").and_then(|v| v.as_f64()) {
+                self.sim_time = v;
+            }
+            if let Some(v) = map.get("startTime").and_then(|v| v.as_f64()) {
+                self.start_time = v;
+            }
+            if let Some(serde_json::Value::Array(arr)) = map.get("bodies") {
+                self.bodies = arr
+                    .iter()
+                    .map(|v| {
+                        let cel = CelestialBody::deserialize(v)?;
+                        Ok(cel)
+                    })
+                    .collect::<anyhow::Result<Vec<_>>>()?;
+            }
+            if let Some(v) = map.get("timeScale").and_then(|v| v.as_f64()) {
+                self.time_scale = v;
+            }
+        }
+        Ok(())
     }
 }
 

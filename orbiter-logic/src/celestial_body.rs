@@ -3,14 +3,15 @@ pub(crate) mod builder;
 use self::builder::CelestialBodyBuilder;
 use super::{Quaternion, Universe, Vector3};
 use crate::{dyn_iter::DynIterMut, session::SessionId};
-use cgmath::{InnerSpace, Rad, Rotation, Rotation3};
-use serde::{ser::SerializeMap, Serialize, Serializer};
+use anyhow::anyhow;
+use cgmath::{InnerSpace, Rad, Rotation, Rotation3, Zero};
+use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
 
 const Rsun: f64 = 695800.;
 const EPSILON: f64 = 1e-40; // Doesn't the machine epsilon depend on browsers!??
                             // const acceleration: f64 = 5e-10;
 
-#[derive(Serialize, Default, Debug)]
+#[derive(Deserialize, Serialize, Default, Debug)]
 pub struct OrbitalElements {
     pub semimajor_axis: f64,
     pub ascending_node: f64,
@@ -43,6 +44,26 @@ pub struct CelestialBody {
     radius: f64,
 
     orbital_elements: OrbitalElements,
+}
+
+impl Default for CelestialBody {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            name: "".to_string(),
+            position: Vector3::zero(),
+            velocity: Vector3::zero(),
+            quaternion: Quaternion::new(1., 0., 0., 0.),
+            angular_velocity: Vector3::zero(),
+            orbit_color: "".to_string(),
+            children: vec![],
+            parent: None,
+            session_id: None,
+            GM: super::GMsun,
+            radius: Rsun,
+            orbital_elements: OrbitalElements::default(),
+        }
+    }
 }
 
 impl CelestialBody {
@@ -208,25 +229,91 @@ impl Serialize for CelestialBody {
     }
 }
 
+// macro_rules! deserialize_json {
+//     {$target:ident, $name:literal} => {
+//         if let Some(v) = map.get($name).and_then(|v| v.as_u64()) {
+//             self.$target = v as usize;
+//         }
+//     }
+// }
+
+impl CelestialBody {
+    pub(crate) fn deserialize(json: &serde_json::Value) -> anyhow::Result<Self> {
+        let map = if let serde_json::Value::Object(map) = json {
+            map
+        } else {
+            return Err(anyhow!(""));
+        };
+        let mut ret = CelestialBody::default();
+        let deserialize_usize = |target: &mut usize, key: &str| {
+            if let Some(v) = map.get(key).and_then(|v| v.as_u64()) {
+                *target = v as usize;
+            }
+        };
+        let deserialize_f64 =
+            |target: &mut f64, map: &serde_json::Map<String, serde_json::Value>, key: &str| {
+                if let Some(v) = map.get(key).and_then(|v| v.as_f64()) {
+                    *target = v as f64;
+                }
+            };
+        let deserialize_str = |target: &mut String, key: &str| {
+            if let Some(v) = map.get(key).and_then(|v| v.as_str()) {
+                *target = v.to_string();
+            }
+        };
+        let deserialize_vector3 = |target: &mut Vector3, key: &str| -> anyhow::Result<()> {
+            if let Some(v) = map.get(key) {
+                *target = serde_json::from_value(v.clone())?;
+            }
+            Ok(())
+        };
+        let deserialize_quaternion = |target: &mut Quaternion, key: &str| {
+            if let Some(serde_json::Value::Object(v)) = map.get(key) {
+                deserialize_f64(&mut target.s, v, "w");
+                deserialize_f64(&mut target.v.x, v, "x");
+                deserialize_f64(&mut target.v.y, v, "y");
+                deserialize_f64(&mut target.v.z, v, "z");
+            }
+            Some(())
+        };
+        let deserialize_vec = |target: &mut Vec<CelestialId>, key: &str| {
+            if let Some(serde_json::Value::Array(arr)) = map.get(key) {
+                *target = arr
+                    .iter()
+                    .filter_map(|v| v.as_u64().map(|v| v as usize))
+                    .collect();
+            }
+            Some(())
+        };
+
+        deserialize_usize(&mut ret.id, "id");
+        deserialize_str(&mut ret.name, "name");
+        deserialize_vector3(&mut ret.position, "position")?;
+        deserialize_vector3(&mut ret.velocity, "velocity")?;
+        deserialize_quaternion(&mut ret.quaternion, "quaternion");
+        deserialize_vector3(&mut ret.angular_velocity, "angularVelocity")?;
+        deserialize_str(&mut ret.orbit_color, "orbitColor");
+        deserialize_vec(&mut ret.children, "children");
+        ret.parent = map
+            .get("parent")
+            .and_then(|v| v.as_u64())
+            .map(|v| v as usize);
+        ret.session_id = map
+            .get("sessionId")
+            .and_then(|v| v.as_str())
+            .map(|v| SessionId::from(v));
+        deserialize_f64(&mut ret.radius, map, "radius");
+        deserialize_f64(&mut ret.GM, map, "GM");
+        if let Some(val) = map.get("orbitalElements") {
+            ret.orbital_elements = serde_json::from_value(val.clone())?;
+        }
+        Ok(ret)
+    }
+}
+
 #[test]
 fn serialize_cel() {
-    use cgmath::Zero;
-
-    let cel = CelestialBody {
-        id: 0,
-        name: "".to_string(),
-        position: Vector3::zero(),
-        velocity: Vector3::zero(),
-        quaternion: Quaternion::new(1., 0., 0., 0.),
-        angular_velocity: Vector3::zero(),
-        orbit_color: "".to_string(),
-        children: vec![],
-        parent: None,
-        session_id: None,
-        GM: super::GMsun,
-        radius: Rsun,
-        orbital_elements: OrbitalElements::default(),
-    };
+    let cel = CelestialBody::default();
 
     let ser = serde_json::to_string(&cel).unwrap();
     assert_eq!(ser, "{\"id\":0,\"name\":\"\",\"position\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"velocity\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"quaternion\":{\"_x\":0.0,\"_y\":0.0,\"_z\":0.0,\"_w\":1.0},\"angularVelocity\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"orbitColor\":\"\",\"children\":[],\"parent\":null,\"sessionId\":null,\"radius\":695800.0,\"GM\":3.9640159680940277e-14,\"orbitalElements\":{\"semimajor_axis\":0.0,\"ascending_node\":0.0,\"inclination\":0.0,\"eccentricity\":0.0,\"epoch\":0.0,\"mean_anomaly\":0.0,\"argument_of_perihelion\":0.0,\"soi\":0.0}}");

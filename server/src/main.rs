@@ -117,7 +117,24 @@ async fn get_file(data: web::Data<OrbiterData>, req: HttpRequest) -> actix_web::
 async fn main() -> std::io::Result<()> {
     let args = Args::parse();
 
-    let universe = Universe::new();
+    let mut universe = Universe::new();
+
+    let start = Instant::now();
+    if let Ok(data) = fs::read(&args.autosave_file) {
+        if let Ok(saved_data) = String::from_utf8(data) {
+            if let Ok(json) = serde_json::from_str(&saved_data) {
+                if let Err(e) = universe.deserialize(json) {
+                    eprintln!("Error on loading serialized data: {}", e);
+                } else {
+                    eprintln!(
+                        "Deserialized data {} object in {}ms",
+                        universe.bodies.len(),
+                        start.elapsed().as_micros() as f64 * 1e-3
+                    );
+                }
+            }
+        }
+    }
 
     let data = web::Data::new(OrbiterData {
         universe: RwLock::new(universe),
