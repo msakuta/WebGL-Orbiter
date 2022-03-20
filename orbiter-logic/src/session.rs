@@ -2,8 +2,10 @@ use rand::random;
 use serde::{ser::Serialize, Serializer};
 use std::{cmp::Eq, collections::HashSet};
 
+const SESSION_DIGITS: usize = 10;
+
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
-pub struct SessionId(pub [u8; 20]);
+pub struct SessionId(pub [u8; SESSION_DIGITS]);
 
 impl SessionId {
     pub fn new() -> Self {
@@ -21,7 +23,7 @@ impl ToString for SessionId {
 
 impl From<&str> for SessionId {
     fn from(s: &str) -> Self {
-        let mut ret = [0; 20];
+        let mut ret = [0; SESSION_DIGITS];
         for (i, c) in s.bytes().enumerate() {
             let c = if (b'0'..=b'9').contains(&c) {
                 c - b'0'
