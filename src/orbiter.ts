@@ -310,11 +310,13 @@ function init() {
 
         await tryLoadState();
 
-        const sessionRocket = gameState.findSessionRocket(gameState.sessionId);
-        if(sessionRocket){
-            gameState.select_obj = sessionRocket;
+        let sessionRocket;
+        if(gameState.sessionId){
+            sessionRocket = gameState.findSessionRocket(gameState.sessionId);
+            if(sessionRocket)
+                gameState.select_obj = sessionRocket;
         }
-        else{
+        if(!sessionRocket){
             const sessionRes = await fetch(`http://${location.hostname}:${port}/api/session`, {
                 method: "POST"
             });
