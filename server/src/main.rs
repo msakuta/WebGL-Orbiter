@@ -1,6 +1,6 @@
 use ::actix_cors::Cors;
 use ::actix_files::NamedFile;
-use ::actix_web::{web, App, HttpRequest, HttpResponse, HttpServer};
+use ::actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer};
 use clap::Parser;
 use orbiter_logic::{serialize, Universe};
 use serde::Deserialize;
@@ -131,6 +131,7 @@ async fn main() -> std::io::Result<()> {
 
         let app = App::new()
             .wrap(cors)
+            .wrap(middleware::Compress::default())
             .app_data(data.clone())
             .route("/api/session", web::post().to(new_session))
             .route("/api/load", web::get().to(get_state))
