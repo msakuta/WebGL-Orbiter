@@ -130,8 +130,8 @@ async fn main() -> std::io::Result<()> {
             .max_age(3600);
 
         let app = App::new()
-            .wrap(cors)
             .wrap(middleware::Compress::default())
+            .wrap(cors)
             .app_data(data.clone())
             .route("/api/session", web::post().to(new_session))
             .route("/api/load", web::get().to(get_state))
