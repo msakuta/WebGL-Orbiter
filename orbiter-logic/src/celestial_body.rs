@@ -31,10 +31,10 @@ pub type CelestialId = usize;
 pub struct CelestialBody {
     pub id: CelestialId,
     pub name: String,
-    position: Vector3,
-    velocity: Vector3,
+    pub position: Vector3,
+    pub velocity: Vector3,
     pub quaternion: Quaternion,
-    angular_velocity: Vector3,
+    pub angular_velocity: Vector3,
     orbit_color: String,
     // orbitMaterial: THREE.LineBasicMaterial;
     pub children: Vec<CelestialId>,
@@ -70,6 +70,10 @@ impl Default for CelestialBody {
 impl CelestialBody {
     pub(super) fn builder() -> CelestialBodyBuilder {
         CelestialBodyBuilder::new()
+    }
+
+    pub fn get_session_id(&self) -> Option<SessionId> {
+        self.session_id
     }
 
     fn set_orbiting_velocity<'a>(

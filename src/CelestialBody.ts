@@ -6,6 +6,7 @@ import periapsisUrl from './images/periapsis.png';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
 import { GraphicsParams } from './GameState';
+import { port } from './orbiter';
 
 export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
@@ -58,6 +59,7 @@ export class CelestialBody{
     hyperbolicMesh?: THREE.Line = null;
     orbit?: THREE.Line = null;
     blastModel?: THREE.Object3D = null;
+    updatingState = false;
 
     // Orbital elements
     orbitalElements: OrbitalElements;
@@ -399,6 +401,28 @@ export class CelestialBody{
                         const deltaV = acceleration * select_obj.throttle * deltaTime / div;
                         select_obj.velocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(deltaV));
                         select_obj.totalDeltaV += deltaV;
+                    }
+                    if((buttons.up || buttons.down || buttons.left || buttons.right || buttons.counterclockwise || buttons.clockwise || select_obj.throttle)
+                        && !this.updatingState)
+                    {
+                        this.updatingState = true;
+                        (async () => {
+                            await fetch(`http://${location.hostname}:${port}/api/rocket_state`, {
+                                method: 'POST',
+                                mode: 'cors',
+                                headers: {
+                                    "Content-Type": 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    session_id: select_obj.sessionId,
+                                    position: select_obj.position,
+                                    velocity: select_obj.velocity,
+                                    quaternion: select_obj.quaternion,
+                                    angular_velocity: select_obj.angularVelocity,
+                                }),
+                            });
+                            this.updatingState = false;
+                        })();
                     }
                 }
                 const dvelo = accel.clone().multiplyScalar(0.5);

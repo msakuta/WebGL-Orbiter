@@ -1,10 +1,10 @@
 use rand::random;
-use serde::{ser::Serialize, Serializer};
+use serde::{ser::Serialize, Deserialize, Serializer};
 use std::cmp::Eq;
 
 const SESSION_DIGITS: usize = 10;
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Deserialize)]
 pub struct SessionId(pub [u8; SESSION_DIGITS]);
 
 impl SessionId {

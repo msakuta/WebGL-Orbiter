@@ -1,3 +1,9 @@
+mod api {
+    pub(crate) mod set_rocket_state;
+    pub(crate) mod set_timescale;
+}
+
+use crate::api::{set_rocket_state::set_rocket_state, set_timescale::set_timescale};
 use ::actix_cors::Cors;
 use ::actix_files::NamedFile;
 use ::actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer};
@@ -73,23 +79,6 @@ async fn get_state(data: web::Data<OrbiterData>) -> actix_web::Result<HttpRespon
     Ok(HttpResponse::Ok()
         .content_type("application/json")
         .body(serialized))
-}
-
-#[derive(Deserialize)]
-struct SetTimeScale {
-    time_scale: f64,
-}
-
-async fn set_timescale(
-    data: web::Data<OrbiterData>,
-    payload: web::Json<SetTimeScale>,
-) -> HttpResponse {
-    let mut universe = data.universe.write().unwrap();
-
-    println!("Set timescale to: {}", payload.time_scale);
-    universe.time_scale = payload.time_scale;
-
-    HttpResponse::Ok().body("Ok")
 }
 
 #[cfg(not(debug_assertions))]
@@ -214,7 +203,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(data.clone())
             .route("/api/session", web::post().to(new_session))
             .route("/api/load", web::get().to(get_state))
-            .route("/api/time_scale", web::post().to(set_timescale));
+            .route("/api/time_scale", web::post().to(set_timescale))
+            .route("/api/rocket_state", web::post().to(set_rocket_state));
         #[cfg(not(debug_assertions))]
         {
             app.route("/", web::get().to(get_index))
