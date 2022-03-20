@@ -1,6 +1,6 @@
 use rand::random;
 use serde::{ser::Serialize, Serializer};
-use std::{cmp::Eq, collections::HashSet};
+use std::cmp::Eq;
 
 const SESSION_DIGITS: usize = 10;
 

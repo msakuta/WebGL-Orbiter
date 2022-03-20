@@ -1,14 +1,14 @@
-mod builder;
+pub(crate) mod builder;
 
 use self::builder::CelestialBodyBuilder;
 use super::{Quaternion, Universe, Vector3};
 use crate::{dyn_iter::DynIterMut, session::SessionId};
-use cgmath::{InnerSpace, Rad, Rotation, Rotation3, Zero};
+use cgmath::{InnerSpace, Rad, Rotation, Rotation3};
 use serde::{ser::SerializeMap, Serialize, Serializer};
 
 const Rsun: f64 = 695800.;
-const epsilon: f64 = 1e-40; // Doesn't the machine epsilon depend on browsers!??
-const acceleration: f64 = 5e-10;
+const EPSILON: f64 = 1e-40; // Doesn't the machine epsilon depend on browsers!??
+                            // const acceleration: f64 = 5e-10;
 
 #[derive(Serialize, Default, Debug)]
 pub struct OrbitalElements {
@@ -20,24 +20,6 @@ pub struct OrbitalElements {
     pub mean_anomaly: f64,
     pub argument_of_perihelion: f64,
     pub soi: f64,
-}
-
-pub struct AddPlanetParams {
-    pub axial_tilt: f64,
-    pub rotation_period: f64,
-    pub quaternion: Quaternion,
-    pub angular_velocity: Vector3,
-}
-
-impl Default for AddPlanetParams {
-    fn default() -> Self {
-        Self {
-            axial_tilt: 0.,
-            rotation_period: 0.,
-            quaternion: Quaternion::new(1., 0., 0., 0.),
-            angular_velocity: Vector3::zero(),
-        }
-    }
 }
 
 pub type CelestialId = usize;
@@ -64,77 +46,8 @@ pub struct CelestialBody {
 }
 
 impl CelestialBody {
-    pub(super) fn new(
-        universe: &mut Universe,
-        parent: Option<CelestialId>,
-        position: Vector3,
-        orbit_color: String,
-        gm: f64,
-        name: String,
-        orbital_elements: OrbitalElements,
-    ) -> Self {
-        let mut builder = CelestialBodyBuilder::new();
-        if let Some(parent) = parent {
-            builder.parent(parent);
-        }
-        builder
-            .name(name)
-            .position(position)
-            .orbit_color(orbit_color)
-            .gm(gm)
-            .build(universe, orbital_elements)
-    }
-
-    pub(crate) fn from_orbital_elements(
-        universe: &mut Universe,
-        parent: Option<usize>,
-        orbital_elements: OrbitalElements,
-        params: AddPlanetParams,
-        gm: f64,
-        radius: f64,
-        name: String,
-    ) -> Self {
-        let rotation =
-            Quaternion::from_angle_z(Rad(
-                orbital_elements.ascending_node - std::f64::consts::PI / 2.
-            )) * (Quaternion::from_angle_y(Rad(
-                std::f64::consts::PI - orbital_elements.inclination
-            ))) * (Quaternion::from_angle_z(Rad(orbital_elements.argument_of_perihelion)));
-        let axis = Vector3::new(0., 1. - orbital_elements.eccentricity, 0.)
-            * orbital_elements.semimajor_axis;
-
-        let mut builder = CelestialBodyBuilder::new();
-        if let Some(parent) = parent {
-            builder.parent(parent);
-        }
-
-        let mut ret = builder
-            .name(name)
-            .position(rotation * axis)
-            .radius(radius)
-            .orbit_color("#fff".to_string())
-            .gm(gm)
-            .build(universe, orbital_elements);
-
-        // Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
-        // https://en.wikipedia.org/wiki/Orbital_speed
-        ret.set_orbiting_velocity(
-            universe.bodies.iter(),
-            ret.orbital_elements.semimajor_axis,
-            rotation,
-        );
-        ret.quaternion = Quaternion::from_angle_x(Rad(params.axial_tilt));
-        ret.angular_velocity = if params.rotation_period != 0. {
-            ret.quaternion.rotate_vector(Vector3::new(
-                0.,
-                0.,
-                2. * std::f64::consts::PI / params.rotation_period,
-            ))
-        } else {
-            Vector3::zero()
-        };
-
-        ret
+    pub(super) fn builder() -> CelestialBodyBuilder {
+        CelestialBodyBuilder::new()
     }
 
     fn set_orbiting_velocity<'a>(
@@ -174,7 +87,7 @@ impl CelestialBody {
             self.orbital_elements.eccentricity = e.magnitude();
             self.orbital_elements.inclination = (-ang.z / ang.magnitude()).acos();
             // Avoid zero division
-            if n.magnitude2() <= epsilon {
+            if n.magnitude2() <= EPSILON {
                 self.orbital_elements.ascending_node = 0.;
             } else {
                 self.orbital_elements.ascending_node = (n.x / n.magnitude()).acos();
@@ -194,14 +107,14 @@ impl CelestialBody {
                 Vector3::new(0., 1., 0.),
                 Rad(std::f64::consts::PI - self.orbital_elements.inclination),
             );
-            let plane_rot = ascending_node_rot * inclination_rot;
+            // let plane_rot = ascending_node_rot * inclination_rot;
 
-            let heading_apoapsis =
-                -self.position.dot(self.velocity) / (self.position.dot(self.velocity)).abs();
+            // let heading_apoapsis =
+            //     -self.position.dot(self.velocity) / (self.position.dot(self.velocity)).abs();
 
             // Avoid zero division and still get the correct answer when N == 0.
             // This is necessary to draw orbit with zero inclination and nonzero eccentricity.
-            if n.magnitude2() <= epsilon || e.magnitude2() <= epsilon {
+            if n.magnitude2() <= EPSILON || e.magnitude2() <= EPSILON {
                 self.orbital_elements.argument_of_perihelion =
                     (if ang.z < 0. { -e.y } else { e.y }).atan2(e.x);
             } else {
@@ -297,6 +210,8 @@ impl Serialize for CelestialBody {
 
 #[test]
 fn serialize_cel() {
+    use cgmath::Zero;
+
     let cel = CelestialBody {
         id: 0,
         name: "".to_string(),
@@ -314,5 +229,5 @@ fn serialize_cel() {
     };
 
     let ser = serde_json::to_string(&cel).unwrap();
-    assert_eq!(ser, "{\"id\":0,\"position\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"velocity\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"quaternion\":{\"v\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"s\":1.0},\"angular_velocity\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"orbit_color\":\"\",\"children\":[],\"parent\":0,\"radius\":695800.0,\"GM\":3.9640159680940277e-14,\"orbital_elements\":{\"semimajor_axis\":0.0,\"ascending_node\":0.0,\"inclination\":0.0,\"eccentricity\":0.0,\"epoch\":0.0,\"mean_anomaly\":0.0,\"argument_of_perihelion\":0.0,\"soi\":0.0}}");
+    assert_eq!(ser, "{\"id\":0,\"name\":\"\",\"position\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"velocity\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"quaternion\":{\"_x\":0.0,\"_y\":0.0,\"_z\":0.0,\"_w\":1.0},\"angularVelocity\":{\"x\":0.0,\"y\":0.0,\"z\":0.0},\"orbitColor\":\"\",\"children\":[],\"parent\":null,\"sessionId\":null,\"radius\":695800.0,\"GM\":3.9640159680940277e-14,\"orbitalElements\":{\"semimajor_axis\":0.0,\"ascending_node\":0.0,\"inclination\":0.0,\"eccentricity\":0.0,\"epoch\":0.0,\"mean_anomaly\":0.0,\"argument_of_perihelion\":0.0,\"soi\":0.0}}");
 }

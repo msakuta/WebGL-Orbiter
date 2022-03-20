@@ -3,7 +3,7 @@ mod dyn_iter;
 mod session;
 mod universe;
 
-pub use crate::celestial_body::{AddPlanetParams, CelestialBody, OrbitalElements};
+pub use crate::celestial_body::{CelestialBody, OrbitalElements};
 pub use crate::universe::{serialize, Universe};
 
 type Vector3 = cgmath::Vector3<f64>;
