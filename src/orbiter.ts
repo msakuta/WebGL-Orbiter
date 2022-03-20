@@ -288,6 +288,17 @@ function init() {
     );
     container.appendChild( loadControl.domElement );
 
+    async function tryLoadState(){
+        const res = await fetch(`http://${location.hostname}:${port}/api/load`, {
+            method: "GET"
+        });
+        if(res.status === 200){
+            const data = await res.json();
+            console.log(data);
+            gameState.loadState(data, settings);
+        }
+    }
+
     window.addEventListener( 'resize', onWindowResize, false );
     window.addEventListener( 'keydown', onKeyDown, false );
     window.addEventListener( 'keyup', onKeyUp, false );
@@ -295,17 +306,6 @@ function init() {
         const restoredSession = localStorage.getItem('WebGLOrbiterSession');
         if(restoredSession){
             gameState.sessionId = JSON.parse(restoredSession).sessionId;
-        }
-
-        async function tryLoadState(){
-            const res = await fetch(`http://${location.hostname}:${port}/api/load`, {
-                method: "GET"
-            });
-            if(res.status === 200){
-                const data = await res.json();
-                console.log(data);
-                gameState.loadState(data, settings);
-            }
         }
 
         await tryLoadState();
@@ -340,6 +340,7 @@ function init() {
         //     body: gameSerialized
         // });
     });
+    setInterval(tryLoadState, 10000);
 
     gameState.startTicking();
 }

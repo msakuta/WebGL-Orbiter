@@ -69,6 +69,7 @@ export default class GameState{
             else if(body.name.match(/rocket\d+/)){
                 const parent = body.parent !== null ? CelestialBody.celestialBodies.get(bodies[body.parent].name) : undefined;
                 obj = this.universe.addRocket(
+                    body.name,
                     body.orbitalElements,
                     parent,
                     this.graphicsParams,

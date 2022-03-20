@@ -112,16 +112,19 @@ export default class Universe{
             soi: 5e5
         });
 
-        this.rocket = this.addRocket({
-            semimajor_axis: 10000 / AU,
-            eccentricity: 0.,
-            inclination: 0,
-            ascending_node: 0,
-            argument_of_perihelion: 0
-        },
-        earth, 
-        graphicsParams,
-        settings);
+        this.rocket = this.addRocket(
+            "rocket",
+            {
+                semimajor_axis: 10000 / AU,
+                eccentricity: 0.,
+                inclination: 0,
+                ascending_node: 0,
+                argument_of_perihelion: 0
+            },
+            earth,
+            graphicsParams,
+            settings
+        );
 
         const moon = addPlanetLocal({
             semimajor_axis: 384399 / AU,
@@ -229,10 +232,10 @@ export default class Universe{
 
     }
 
-    addRocket(orbitalElements: OrbitalElements, parent: CelestialBody, graphicsParams: GraphicsParams, settings: Settings){
+    addRocket(name: string, orbitalElements: OrbitalElements, parent: CelestialBody, graphicsParams: GraphicsParams, settings: Settings){
         const rocket = addPlanet(orbitalElements,
         {
-            name: "rocket",
+            name,
             parent,
             color: "#3f7f7f",
             GM: 100 / AU / AU / AU,
