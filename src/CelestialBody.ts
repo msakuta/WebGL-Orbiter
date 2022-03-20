@@ -25,6 +25,15 @@ export function AxisAngleQuaternion(x: number, y: number, z: number, angle: numb
 	return q;
 }
 
+export interface OrbitalElements {
+    semimajor_axis: number;
+    ascending_node: number;
+    inclination: number;
+    eccentricity: number;
+    epoch?: number;
+    mean_anomaly?: number;
+    argument_of_perihelion: number;
+}
 
 export class CelestialBody{
     position: THREE.Vector3;
@@ -49,13 +58,7 @@ export class CelestialBody{
     blastModel?: THREE.Object3D = null;
 
     // Orbital elements
-    semimajor_axis: number;
-    ascending_node: number;
-    inclination: number;
-    eccentricity: number;
-    epoch: number;
-    mean_anomaly: number;
-    argument_of_perihelion: number;
+    orbitalElements: OrbitalElements;
     soi: number;
 
     controllable: boolean;
@@ -65,7 +68,7 @@ export class CelestialBody{
     name: string;
     static celestialBodies = new Map<string, CelestialBody>();
 
-    constructor(parent: CelestialBody, position: THREE.Vector3, vertex: THREE.Vector3, orbitColor: string, GM: number, name: string){
+    constructor(parent: CelestialBody, position: THREE.Vector3, vertex: THREE.Vector3, orbitColor: string, GM: number, name: string, orbitalElements?: OrbitalElements){
         this.position = position;
         this.velocity = new THREE.Vector3(0,0,0);
         this.quaternion = new THREE.Quaternion(0,0,0,1);
@@ -81,24 +84,33 @@ export class CelestialBody{
         this.totalDeltaV = 0.;
         this.ignitionCount = 0;
         this.name = name;
+        this.orbitalElements = orbitalElements || {
+            semimajor_axis: 0,
+            ascending_node: 0,
+            inclination: 0,
+            eccentricity: 0,
+            epoch: 0,
+            mean_anomaly: 0,
+            argument_of_perihelion: 0,
+        };
         CelestialBody.celestialBodies.set(name, this);
     }
 
 
     init(){
-        this.ascending_node = Math.random() * Math.PI * 2;
-        this.epoch = Math.random();
-        this.mean_anomaly = Math.random();
+        this.orbitalElements.ascending_node = Math.random() * Math.PI * 2;
+        this.orbitalElements.epoch = Math.random();
+        this.orbitalElements.mean_anomaly = Math.random();
         // this.update();
     }
 
     get_eccentric_anomaly(time: number){
         // Calculates eccentric anomaly from mean anomaly in first order approximation
         // see http://en.wikipedia.org/wiki/Eccentric_anomaly
-        const td = time - this.epoch;
-        const period = 2 * Math.PI * Math.sqrt(Math.pow(this.semimajor_axis * AU, 3) / this.parent.GM);
-        const now_anomaly = this.mean_anomaly + td * 2 * Math.PI / period;
-        return now_anomaly + this.eccentricity * Math.sin(now_anomaly);
+        const td = time - this.orbitalElements.epoch;
+        const period = 2 * Math.PI * Math.sqrt(Math.pow(this.orbitalElements.semimajor_axis * AU, 3) / this.parent.GM);
+        const now_anomaly = this.orbitalElements.mean_anomaly + td * 2 * Math.PI / period;
+        return now_anomaly + this.orbitalElements.eccentricity * Math.sin(now_anomaly);
     }
 
     getWorldPosition(): THREE.Vector3{
@@ -168,6 +180,7 @@ export class CelestialBody{
         scene: THREE.Scene, select_obj?: CelestialBody)
     {
         let scope = this;
+        let orbitalElements = this.orbitalElements;
         function visualPosition(o: CelestialBody){
             const position = o.getWorldPosition();
             if(select_obj && center_select)
@@ -194,7 +207,7 @@ export class CelestialBody{
         /// for placing overlay icons.
         /// peri = -1 if periapsis, otherwise 1
         function calcApsePosition(peri: number, apsis: THREE.Sprite){
-            const worldPos = e.clone().normalize().multiplyScalar(peri * scope.semimajor_axis * (1 - peri * scope.eccentricity)).sub(scope.position);
+            const worldPos = e.clone().normalize().multiplyScalar(peri * orbitalElements.semimajor_axis * (1 - peri * orbitalElements.eccentricity)).sub(scope.position);
             const cameraPos = worldPos.multiplyScalar(viewScale).applyMatrix4(camera.matrixWorldInverse);
             const persPos = cameraPos.applyMatrix4(camera.projectionMatrix);
             persPos.x *= windowHalfX;
@@ -228,33 +241,33 @@ export class CelestialBody{
             const N = (new THREE.Vector3(0, 0, 1)).cross(ang);
             // Eccentricity vector
             e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velocity.clone().multiplyScalar(this.position.dot(this.velocity) / this.parent.GM));
-            this.eccentricity = e.length();
-            this.inclination = Math.acos(-ang.z / ang.length());
+            orbitalElements.eccentricity = e.length();
+            orbitalElements.inclination = Math.acos(-ang.z / ang.length());
             // Avoid zero division
             if(N.lengthSq() <= epsilon)
-                this.ascending_node = 0;
+                orbitalElements.ascending_node = 0;
             else{
-                this.ascending_node = Math.acos(N.x / N.length());
-                if(N.y < 0) this.ascending_node = 2 * Math.PI - this.ascending_node;
+                orbitalElements.ascending_node = Math.acos(N.x / N.length());
+                if(N.y < 0) orbitalElements.ascending_node = 2 * Math.PI - orbitalElements.ascending_node;
             }
-            this.semimajor_axis = 1 / (2 / r - v * v / this.parent.GM);
+            orbitalElements.semimajor_axis = 1 / (2 / r - v * v / this.parent.GM);
 
             // Rotation to perifocal frame
-            const planeRot = AxisAngleQuaternion(0, 0, 1, this.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - this.inclination));
+            const planeRot = AxisAngleQuaternion(0, 0, 1, orbitalElements.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - orbitalElements.inclination));
 
             headingApoapsis = -this.position.dot(this.velocity)/Math.abs(this.position.dot(this.velocity));
 
             // Avoid zero division and still get the correct answer when N == 0.
             // This is necessary to draw orbit with zero inclination and nonzero eccentricity.
             if(N.lengthSq() <= epsilon || e.lengthSq() <= epsilon)
-                this.argument_of_perihelion = Math.atan2(ang.z < 0 ? -e.y : e.y, e.x);
+                orbitalElements.argument_of_perihelion = Math.atan2(ang.z < 0 ? -e.y : e.y, e.x);
             else{
-                this.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
-                if(e.z < 0) this.argument_of_perihelion = 2 * Math.PI - this.argument_of_perihelion;
+                orbitalElements.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
+                if(e.z < 0) orbitalElements.argument_of_perihelion = 2 * Math.PI - orbitalElements.argument_of_perihelion;
             }
 
             // Total rotation of the orbit
-            const rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, this.argument_of_perihelion));
+            const rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, orbitalElements.argument_of_perihelion));
 
             // Show orbit information
             if(this === select_obj){
@@ -266,7 +279,7 @@ export class CelestialBody{
             // If eccentricity is over 1, the trajectory is a hyperbola.
             // It could be parabola in case of eccentricity == 1, but we ignore
             // this impractical case for now.
-            if(1 < this.eccentricity){
+            if(1 < orbitalElements.eccentricity){
                 // Allocate the hyperbolic shape and mesh only if necessary,
                 // since most of celestial bodies are all on permanent elliptical orbit.
                 
@@ -277,14 +290,14 @@ export class CelestialBody{
 
                 // Calculate the vertices every frame since the hyperbola changes shape
                 // depending on orbital elements.
-                const thetaInf = Math.acos(-1 / this.eccentricity);
+                const thetaInf = Math.acos(-1 / orbitalElements.eccentricity);
                 const h2 = ang.lengthSq();
                 for(let i = -19; i < 20; i++){
                     // Transform by square root to make far side of the hyperbola less "polygonic"
                     const isign = i < 0 ? -1 : 1;
                     const theta = thetaInf * isign * Math.sqrt(Math.abs(i) / 20);
                     const vec = new THREE.Vector3( Math.sin(theta), Math.cos(theta), 0 )
-                        .multiplyScalar(h2 / this.parent.GM / (1 + this.eccentricity * Math.cos(theta)));
+                        .multiplyScalar(h2 / this.parent.GM / (1 + orbitalElements.eccentricity * Math.cos(theta)));
                     hyperbolicGeometryVertices.push(vec.x, vec.y, vec.z);
                 }
                 this.hyperbolicGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(hyperbolicGeometryVertices), 3));
@@ -319,9 +332,9 @@ export class CelestialBody{
             // Apply transformation to orbit mesh
             if(this.orbit){
                 this.orbit.quaternion.copy(rotation);
-                this.orbit.scale.x = this.semimajor_axis * viewScale * Math.sqrt(1. - this.eccentricity * this.eccentricity);
-                this.orbit.scale.y = this.semimajor_axis * viewScale;
-                this.orbit.position.copy(new THREE.Vector3(0, -this.semimajor_axis * this.eccentricity, 0).applyQuaternion(rotation).add(this.parent.getWorldPosition()));
+                this.orbit.scale.x = orbitalElements.semimajor_axis * viewScale * Math.sqrt(1. - orbitalElements.eccentricity * orbitalElements.eccentricity);
+                this.orbit.scale.y = orbitalElements.semimajor_axis * viewScale;
+                this.orbit.position.copy(new THREE.Vector3(0, -orbitalElements.semimajor_axis * orbitalElements.eccentricity, 0).applyQuaternion(rotation).add(this.parent.getWorldPosition()));
                 if(select_obj && center_select)
                     this.orbit.position.sub(select_obj.getWorldPosition());
                 this.orbit.position.multiplyScalar(viewScale);
@@ -329,14 +342,14 @@ export class CelestialBody{
 
             if(this.apoapsis){
                 // if eccentricity is zero or more than 1, apoapsis is not defined
-                if(this === select_obj && 0 < this.eccentricity && this.eccentricity < 1)
+                if(this === select_obj && 0 < orbitalElements.eccentricity && orbitalElements.eccentricity < 1)
                     calcApsePosition(-1, this.apoapsis);
                 else
                     this.apoapsis.visible = false;
             }
             if(this.periapsis){
                 // if eccentricity is zero, periapsis is not defined
-                if(this === select_obj && 0 < this.eccentricity)
+                if(this === select_obj && 0 < orbitalElements.eccentricity)
                     calcApsePosition(1, this.periapsis);
                 else
                     this.periapsis.visible = false;
@@ -446,6 +459,12 @@ export class CelestialBody{
 
 
 export interface AddPlanetParams{
+    name: string;
+    parent?: CelestialBody,
+    color: string;
+    texture?: string;
+    GM: number;
+    radius: number;
     modelName?: string;
     controllable?: boolean;
     soi?: number;
@@ -457,29 +476,31 @@ export interface AddPlanetParams{
 
 // Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 // It's a bit difficult to calculate in Newtonian dynamics simulation.
-export function addPlanet(semimajor_axis: number, eccentricity: number, inclination: number, ascending_node: number, argument_of_perihelion: number,
-    color: string, GM: number, parent: CelestialBody | null, texture: string, radius: number, params: AddPlanetParams, name: string, scene: THREE.Scene,
+export function addPlanet(orbitalElements: OrbitalElements,
+    params: AddPlanetParams, scene: THREE.Scene,
     viewScale: number, overlay: THREE.Scene, orbitGeometry: THREE.BufferGeometry, center_select: boolean, settings: Settings, camera: THREE.Camera,
     windowHalfX: number, windowHalfY: number)
 {
-    const rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2)
-        .multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - inclination))
-        .multiply(AxisAngleQuaternion(0, 0, 1, argument_of_perihelion));
+    const rotation = AxisAngleQuaternion(0, 0, 1, orbitalElements.ascending_node - Math.PI / 2)
+        .multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - orbitalElements.inclination))
+        .multiply(AxisAngleQuaternion(0, 0, 1, orbitalElements.argument_of_perihelion));
     const group = new THREE.Object3D();
-    const ret = new CelestialBody(parent, new THREE.Vector3(0, 1 - eccentricity, 0).multiplyScalar(semimajor_axis).applyQuaternion(rotation), group.position, color, GM, name);
+    const ret = new CelestialBody(params.parent || null, new THREE.Vector3(0, 1 - orbitalElements.eccentricity, 0)
+        .multiplyScalar(orbitalElements.semimajor_axis)
+        .applyQuaternion(rotation), group.position, params.color, params.GM, params.name, orbitalElements);
     ret.model = group;
-    ret.radius = radius;
+    ret.radius = params.radius;
     scene.add( group );
 
-    if(texture){
+    if(params.texture){
         const loader = new THREE.TextureLoader();
-        loader.load( texture, function ( texture ) {
+        loader.load( params.texture, function ( texture ) {
 
             const geometry = new THREE.SphereGeometry( 1, 20, 20 );
 
             const material = new THREE.MeshLambertMaterial( { map: texture, color: 0xffffff, flatShading: false } );
             const mesh = new THREE.Mesh( geometry, material );
-            const radiusInAu = viewScale * (radius || 6534) / AU;
+            const radiusInAu = viewScale * (params.radius || 6534) / AU;
             mesh.scale.set(radiusInAu, radiusInAu, radiusInAu);
             mesh.rotation.x = Math.PI / 2;
             group.add( mesh );
@@ -489,7 +510,7 @@ export function addPlanet(semimajor_axis: number, eccentricity: number, inclinat
     else if(params.modelName){
         const loader = new OBJLoader();
         loader.load( params.modelName, function ( object ) {
-            const radiusInAu = 100 * (radius || 6534) / AU;
+            const radiusInAu = 100 * (params.radius || 6534) / AU;
             object.scale.set(radiusInAu, radiusInAu, radiusInAu);
             group.add( object );
         } );
@@ -539,7 +560,7 @@ export function addPlanet(semimajor_axis: number, eccentricity: number, inclinat
 
     // Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
     // https://en.wikipedia.org/wiki/Orbital_speed
-    ret.setOrbitingVelocity(semimajor_axis, rotation);
+    ret.setOrbitingVelocity(orbitalElements.semimajor_axis, rotation);
     if(params && params.axialTilt && params.rotationPeriod){
         ret.quaternion = AxisAngleQuaternion(1, 0, 0, params.axialTilt);
         ret.angularVelocity = new THREE.Vector3(0, 0, 2 * Math.PI / params.rotationPeriod).applyQuaternion(ret.quaternion);
