@@ -88,12 +88,7 @@ impl Universe {
                 mean_anomaly: 0.,
                 soi: 1.,
             },
-            AddPlanetParams {
-                axial_tilt: 0.,
-                rotation_period: 0.,
-                quaternion: Quaternion::new(1., 0., 0., 0.),
-                angular_velocity: Vector3::zero(),
-            },
+            AddPlanetParams::default(),
             100. / AU / AU / AU,
             0.1,
             "rocket".to_string(),
@@ -118,12 +113,7 @@ impl Universe {
                 mean_anomaly: 0.,
                 soi: 1e5,
             },
-            AddPlanetParams {
-                axial_tilt: 0.,
-                rotation_period: 0.,
-                quaternion: Quaternion::new(1., 0., 0., 0.),
-                angular_velocity: Vector3::zero(),
-            },
+            AddPlanetParams::default(),
             4904.8695 / AU / AU / AU,
             1737.1,
             "moon".to_string(),
@@ -144,18 +134,34 @@ impl Universe {
                 mean_anomaly: 0.,
                 soi: 3e5,
             },
-            AddPlanetParams {
-                axial_tilt: 0.,
-                rotation_period: 0.,
-                quaternion: Quaternion::new(1., 0., 0., 0.),
-                angular_velocity: Vector3::zero(),
-            },
+            AddPlanetParams::default(),
             42828. / AU / AU / AU,
             3389.5,
             "mars".to_string(),
         );
 
         this.add_body(mars);
+
+        let jupiter = CelestialBody::from_orbital_elements(
+            &mut this,
+            Some(sun_id),
+            OrbitalElements {
+                semimajor_axis: 5.204267,
+                eccentricity: 0.048775,
+                inclination: 1.305 * rad_per_deg,
+                ascending_node: 100.492 * rad_per_deg,
+                argument_of_perihelion: 275.066 * rad_per_deg,
+                epoch: 0.,
+                mean_anomaly: 0.,
+                soi: 10e6,
+            },
+            AddPlanetParams::default(),
+            126686534. / AU / AU / AU,
+            69911.,
+            "jupiter".to_string(),
+        );
+
+        this.add_body(jupiter);
 
         this
     }

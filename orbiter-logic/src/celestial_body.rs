@@ -29,6 +29,17 @@ pub struct AddPlanetParams {
     pub angular_velocity: Vector3,
 }
 
+impl Default for AddPlanetParams {
+    fn default() -> Self {
+        Self {
+            axial_tilt: 0.,
+            rotation_period: 0.,
+            quaternion: Quaternion::new(1., 0., 0., 0.),
+            angular_velocity: Vector3::zero(),
+        }
+    }
+}
+
 pub type CelestialId = usize;
 
 #[allow(non_snake_case)]

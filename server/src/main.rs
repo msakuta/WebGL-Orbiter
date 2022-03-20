@@ -51,7 +51,11 @@ async fn get_state(data: web::Data<OrbiterData>) -> actix_web::Result<HttpRespon
 
     let serialized = serialize(&universe)?;
 
-    println!("Serialized universe at tick {} in {:.3}ms", universe.get_time(), start.elapsed().as_micros() as f64 * 1e-3);
+    println!(
+        "Serialized universe at tick {} in {:.3}ms",
+        universe.get_time(),
+        start.elapsed().as_micros() as f64 * 1e-3
+    );
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
