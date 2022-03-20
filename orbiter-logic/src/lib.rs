@@ -111,6 +111,33 @@ impl Universe {
 
         this.add_body(rocket);
 
+        let moon = CelestialBody::from_orbital_elements(
+            &mut this,
+            Some(earth_id),
+            OrbitalElements {
+                semimajor_axis: 384399. / AU,
+                eccentricity: 0.048775,
+                inclination: -11.26064 * rad_per_deg,
+                ascending_node: 100.492 * rad_per_deg,
+                argument_of_perihelion: 114.20783 * rad_per_deg, //275.066 * rad_per_deg,
+                epoch: 0.,
+                mean_anomaly: 0.,
+                soi: 1e5,
+            },
+            AddPlanetParams {
+                axial_tilt: 0.,
+                rotation_period: 0.,
+                // soi: 5e5,
+                quaternion: Quaternion::new(1., 0., 0., 0.),
+                angular_velocity: Vector3::zero(),
+            },
+            4904.8695 / AU / AU / AU,
+            1737.1,
+            "moon".to_string(),
+        );
+
+        this.add_body(moon);
+
         this
     }
 
