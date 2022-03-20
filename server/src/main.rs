@@ -6,7 +6,7 @@ use orbiter_logic::{serialize, Universe};
 use serde::Deserialize;
 use std::{
     fs,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{Mutex, RwLock},
     time::Instant,
 };
@@ -113,6 +113,28 @@ async fn get_file(data: web::Data<OrbiterData>, req: HttpRequest) -> actix_web::
     Ok(NamedFile::open(path)?)
 }
 
+fn serialize_state(universe: &Universe, autosave_pretty: bool) -> serde_json::Result<String> {
+    if autosave_pretty {
+        serde_json::to_string_pretty(&universe as &Universe)
+    } else {
+        serde_json::to_string(&universe as &Universe)
+    }
+}
+
+fn save_file(autosave_file: &Path, serialized: &str) {
+    println!(
+        "[{:?}] Writing {}",
+        std::thread::current().id(),
+        serialized.len()
+    );
+    let start = Instant::now();
+    fs::write(autosave_file, serialized.as_bytes()).expect("Write to save file should succeed");
+    println!(
+        "Wrote in {:.3}ms",
+        start.elapsed().as_micros() as f64 * 1e-3
+    );
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let args = Args::parse();
@@ -143,6 +165,7 @@ async fn main() -> std::io::Result<()> {
         autosave_file: args.autosave_file,
     });
     let data_copy = data.clone();
+    let data_copy2 = data.clone();
 
     let autosave_period_s = args.autosave_period_s;
     let autosave_pretty = args.autosave_pretty;
@@ -159,26 +182,10 @@ async fn main() -> std::io::Result<()> {
 
             let mut last_saved = data_copy.last_saved.lock().unwrap();
             if autosave_period_s < last_saved.elapsed().as_micros() as f64 * 1e-6 {
-                let serialized = if autosave_pretty {
-                    serde_json::to_string_pretty(&universe as &Universe)
-                } else {
-                    serde_json::to_string(&universe as &Universe)
-                };
-                if let Ok(serialized) = serialized {
+                if let Ok(serialized) = serialize_state(&universe, autosave_pretty) {
                     let autosave_file = data_copy.autosave_file.clone();
                     actix_web::rt::spawn(async move {
-                        println!(
-                            "[{:?}] Writing {}",
-                            std::thread::current().id(),
-                            serialized.len()
-                        );
-                        let start = Instant::now();
-                        fs::write(&autosave_file, serialized.as_bytes())
-                            .expect("Write to save file should succeed");
-                        println!(
-                            "Wrote in {:.3}ms",
-                            start.elapsed().as_micros() as f64 * 1e-3
-                        );
+                        save_file(&autosave_file, &serialized);
                     });
                 }
                 *last_saved = Instant::now();
@@ -221,7 +228,8 @@ async fn main() -> std::io::Result<()> {
     .run()
     .await;
 
-    // loop {
-    // }
+    if let Ok(serialized) = serialize_state(&data_copy2.universe.read().unwrap(), autosave_pretty) {
+        save_file(&data_copy2.autosave_file, &serialized);
+    }
     Ok(())
 }
