@@ -477,7 +477,7 @@ export interface AddPlanetParams{
 // It's a bit difficult to calculate in Newtonian dynamics simulation.
 export function addPlanet(orbitalElements: OrbitalElements,
     params: AddPlanetParams, graphicsParams: GraphicsParams,
-    orbitGeometry: THREE.BufferGeometry, center_select: boolean, settings: Settings)
+    orbitGeometry: THREE.BufferGeometry, settings: Settings)
 {
     const { scene, viewScale, overlay } = graphicsParams;
     const rotation = AxisAngleQuaternion(0, 0, 1, orbitalElements.ascending_node - Math.PI / 2)
@@ -570,7 +570,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     ret.orbit = orbitMesh;
     scene.add(orbitMesh);
     ret.init();
-    ret.update(center_select, graphicsParams.viewScale, settings.nlips_enable, graphicsParams.camera, graphicsParams.windowHalfX, graphicsParams.windowHalfY,
+    ret.update(settings.center_select, graphicsParams.viewScale, settings.nlips_enable, graphicsParams.camera, graphicsParams.windowHalfX, graphicsParams.windowHalfY,
         settings.units_km, (_) => {}, scene);
     return ret;
 }

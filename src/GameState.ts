@@ -31,11 +31,7 @@ export default class GameState{
         this.sendMessage = sendMessage;
         this.graphicsParams = graphicsParams;
 
-        const AddPlanet = (orbitalElements: OrbitalElements, params: AddPlanetParams, orbitGeometry: THREE.BufferGeometry) =>
-            addPlanet(orbitalElements, params, graphicsParams,
-                orbitGeometry, settings.center_select, settings);
-
-        this.universe = new Universe(graphicsParams, AddPlanet, settings.center_select, settings);
+        this.universe = new Universe(graphicsParams, settings);
         this.select_obj = this.universe.rocket;
         window.addEventListener( 'keydown', (event: KeyboardEvent) => this.onKeyDown(event), false );
     }
