@@ -457,6 +457,12 @@ export class CelestialBody{
 
 
 export interface AddPlanetParams{
+    name: string;
+    parent?: CelestialBody,
+    color: string;
+    texture?: string;
+    GM: number;
+    radius: number;
     modelName?: string;
     controllable?: boolean;
     soi?: number;
@@ -469,7 +475,7 @@ export interface AddPlanetParams{
 // Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 // It's a bit difficult to calculate in Newtonian dynamics simulation.
 export function addPlanet(orbitalElements: OrbitalElements,
-    color: string, GM: number, parent: CelestialBody | null, texture: string, radius: number, params: AddPlanetParams, name: string, scene: THREE.Scene,
+    params: AddPlanetParams, scene: THREE.Scene,
     viewScale: number, overlay: THREE.Scene, orbitGeometry: THREE.BufferGeometry, center_select: boolean, settings: Settings, camera: THREE.Camera,
     windowHalfX: number, windowHalfY: number)
 {
@@ -477,22 +483,22 @@ export function addPlanet(orbitalElements: OrbitalElements,
         .multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - orbitalElements.inclination))
         .multiply(AxisAngleQuaternion(0, 0, 1, orbitalElements.argument_of_perihelion));
     const group = new THREE.Object3D();
-    const ret = new CelestialBody(parent, new THREE.Vector3(0, 1 - orbitalElements.eccentricity, 0)
+    const ret = new CelestialBody(params.parent || null, new THREE.Vector3(0, 1 - orbitalElements.eccentricity, 0)
         .multiplyScalar(orbitalElements.semimajor_axis)
-        .applyQuaternion(rotation), group.position, color, GM, name, orbitalElements);
+        .applyQuaternion(rotation), group.position, params.color, params.GM, params.name, orbitalElements);
     ret.model = group;
-    ret.radius = radius;
+    ret.radius = params.radius;
     scene.add( group );
 
-    if(texture){
+    if(params.texture){
         const loader = new THREE.TextureLoader();
-        loader.load( texture, function ( texture ) {
+        loader.load( params.texture, function ( texture ) {
 
             const geometry = new THREE.SphereGeometry( 1, 20, 20 );
 
             const material = new THREE.MeshLambertMaterial( { map: texture, color: 0xffffff, flatShading: false } );
             const mesh = new THREE.Mesh( geometry, material );
-            const radiusInAu = viewScale * (radius || 6534) / AU;
+            const radiusInAu = viewScale * (params.radius || 6534) / AU;
             mesh.scale.set(radiusInAu, radiusInAu, radiusInAu);
             mesh.rotation.x = Math.PI / 2;
             group.add( mesh );
@@ -502,7 +508,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     else if(params.modelName){
         const loader = new OBJLoader();
         loader.load( params.modelName, function ( object ) {
-            const radiusInAu = 100 * (radius || 6534) / AU;
+            const radiusInAu = 100 * (params.radius || 6534) / AU;
             object.scale.set(radiusInAu, radiusInAu, radiusInAu);
             group.add( object );
         } );

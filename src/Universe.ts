@@ -17,8 +17,8 @@ import perlinUrl from './images/perlin.jpg';
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 const rad_per_deg = Math.PI / 180; // Radians per degrees
 
-type AddPlanetArgType = (orbitalElements: OrbitalElements, color: string, GM: number, parent: CelestialBody, texture: string, radius: number,
-    params: AddPlanetParams, name: string, orbitGeometry: THREE.BufferGeometry) => CelestialBody;
+type AddPlanetArgType = (orbitalElements: OrbitalElements,
+    params: AddPlanetParams, orbitGeometry: THREE.BufferGeometry) => CelestialBody;
 
 
 export default class Universe{
@@ -47,8 +47,8 @@ export default class Universe{
 
         scene.add(group);
 
-        const AddPlanet = (orbitalElements: OrbitalElements, color: string, GM: number, parent: CelestialBody, texture: string, radius: number, params: AddPlanetParams, name: string) =>
-            AddPlanetArg(orbitalElements, color, GM, parent, texture, radius, params, name, orbitGeometry);
+        const AddPlanet = (orbitalElements: OrbitalElements, params: AddPlanetParams) =>
+            AddPlanetArg(orbitalElements, params, orbitGeometry);
 
         this.sun = new CelestialBody(null, new THREE.Vector3(), null, "#ffffff", GMsun, "sun");
         this.sun.radius = Rsun;
@@ -59,7 +59,16 @@ export default class Universe{
             inclination: 7.005 * rad_per_deg,
             ascending_node: 48.331 * rad_per_deg,
             argument_of_perihelion: 29.124 * rad_per_deg
-        }, "#3f7f7f", 22032 / AU / AU / AU, this.sun, mercuryUrl, 2439.7, {soi: 2e5}, "mercury");
+        },
+        {
+            name: "mercury",
+            parent: this.sun,
+            color: "#3f7f7f",
+            texture: mercuryUrl,
+            GM: 22032 / AU / AU / AU,
+            radius: 2439.7,
+            soi: 2e5,
+        });
 
         const venus = AddPlanet({
             semimajor_axis: 0.723332,
@@ -67,7 +76,16 @@ export default class Universe{
             inclination: 3.39458 * rad_per_deg,
             ascending_node: 76.678 * rad_per_deg,
             argument_of_perihelion: 55.186 * rad_per_deg
-        }, "#7f7f3f", 324859 / AU / AU / AU, this.sun, venusUrl, 6051.8, {soi: 5e5}, "venus");
+        },
+        {
+            name: "venus",
+            parent: this.sun,
+            color: "#7f7f3f",
+            texture: venusUrl,
+            GM: 324859 / AU / AU / AU,
+            radius: 6051.8,
+            soi: 5e5,
+        });
 
         // Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
         const earth = AddPlanet({
@@ -76,10 +94,18 @@ export default class Universe{
             inclination: 0,
             ascending_node: -11.26064 * rad_per_deg,
             argument_of_perihelion: 114.20783 * rad_per_deg
-        }, "#3f7f3f", 398600 / AU / AU / AU, this.sun, earthUrl, 6534,
-            {axialTilt: 23.4392811 * rad_per_deg,
+        },
+        {
+            name: "earth",
+            parent: this.sun,
+            color: "#3f7f3f",
+            texture: earthUrl,
+            GM: 398600 / AU / AU / AU,
+            radius: 6534,
+            axialTilt: 23.4392811 * rad_per_deg,
             rotationPeriod: ((23 * 60 + 56) * 60 + 4.10),
-            soi: 5e5}, "earth");
+            soi: 5e5
+        });
 
         this.rocket = AddPlanet({
             semimajor_axis: 10000 / AU,
@@ -87,7 +113,16 @@ export default class Universe{
             inclination: 0,
             ascending_node: 0,
             argument_of_perihelion: 0
-        },"#3f7f7f", 100 / AU / AU / AU, earth, undefined, 0.1, {modelName: rocketModelUrl, controllable: true}, "rocket");
+        },
+        {
+            name: "rocket",
+            parent: earth,
+            color: "#3f7f7f",
+            GM: 100 / AU / AU / AU,
+            radius: 0.1,
+            modelName: rocketModelUrl,
+            controllable: true
+        });
         this.rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
 
         const moon = AddPlanet({
@@ -96,7 +131,16 @@ export default class Universe{
             inclination: 0,
             ascending_node: -11.26064 * rad_per_deg,
             argument_of_perihelion: 114.20783 * rad_per_deg
-        }, "#5f5f5f", 4904.8695 / AU / AU / AU, earth, moonUrl, 1737.1, {soi: 1e5}, "moon");
+        },
+        {
+            name: "moon",
+            parent: earth,
+            color: "#5f5f5f",
+            texture: moonUrl,
+            GM: 4904.8695 / AU / AU / AU,
+            radius: 1737.1,
+            soi: 1e5,
+        });
 
         const mars = AddPlanet({
             semimajor_axis: 1.523679,
@@ -104,7 +148,16 @@ export default class Universe{
             inclination: 1.850 * rad_per_deg,
             ascending_node: 49.562 * rad_per_deg,
             argument_of_perihelion: 286.537 * rad_per_deg
-        }, "#7f3f3f", 42828 / AU / AU / AU, this.sun, marsUrl, 3389.5, {soi: 3e5}, "mars");
+        },
+        {
+            name: "mars",
+            parent: this.sun,
+            color: "#7f3f3f",
+            texture: marsUrl,
+            GM: 42828 / AU / AU / AU,
+            radius: 3389.5,
+            soi: 3e5
+        });
 
         const jupiter = AddPlanet({
             semimajor_axis: 5.204267,
@@ -112,7 +165,16 @@ export default class Universe{
             inclination: 1.305 * rad_per_deg,
             ascending_node: 100.492 * rad_per_deg,
             argument_of_perihelion: 275.066 * rad_per_deg
-        }, "#7f7f3f", 126686534 / AU / AU / AU, this.sun, jupiterUrl, 69911, {soi: 10e6}, "jupiter");
+        },
+        {
+            name: "jupiter",
+            parent: this.sun,
+            color: "#7f7f3f",
+            texture: jupiterUrl,
+            GM: 126686534 / AU / AU / AU,
+            radius: 69911,
+            soi: 10e6,
+        });
 
         // Use icosahedron instead of sphere to make it look like uniform
         // TODO: use simplex noise to make more smooth asteroid
