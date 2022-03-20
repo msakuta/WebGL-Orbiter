@@ -45,9 +45,13 @@ async fn new_session(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResp
 }
 
 async fn get_state(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResponse> {
+    let start = std::time::Instant::now();
+
     let universe = data.universe.read().unwrap();
 
     let serialized = serialize(&universe)?;
+
+    println!("Serialized universe at tick {} in {:.3}ms", universe.get_time(), start.elapsed().as_micros() as f64 * 1e-3);
 
     Ok(HttpResponse::Ok()
         .content_type("application/json")
@@ -114,10 +118,10 @@ async fn main() -> std::io::Result<()> {
             data_copy.universe.write().unwrap().update();
             let universe = data_copy.universe.read().unwrap();
             println!(
-                "Tick {}, time {}, calc: {}",
+                "Tick {}, time {}, calc: {:.3}ms",
                 universe.get_time(),
                 universe.get_sim_time(),
-                start.elapsed().as_micros() as f64 * 1e-6,
+                start.elapsed().as_micros() as f64 * 1e-3,
             );
         }
     });

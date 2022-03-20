@@ -262,8 +262,6 @@ impl Serialize for Universe {
     where
         S: Serializer,
     {
-        println!("Trying to acquire mutex");
-        println!("Serializing vec...");
         let mut map = serializer.serialize_map(Some(3))?;
         map.serialize_entry("simTime", &self.sim_time)?;
         map.serialize_entry("startTime", &self.start_time)?;
