@@ -292,11 +292,17 @@ function init() {
     window.addEventListener( 'keydown', onKeyDown, false );
     window.addEventListener( 'keyup', onKeyUp, false );
     window.addEventListener( 'pageshow', async function(){
-        const sessionRes = await fetch(`http://${location.hostname}:${port}/api/session`, {
-            method: "POST"
-        });
-        const sessionId = parseInt(await sessionRes.text());
-        gameState.sessionId = sessionId;
+        const restoredSession = localStorage.getItem('WebGLOrbiterSession');
+        if(restoredSession){
+            gameState.sessionId = JSON.parse(restoredSession).sessionId;
+        }
+        else{
+            const sessionRes = await fetch(`http://${location.hostname}:${port}/api/session`, {
+                method: "POST"
+            });
+            const sessionId = parseInt(await sessionRes.text());
+            gameState.sessionId = sessionId;
+        }
 
         const res = await fetch(`http://${location.hostname}:${port}/api/load`, {
             method: "GET"
@@ -312,12 +318,14 @@ function init() {
         // }
     });
     window.addEventListener( 'beforeunload', function(){
-        const gameSerialized = JSON.stringify(gameState.serializeState());
-        localStorage.setItem('WebGLOrbiterAutoSave', gameSerialized);
-        fetch(`http://${location.hostname}:${port}/save`, {
-            method: "POST",
-            body: gameSerialized
-        });
+        // const gameSerialized = JSON.stringify(gameState.serializeState());
+        localStorage.setItem('WebGLOrbiterSession', JSON.stringify({
+            sessionId: gameState.sessionId
+        }));
+        // fetch(`http://${location.hostname}:${port}/save`, {
+        //     method: "POST",
+        //     body: gameSerialized
+        // });
     });
 
     gameState.startTicking();
