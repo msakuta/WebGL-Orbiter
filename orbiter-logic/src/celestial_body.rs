@@ -7,6 +7,7 @@ use anyhow::anyhow;
 use cgmath::{InnerSpace, Rad, Rotation, Rotation3, Zero};
 use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
 
+#[allow(non_upper_case_globals)]
 const Rsun: f64 = 695800.;
 const EPSILON: f64 = 1e-40; // Doesn't the machine epsilon depend on browsers!??
                             // const acceleration: f64 = 5e-10;
@@ -120,14 +121,14 @@ impl CelestialBody {
             self.orbital_elements.semimajor_axis = 1. / (2. / r - v * v / parent.GM);
 
             // Rotation to perifocal frame
-            let ascending_node_rot = <Quaternion as Rotation3>::from_axis_angle(
-                Vector3::new(0., 0., 1.),
-                Rad(self.orbital_elements.ascending_node - std::f64::consts::PI / 2.),
-            );
-            let inclination_rot = Quaternion::from_axis_angle(
-                Vector3::new(0., 1., 0.),
-                Rad(std::f64::consts::PI - self.orbital_elements.inclination),
-            );
+            // let ascending_node_rot = <Quaternion as Rotation3>::from_axis_angle(
+            //     Vector3::new(0., 0., 1.),
+            //     Rad(self.orbital_elements.ascending_node - std::f64::consts::PI / 2.),
+            // );
+            // let inclination_rot = Quaternion::from_axis_angle(
+            //     Vector3::new(0., 1., 0.),
+            //     Rad(std::f64::consts::PI - self.orbital_elements.inclination),
+            // );
             // let plane_rot = ascending_node_rot * inclination_rot;
 
             // let heading_apoapsis =

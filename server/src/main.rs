@@ -185,7 +185,7 @@ async fn main() -> std::io::Result<()> {
             }
 
             println!(
-                "[{:?}]Tick {}, time {}, calc: {:.3}ms",
+                "[{:?}] Tick {}, time {}, calc: {:.3}ms",
                 std::thread::current().id(),
                 universe.get_time(),
                 universe.get_sim_time(),

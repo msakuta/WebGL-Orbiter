@@ -29,7 +29,7 @@ impl CelestialBodyBuilder {
         self
     }
 
-    pub(crate) fn session_id(&mut self, session_id: SessionId) -> &mut Self {
+    pub(crate) fn _session_id(&mut self, session_id: SessionId) -> &mut Self {
         self.session_id = Some(session_id);
         self
     }
@@ -39,7 +39,7 @@ impl CelestialBodyBuilder {
         self
     }
 
-    pub(crate) fn velocity(&mut self, velocity: Vector3) -> &mut Self {
+    pub(crate) fn _velocity(&mut self, velocity: Vector3) -> &mut Self {
         self.velocity = Some(velocity);
         self
     }
@@ -88,8 +88,6 @@ impl CelestialBodyBuilder {
 pub(crate) struct AddPlanetParams {
     pub axial_tilt: f64,
     pub rotation_period: f64,
-    pub quaternion: Quaternion,
-    pub angular_velocity: Vector3,
 }
 
 impl Default for AddPlanetParams {
@@ -97,8 +95,6 @@ impl Default for AddPlanetParams {
         Self {
             axial_tilt: 0.,
             rotation_period: 0.,
-            quaternion: Quaternion::new(1., 0., 0., 0.),
-            angular_velocity: Vector3::zero(),
         }
     }
 }

@@ -2,11 +2,11 @@ use crate::{
     celestial_body::{builder::AddPlanetParams, CelestialBody, OrbitalElements},
     dyn_iter::{Chained, DynIterMut, MutRef},
     session::SessionId,
-    GMsun, Quaternion, Vector3, AU,
+    GMsun, Quaternion, AU,
 };
-use cgmath::{Rad, Rotation3, Zero};
+use cgmath::{Rad, Rotation3};
 use rand::prelude::*;
-use serde::{ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{ser::SerializeMap, Serialize, Serializer};
 
 #[derive(Debug)]
 pub struct Universe {
@@ -43,9 +43,6 @@ impl Universe {
         let params = AddPlanetParams {
             axial_tilt: 23.4392811 * rad_per_deg,
             rotation_period: ((23. * 60. + 56.) * 60. + 4.10),
-            // soi: 5e5,
-            quaternion: Quaternion::new(1., 0., 0., 0.),
-            angular_velocity: Vector3::zero(),
         };
 
         let earth = CelestialBody::builder()
@@ -198,8 +195,6 @@ impl Universe {
                 AddPlanetParams {
                     axial_tilt: 0.,
                     rotation_period: 0.,
-                    quaternion: Quaternion::new(1., 0., 0., 0.),
-                    angular_velocity: Vector3::zero(),
                 },
             );
 
