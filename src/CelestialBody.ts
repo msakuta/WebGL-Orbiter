@@ -403,7 +403,9 @@ export class CelestialBody{
                         select_obj.totalDeltaV += deltaV;
                     }
                     if((buttons.up || buttons.down || buttons.left || buttons.right || buttons.counterclockwise || buttons.clockwise || a.throttle)){
-                        a.sendControlCommand();
+                        if(select_obj){
+                            a.sendControlCommand();
+                        }
                     }
                 }
                 const dvelo = accel.clone().multiplyScalar(0.5);
@@ -419,7 +421,10 @@ export class CelestialBody{
                     a.quaternion.multiplyQuaternions(AxisAngleQuaternion(axis.x, axis.y, axis.z, a.angularVelocity.length() * deltaTime / div), a.quaternion);
 
                     // We want to send decelerate commands to the server until the rotation stops, otherwise it will rotate forever.
-                    a.sendControlCommand();
+                    // Let's leave other rockets' control to their respective clients.
+                    if(a === select_obj){
+                        a.sendControlCommand();
+                    }
                 }
             }
             // Only controllable objects can change orbiting body
