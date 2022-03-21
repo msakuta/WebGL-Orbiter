@@ -45,11 +45,6 @@ impl Universe {
 
         let rad_per_deg = std::f64::consts::PI / 180.;
 
-        let params = AddPlanetParams {
-            axial_tilt: 23.4392811 * rad_per_deg,
-            rotation_period: ((23. * 60. + 56.) * 60. + 4.10),
-        };
-
         let mercury = CelestialBody::builder()
             .name("mercury".to_string())
             .parent(sun_id)
@@ -69,8 +64,8 @@ impl Universe {
                     mean_anomaly: 0.,
                 },
                 AddPlanetParams {
-                    axial_tilt: 0.,
-                    rotation_period: 0.,
+                    axial_tilt: 2.04 * rad_per_deg,
+                    rotation_period: 58.646 * 24. * 60. * 60.,
                 },
             );
         this.add_body(mercury);
@@ -94,8 +89,8 @@ impl Universe {
                     mean_anomaly: 0.,
                 },
                 AddPlanetParams {
-                    axial_tilt: 0.,
-                    rotation_period: 0.,
+                    axial_tilt: 2.64 * rad_per_deg,
+                    rotation_period: -243. * 24. * 60. * 60.,
                 },
             );
         this.add_body(venus);
@@ -117,7 +112,10 @@ impl Universe {
                     epoch: 0.,
                     mean_anomaly: 0.,
                 },
-                params,
+                AddPlanetParams {
+                    axial_tilt: 23.4392811 * rad_per_deg,
+                    rotation_period: ((23. * 60. + 56.) * 60. + 4.10),
+                },
             );
         let earth_id = earth.id;
 

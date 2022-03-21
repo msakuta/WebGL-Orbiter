@@ -93,6 +93,8 @@ export default class Universe{
             texture: mercuryUrl,
             GM: 22032 / AU / AU / AU,
             radius: 2439.7,
+            axialTilt: 2.04 * rad_per_deg,
+            rotationPeriod: 58.646 * 24. * 60. * 60.,
             sphereOfInfluence: 2e5,
         });
 
@@ -110,6 +112,8 @@ export default class Universe{
             texture: venusUrl,
             GM: 324859 / AU / AU / AU,
             radius: 6051.8,
+            axialTilt: 23.4392811 * rad_per_deg,
+            rotationPeriod: -243. * 24. * 60. * 60.,
             sphereOfInfluence: 5e5,
         });
 
