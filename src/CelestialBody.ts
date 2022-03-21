@@ -392,8 +392,15 @@ export class CelestialBody{
                         // This is done to make it still in larger timescale, since micro-rotation cannot be canceled
                         // by product of angularVelocity and quaternion which underflows by square.
                         // Think that the vehicle has a momentum wheels that cancels micro-rotation continuously working.
-                        if(1e-6 < select_obj.angularVelocity.lengthSq())
+                        const MICRO_ROTATION = 1e-6;
+                        if(MICRO_ROTATION < select_obj.angularVelocity.lengthSq()){
                             select_obj.angularVelocity.add(select_obj.angularVelocity.clone().normalize().multiplyScalar(-angleAcceleration * deltaTime / div));
+                            if(select_obj.angularVelocity.lengthSq() <= MICRO_ROTATION){
+                                select_obj.angularVelocity.set(0, 0, 0);
+                            }
+                            // We want to send decelerate commands to the server until the rotation stops, otherwise it will rotate forever.
+                            a.sendControlCommand();
+                        }
                         else
                             select_obj.angularVelocity.set(0, 0, 0);
                     }
@@ -419,12 +426,6 @@ export class CelestialBody{
                     const axis = a.angularVelocity.clone().normalize();
                     // We have to multiply in this order!
                     a.quaternion.multiplyQuaternions(AxisAngleQuaternion(axis.x, axis.y, axis.z, a.angularVelocity.length() * deltaTime / div), a.quaternion);
-
-                    // We want to send decelerate commands to the server until the rotation stops, otherwise it will rotate forever.
-                    // Let's leave other rockets' control to their respective clients.
-                    if(a === select_obj){
-                        a.sendControlCommand();
-                    }
                 }
             }
             // Only controllable objects can change orbiting body
