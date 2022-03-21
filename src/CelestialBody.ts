@@ -475,11 +475,12 @@ export class CelestialBody{
                     "Content-Type": 'application/json',
                 },
                 body: JSON.stringify({
-                    session_id: this.sessionId,
+                    sessionId: this.sessionId,
+                    parent: this.parent.name,
                     position: this.position,
                     velocity: this.velocity,
                     quaternion: this.quaternion,
-                    angular_velocity: this.angularVelocity,
+                    angularVelocity: this.angularVelocity,
                 }),
             });
             this.updatingState = false;
