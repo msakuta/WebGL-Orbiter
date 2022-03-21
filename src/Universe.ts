@@ -19,6 +19,26 @@ import perlinUrl from './images/perlin.jpg';
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 const rad_per_deg = Math.PI / 180; // Radians per degrees
 
+export const COLOR_PALETTE = [
+    '1 1 1',
+    '1 0.75 0.75',
+    '0.75 1 0.75',
+    '0.75 0.75 1',
+    '1 1 0.75',
+    '0.75 1 1',
+    '1 0.75 1',
+    '1 0.25 0.25',
+    '0.25 1 0.25',
+    '1 0.25 1',
+    '0.25 1 1',
+    '0.25 0.5 1',
+    '0.25 1 0.5',
+    '1 0.25 0.25',
+    '0.5 1 0.25',
+    '1 0.25 0.5',
+    '0.5 0.25 1',
+];
+
 type AddPlanetArgType = (orbitalElements: OrbitalElements,
     params: AddPlanetParams, orbitGeometry: THREE.BufferGeometry) => CelestialBody;
 
@@ -241,6 +261,7 @@ export default class Universe{
             radius: 0.1,
             modelName: rocketModelUrl,
             mtlName: rocketMtlUrl,
+            modelColor: COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)],
             controllable: true
         },
         graphicsParams, this.orbitGeometry, settings);

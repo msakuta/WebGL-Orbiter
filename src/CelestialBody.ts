@@ -467,6 +467,7 @@ export interface AddPlanetParams{
     radius: number;
     modelName?: string;
     mtlName?: string;
+    modelColor?: string;
     controllable?: boolean;
     sphereOfInfluence?: number;
     axialTilt?: number;
@@ -510,6 +511,21 @@ export function addPlanet(orbitalElements: OrbitalElements,
     }
     else if(params.modelName){
         if(params.mtlName){
+            if(params.modelColor){
+                fetch(params.mtlName)
+                    .then(mtlFile => mtlFile.text())
+                    .then(mtlFile => {
+                        const mtlFileEdited = mtlFile.replace(/^Kd .+$/gm, `Kd ${params.modelColor}`);
+                        const materials = new MTLLoader().parse(mtlFileEdited, "material.mtl");
+                        new OBJLoader()
+                        .setMaterials( materials )
+                        .load( params.modelName, function ( object ) {
+                            const radiusInAu = 100 * (params.radius || 6534) / AU;
+                            object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+                            group.add( object );
+                        } );
+                    })
+            }
             new MTLLoader().load(params.mtlName, function ( materials ) {
                 materials.preload();
                 new OBJLoader()
