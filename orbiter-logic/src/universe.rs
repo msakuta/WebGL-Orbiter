@@ -7,6 +7,7 @@ use crate::{
 use cgmath::{Rad, Rotation3};
 use rand::prelude::*;
 use serde::{ser::SerializeMap, Serialize, Serializer};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
 pub struct Universe {
@@ -21,12 +22,16 @@ pub struct Universe {
 
 impl Universe {
     pub fn new() -> Self {
+        let now_unix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs() as f64)
+            .unwrap_or(0.);
         let mut this = Self {
             bodies: vec![],
             root: 0,
             id_gen: 0,
-            sim_time: 0.,
-            start_time: 0.,
+            sim_time: now_unix,
+            start_time: now_unix,
             time: 0,
             time_scale: 1.,
         };
