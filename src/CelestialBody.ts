@@ -1,5 +1,6 @@
 import * as THREE from 'three/src/Three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import blastUrl from './images/blast.png';
 import apoapsisUrl from './images/apoapsis.png';
 import periapsisUrl from './images/periapsis.png';
@@ -465,6 +466,7 @@ export interface AddPlanetParams{
     GM: number;
     radius: number;
     modelName?: string;
+    mtlName?: string;
     controllable?: boolean;
     sphereOfInfluence?: number;
     axialTilt?: number;
@@ -507,12 +509,25 @@ export function addPlanet(orbitalElements: OrbitalElements,
         } );
     }
     else if(params.modelName){
-        const loader = new OBJLoader();
-        loader.load( params.modelName, function ( object ) {
-            const radiusInAu = 100 * (params.radius || 6534) / AU;
-            object.scale.set(radiusInAu, radiusInAu, radiusInAu);
-            group.add( object );
-        } );
+        if(params.mtlName){
+            new MTLLoader().load(params.mtlName, function ( materials ) {
+                materials.preload();
+                new OBJLoader()
+                    .setMaterials( materials )
+                    .load( params.modelName, function ( object ) {
+                        const radiusInAu = 100 * (params.radius || 6534) / AU;
+                        object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+                        group.add( object );
+                    } );
+            } );
+        }
+        else{
+            new OBJLoader().load( params.modelName, function ( object ) {
+                const radiusInAu = 100 * (params.radius || 6534) / AU;
+                object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+                group.add( object );
+            } );
+        }
         const blastGroup = new THREE.Object3D();
         group.add(blastGroup);
         blastGroup.visible = false;
