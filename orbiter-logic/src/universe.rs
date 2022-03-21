@@ -45,6 +45,56 @@ impl Universe {
             rotation_period: ((23. * 60. + 56.) * 60. + 4.10),
         };
 
+        let mercury = CelestialBody::builder()
+            .name("mercury".to_string())
+            .parent(sun_id)
+            .orbit_color("#3f7f7f".to_string())
+            .gm(22032. / AU / AU / AU)
+            .radius(2439.7)
+            .soi(2e5)
+            .build_from_orbital_elements(
+                &mut this,
+                OrbitalElements {
+                    semimajor_axis: 0.387098,
+                    eccentricity: 0.205630,
+                    inclination: 7.005 * rad_per_deg,
+                    ascending_node: 48.331 * rad_per_deg,
+                    argument_of_perihelion: 29.124 * rad_per_deg,
+                    epoch: 0.,
+                    mean_anomaly: 0.,
+                },
+                AddPlanetParams {
+                    axial_tilt: 0.,
+                    rotation_period: 0.,
+                },
+            );
+        this.add_body(mercury);
+
+        let venus = CelestialBody::builder()
+            .name("venus".to_string())
+            .parent(sun_id)
+            .orbit_color("#7f7f3f".to_string())
+            .gm(324859. / AU / AU / AU)
+            .radius(6051.8)
+            .soi(2e5)
+            .build_from_orbital_elements(
+                &mut this,
+                OrbitalElements {
+                    semimajor_axis: 0.723332,
+                    eccentricity: 0.00677323,
+                    inclination: 3.39458 * rad_per_deg,
+                    ascending_node: 76.678 * rad_per_deg,
+                    argument_of_perihelion: 55.186 * rad_per_deg,
+                    epoch: 0.,
+                    mean_anomaly: 0.,
+                },
+                AddPlanetParams {
+                    axial_tilt: 0.,
+                    rotation_period: 0.,
+                },
+            );
+        this.add_body(venus);
+
         let earth = CelestialBody::builder()
             .name("earth".to_string())
             .parent(sun_id)

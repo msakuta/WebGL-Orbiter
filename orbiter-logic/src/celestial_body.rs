@@ -185,7 +185,7 @@ impl CelestialBody {
                 if 0. < a.angular_velocity.magnitude2() {
                     let axis = a.angular_velocity.normalize();
                     // We have to multiply in this order!
-                    a.quaternion = <Quaternion as Rotation3>::from_axis_angle(
+                    a.quaternion = Quaternion::from_axis_angle(
                         axis,
                         Rad(a.angular_velocity.magnitude() * delta_time / div),
                     ) * a.quaternion;
@@ -237,15 +237,8 @@ impl Serialize for CelestialBody {
     }
 }
 
-// macro_rules! deserialize_json {
-//     {$target:ident, $name:literal} => {
-//         if let Some(v) = map.get($name).and_then(|v| v.as_u64()) {
-//             self.$target = v as usize;
-//         }
-//     }
-// }
-
 impl CelestialBody {
+    /// We don't use serde deserializer since our json format is too complex
     pub(crate) fn deserialize(json: &serde_json::Value) -> anyhow::Result<Self> {
         let map = if let serde_json::Value::Object(map) = json {
             map
