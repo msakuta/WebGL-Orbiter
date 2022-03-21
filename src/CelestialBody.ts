@@ -63,7 +63,7 @@ export class CelestialBody{
 
     // Orbital elements
     orbitalElements: OrbitalElements;
-    soi: number;
+    sphereOfInfluence: number;
 
     controllable: boolean;
     throttle: number;
@@ -425,7 +425,7 @@ export class CelestialBody{
             // Only controllable objects can change orbiting body
             if(a.controllable){
                 // Check if we are leaving sphere of influence of current parent.
-                if(a.parent.parent && a.parent.soi && a.parent.soi * 1.01 < a.position.length()){
+                if(a.parent.parent && a.parent.sphereOfInfluence && a.parent.sphereOfInfluence * 1.01 < a.position.length()){
                     a.position.add(this.position);
                     a.velocity.add(this.velocity);
                     const j = children.indexOf(a);
@@ -441,9 +441,9 @@ export class CelestialBody{
                     const aj = children[j];
                     if(aj === a)
                         continue;
-                    if(!aj.soi)
+                    if(!aj.sphereOfInfluence)
                         continue;
-                    if(aj.position.distanceTo(a.position) < aj.soi * .99){
+                    if(aj.position.distanceTo(a.position) < aj.sphereOfInfluence * .99){
                         a.position.sub(aj.position);
                         a.velocity.sub(aj.velocity);
                         const k = children.indexOf(a);
@@ -514,7 +514,7 @@ export interface AddPlanetParams{
     radius: number;
     modelName?: string;
     controllable?: boolean;
-    soi?: number;
+    sphereOfInfluence?: number;
     axialTilt?: number;
     rotationPeriod?: number;
     quaternion?: THREE.Quaternion;
@@ -589,7 +589,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     if(params && params.controllable)
         ret.controllable = params.controllable;
 
-    ret.soi = params && params.soi ? params.soi / AU : 0;
+    ret.sphereOfInfluence = params && params.sphereOfInfluence ? params.sphereOfInfluence / AU : 0;
 
     ret.apoapsis = new THREE.Sprite(new THREE.SpriteMaterial({
         map: new THREE.TextureLoader().load(apoapsisUrl),

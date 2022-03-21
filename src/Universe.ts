@@ -72,7 +72,7 @@ export default class Universe{
             texture: mercuryUrl,
             GM: 22032 / AU / AU / AU,
             radius: 2439.7,
-            soi: 2e5,
+            sphereOfInfluence: 2e5,
         });
 
         const venus = addPlanetLocal({
@@ -89,7 +89,7 @@ export default class Universe{
             texture: venusUrl,
             GM: 324859 / AU / AU / AU,
             radius: 6051.8,
-            soi: 5e5,
+            sphereOfInfluence: 5e5,
         });
 
         // Earth is at 1 AU (which is the AU's definition) and orbits around the ecliptic.
@@ -109,7 +109,7 @@ export default class Universe{
             radius: 6534,
             axialTilt: 23.4392811 * rad_per_deg,
             rotationPeriod: ((23 * 60 + 56) * 60 + 4.10),
-            soi: 5e5
+            sphereOfInfluence: 5e5
         });
 
         this.rocket = this.addRocket(
@@ -140,7 +140,7 @@ export default class Universe{
             texture: moonUrl,
             GM: 4904.8695 / AU / AU / AU,
             radius: 1737.1,
-            soi: 1e5,
+            sphereOfInfluence: 1e5,
         });
 
         const mars = addPlanetLocal({
@@ -157,7 +157,7 @@ export default class Universe{
             texture: marsUrl,
             GM: 42828 / AU / AU / AU,
             radius: 3389.5,
-            soi: 3e5
+            sphereOfInfluence: 3e5
         });
 
         const jupiter = addPlanetLocal({
@@ -174,7 +174,7 @@ export default class Universe{
             texture: jupiterUrl,
             GM: 126686534 / AU / AU / AU,
             radius: 69911,
-            soi: 10e6,
+            sphereOfInfluence: 10e6,
         });
 
         // Use icosahedron instead of sphere to make it look like uniform
