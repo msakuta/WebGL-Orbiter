@@ -13,10 +13,31 @@ import venusUrl from './images/venus.jpg';
 import jupiterUrl from './images/jupiter.jpg';
 import earthUrl from './images/land_ocean_ice_cloud_2048.jpg';
 import rocketModelUrl from './rocket.obj';
+import rocketMtlUrl from './rocket.mtl';
 import perlinUrl from './images/perlin.jpg';
 
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 const rad_per_deg = Math.PI / 180; // Radians per degrees
+
+export const COLOR_PALETTE = [
+    '1 1 1',
+    '1 0.75 0.75',
+    '0.75 1 0.75',
+    '0.75 0.75 1',
+    '1 1 0.75',
+    '0.75 1 1',
+    '1 0.75 1',
+    '1 0.25 0.25',
+    '0.25 1 0.25',
+    '1 0.25 1',
+    '0.25 1 1',
+    '0.25 0.5 1',
+    '0.25 1 0.5',
+    '1 0.25 0.25',
+    '0.5 1 0.25',
+    '1 0.25 0.5',
+    '0.5 0.25 1',
+];
 
 type AddPlanetArgType = (orbitalElements: OrbitalElements,
     params: AddPlanetParams, orbitGeometry: THREE.BufferGeometry) => CelestialBody;
@@ -112,19 +133,17 @@ export default class Universe{
             sphereOfInfluence: 5e5
         });
 
-        this.rocket = this.addRocket(
-            "rocket",
-            {
-                semimajor_axis: 10000 / AU,
-                eccentricity: 0.,
-                inclination: 0,
-                ascending_node: 0,
-                argument_of_perihelion: 0
-            },
-            earth,
-            graphicsParams,
-            settings
-        );
+        this.rocket = this.addRocket("rocket",
+        {
+            semimajor_axis: 10000 / AU,
+            eccentricity: 0.,
+            inclination: 0,
+            ascending_node: 0,
+            argument_of_perihelion: 0
+        },
+        earth, 
+        graphicsParams,
+        settings);
 
         const moon = addPlanetLocal({
             semimajor_axis: 384399 / AU,
@@ -241,6 +260,8 @@ export default class Universe{
             GM: 100 / AU / AU / AU,
             radius: 0.1,
             modelName: rocketModelUrl,
+            mtlName: rocketMtlUrl,
+            modelColor: COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)],
             controllable: true
         },
         graphicsParams, this.orbitGeometry, settings);
