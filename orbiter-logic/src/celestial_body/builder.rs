@@ -12,6 +12,7 @@ pub(crate) struct CelestialBodyBuilder {
     orbit_color: Option<String>,
     gm: Option<f64>,
     radius: Option<f64>,
+    soi: Option<f64>,
 }
 
 impl CelestialBodyBuilder {
@@ -59,6 +60,11 @@ impl CelestialBodyBuilder {
         self
     }
 
+    pub(crate) fn soi(&mut self, soi: f64) -> &mut Self {
+        self.soi = Some(soi);
+        self
+    }
+
     pub(crate) fn build(
         &mut self,
         universe: &mut Universe,
@@ -81,6 +87,7 @@ impl CelestialBodyBuilder {
             GM: self.gm.unwrap(),
             orbital_elements,
             radius: self.radius.unwrap_or(1. / crate::AU),
+            soi: self.soi.unwrap_or(0.),
         }
     }
 }

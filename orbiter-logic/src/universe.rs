@@ -50,6 +50,7 @@ impl Universe {
             .parent(sun_id)
             .gm(398600. / AU / AU / AU)
             .radius(6534.)
+            .soi(5e5)
             .build_from_orbital_elements(
                 &mut this,
                 OrbitalElements {
@@ -60,7 +61,6 @@ impl Universe {
                     argument_of_perihelion: 114.20783 * rad_per_deg,
                     epoch: 0.,
                     mean_anomaly: 0.,
-                    soi: 1.,
                 },
                 params,
             );
@@ -83,7 +83,6 @@ impl Universe {
                     argument_of_perihelion: 0.,
                     epoch: 0.,
                     mean_anomaly: 0.,
-                    soi: 1.,
                 },
                 AddPlanetParams::default(),
             );
@@ -99,6 +98,7 @@ impl Universe {
             .parent(earth_id)
             .gm(4904.8695 / AU / AU / AU)
             .radius(1737.1)
+            .soi(1e5)
             .build_from_orbital_elements(
                 &mut this,
                 OrbitalElements {
@@ -109,7 +109,6 @@ impl Universe {
                     argument_of_perihelion: 114.20783 * rad_per_deg, //275.066 * rad_per_deg,
                     epoch: 0.,
                     mean_anomaly: 0.,
-                    soi: 1e5,
                 },
                 AddPlanetParams::default(),
             );
@@ -121,6 +120,7 @@ impl Universe {
             .parent(sun_id)
             .gm(42828. / AU / AU / AU)
             .radius(3389.5)
+            .soi(3e5)
             .build_from_orbital_elements(
                 &mut this,
                 OrbitalElements {
@@ -131,7 +131,6 @@ impl Universe {
                     argument_of_perihelion: 286.537 * rad_per_deg,
                     epoch: 0.,
                     mean_anomaly: 0.,
-                    soi: 3e5,
                 },
                 AddPlanetParams::default(),
             );
@@ -143,6 +142,7 @@ impl Universe {
             .parent(sun_id)
             .gm(126686534. / AU / AU / AU)
             .radius(69911.)
+            .soi(10e6)
             .build_from_orbital_elements(
                 &mut this,
                 OrbitalElements {
@@ -153,7 +153,6 @@ impl Universe {
                     argument_of_perihelion: 275.066 * rad_per_deg,
                     epoch: 0.,
                     mean_anomaly: 0.,
-                    soi: 10e6,
                 },
                 AddPlanetParams::default(),
             );
@@ -190,7 +189,6 @@ impl Universe {
                     argument_of_perihelion: rng.gen_range(0.0..360. * rad_per_deg),
                     epoch: 0.,
                     mean_anomaly: 0.,
-                    soi: 1.,
                 },
                 AddPlanetParams {
                     axial_tilt: 0.,
@@ -291,6 +289,7 @@ impl Universe {
                         Ok(cel)
                     })
                     .collect::<anyhow::Result<Vec<_>>>()?;
+                self.id_gen = self.bodies.len();
             }
             if let Some(v) = map.get("timeScale").and_then(|v| v.as_f64()) {
                 self.time_scale = v;

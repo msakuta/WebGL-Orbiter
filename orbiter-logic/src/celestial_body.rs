@@ -21,7 +21,6 @@ pub struct OrbitalElements {
     pub epoch: f64,
     pub mean_anomaly: f64,
     pub argument_of_perihelion: f64,
-    pub soi: f64,
 }
 
 pub type CelestialId = usize;
@@ -45,6 +44,7 @@ pub struct CelestialBody {
     radius: f64,
 
     orbital_elements: OrbitalElements,
+    pub soi: f64,
 }
 
 impl Default for CelestialBody {
@@ -63,6 +63,7 @@ impl Default for CelestialBody {
             GM: super::GMsun,
             radius: Rsun,
             orbital_elements: OrbitalElements::default(),
+            soi: 0.,
         }
     }
 }
