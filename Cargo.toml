@@ -2,5 +2,6 @@
 
 members = [
     "orbiter-logic",
+    "orbiter-wasm",
     "server",
 ]

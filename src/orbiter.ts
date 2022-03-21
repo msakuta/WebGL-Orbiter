@@ -20,6 +20,15 @@ import GameState from './GameState';
 
 import backgroundUrl from './images/hipparcoscyl1.jpg';
 
+// Note that a dynamic `import` statement here is required due to
+// webpack/webpack#6615, but in theory `import { greet } from './pkg';`
+// will work here one day as well!
+const rust = import('../orbiter-wasm/pkg');
+
+rust.then((module) => {
+    module.greet();
+})
+
 
 let container: HTMLElement;
 let stats: Stats;

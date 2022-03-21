@@ -1,12 +1,16 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
 
 module.exports = {
-  entry: './src/orbiter.ts',
+  entry: './src/index.ts',
   plugins: [
     new HtmlWebpackPlugin({
       title: 'Orbital simulation with three.js',
+    }),
+    new WasmPackPlugin({
+      crateDirectory: path.resolve(__dirname, "orbiter-wasm")
     }),
     new CleanWebpackPlugin(),
   ],
