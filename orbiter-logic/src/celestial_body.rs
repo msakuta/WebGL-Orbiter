@@ -35,7 +35,7 @@ pub struct CelestialBody {
     pub quaternion: Quaternion,
     pub angular_velocity: Vector3,
     orbit_color: String,
-    // orbitMaterial: THREE.LineBasicMaterial;
+    model_color: String,
     pub children: Vec<CelestialId>,
     pub parent: Option<CelestialId>,
     pub(crate) session_id: Option<SessionId>,
@@ -57,6 +57,7 @@ impl Default for CelestialBody {
             quaternion: Quaternion::new(1., 0., 0., 0.),
             angular_velocity: Vector3::zero(),
             orbit_color: "".to_string(),
+            model_color: "1 1 1".to_string(),
             children: vec![],
             parent: None,
             session_id: None,
@@ -225,6 +226,7 @@ impl Serialize for CelestialBody {
         map.serialize_entry("quaternion", &QuaternionSerial(self.quaternion))?;
         map.serialize_entry("angularVelocity", &self.angular_velocity)?;
         map.serialize_entry("orbitColor", &self.orbit_color)?;
+        map.serialize_entry("modelColor", &self.model_color)?;
         map.serialize_entry("children", &self.children)?;
         map.serialize_entry("parent", &self.parent)?;
         map.serialize_entry("sessionId", &self.session_id)?;
@@ -299,6 +301,7 @@ impl CelestialBody {
         deserialize_quaternion(&mut ret.quaternion, "quaternion");
         deserialize_vector3(&mut ret.angular_velocity, "angularVelocity")?;
         deserialize_str(&mut ret.orbit_color, "orbitColor");
+        deserialize_str(&mut ret.model_color, "modelColor");
         deserialize_vec(&mut ret.children, "children");
         ret.parent = map
             .get("parent")

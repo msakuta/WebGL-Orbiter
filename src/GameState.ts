@@ -73,7 +73,8 @@ export default class GameState{
                     body.orbitalElements,
                     parent,
                     this.graphicsParams,
-                    settings);
+                    settings,
+                    body.modelColor);
                 obj.deserialize(body, bodies);
             }
             if(this.sessionId && this.sessionId === body.sessionId){

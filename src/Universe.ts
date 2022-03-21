@@ -141,7 +141,7 @@ export default class Universe{
             ascending_node: 0,
             argument_of_perihelion: 0
         },
-        earth, 
+        earth,
         graphicsParams,
         settings);
 
@@ -251,7 +251,7 @@ export default class Universe{
 
     }
 
-    addRocket(name: string, orbitalElements: OrbitalElements, parent: CelestialBody, graphicsParams: GraphicsParams, settings: Settings){
+    addRocket(name: string, orbitalElements: OrbitalElements, parent: CelestialBody, graphicsParams: GraphicsParams, settings: Settings, modelColor?: string){
         const rocket = addPlanet(orbitalElements,
         {
             name,
@@ -261,7 +261,7 @@ export default class Universe{
             radius: 0.1,
             modelName: rocketModelUrl,
             mtlName: rocketMtlUrl,
-            modelColor: COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)],
+            modelColor: modelColor || COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)],
             controllable: true
         },
         graphicsParams, this.orbitGeometry, settings);

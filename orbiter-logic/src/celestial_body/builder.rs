@@ -1,6 +1,7 @@
 use super::{CelestialBody, CelestialId, OrbitalElements, Quaternion, Universe, Vector3};
 use crate::session::SessionId;
 use cgmath::{Rad, Rotation, Rotation3, Zero};
+use rand::Rng;
 
 #[derive(Default)]
 pub(crate) struct CelestialBodyBuilder {
@@ -73,6 +74,26 @@ impl CelestialBodyBuilder {
         let id = universe.id_gen;
         universe.id_gen += 1;
 
+        const COLOR_PALETTE: [&'static str; 17] = [
+            "1 1 1",
+            "1 0.75 0.75",
+            "0.75 1 0.75",
+            "0.75 0.75 1",
+            "1 1 0.75",
+            "0.75 1 1",
+            "1 0.75 1",
+            "1 0.25 0.25",
+            "0.25 1 0.25",
+            "1 0.25 1",
+            "0.25 1 1",
+            "0.25 0.5 1",
+            "0.25 1 0.5",
+            "1 0.25 0.25",
+            "0.5 1 0.25",
+            "1 0.25 0.5",
+            "0.5 0.25 1",
+        ];
+
         CelestialBody {
             id,
             name: self.name.take().unwrap(),
@@ -81,6 +102,8 @@ impl CelestialBodyBuilder {
             quaternion: Quaternion::new(0., 0., 0., 1.),
             angular_velocity: Vector3::new(0., 0., 0.),
             orbit_color: self.orbit_color.take().unwrap_or_else(String::new),
+            model_color: COLOR_PALETTE[rand::thread_rng().gen_range(0..COLOR_PALETTE.len())]
+                .to_string(),
             children: vec![],
             parent: self.parent,
             session_id: self.session_id,
