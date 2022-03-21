@@ -402,27 +402,8 @@ export class CelestialBody{
                         select_obj.velocity.add(new THREE.Vector3(1, 0, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(deltaV));
                         select_obj.totalDeltaV += deltaV;
                     }
-                    if((buttons.up || buttons.down || buttons.left || buttons.right || buttons.counterclockwise || buttons.clockwise || select_obj.throttle)
-                        && !this.updatingState)
-                    {
-                        this.updatingState = true;
-                        (async () => {
-                            await fetch(`http://${location.hostname}:${port}/api/rocket_state`, {
-                                method: 'POST',
-                                mode: 'cors',
-                                headers: {
-                                    "Content-Type": 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    session_id: select_obj.sessionId,
-                                    position: select_obj.position,
-                                    velocity: select_obj.velocity,
-                                    quaternion: select_obj.quaternion,
-                                    angular_velocity: select_obj.angularVelocity,
-                                }),
-                            });
-                            this.updatingState = false;
-                        })();
+                    if((buttons.up || buttons.down || buttons.left || buttons.right || buttons.counterclockwise || buttons.clockwise || a.throttle)){
+                        a.sendControlCommand();
                     }
                 }
                 const dvelo = accel.clone().multiplyScalar(0.5);
@@ -436,6 +417,9 @@ export class CelestialBody{
                     const axis = a.angularVelocity.clone().normalize();
                     // We have to multiply in this order!
                     a.quaternion.multiplyQuaternions(AxisAngleQuaternion(axis.x, axis.y, axis.z, a.angularVelocity.length() * deltaTime / div), a.quaternion);
+
+                    // We want to send decelerate commands to the server until the rotation stops, otherwise it will rotate forever.
+                    a.sendControlCommand();
                 }
             }
             // Only controllable objects can change orbiting body
@@ -477,6 +461,29 @@ export class CelestialBody{
             a.simulateBody(deltaTime, div, timescale, buttons, select_obj);
             i++;
         }
+    }
+
+    sendControlCommand(){
+        if(!this.sessionId || this.updatingState)
+            return;
+        this.updatingState = true;
+        (async () => {
+            await fetch(`http://${location.hostname}:${port}/api/rocket_state`, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    "Content-Type": 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: this.sessionId,
+                    position: this.position,
+                    velocity: this.velocity,
+                    quaternion: this.quaternion,
+                    angular_velocity: this.angularVelocity,
+                }),
+            });
+            this.updatingState = false;
+        })();
     }
 
     static findBody(name: string){

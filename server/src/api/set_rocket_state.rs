@@ -32,7 +32,7 @@ pub(crate) async fn set_rocket_state(
 ) -> HttpResponse {
     let mut universe = data.universe.write().unwrap();
 
-    println!("Set rocket state: {:?}", payload);
+    println!("Set rocket state from session: {}", payload.session_id);
     let session_id = SessionId::from(&payload.session_id as &str);
     if let Some(rocket) = universe
         .bodies
