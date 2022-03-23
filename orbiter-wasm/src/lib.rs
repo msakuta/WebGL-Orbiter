@@ -20,7 +20,10 @@ pub fn greet() {
     alert("Hello, orbiter-wasm!");
 }
 
+#[wasm_bindgen]
 pub fn load_state(json: JsValue) {
+    utils::set_panic_hook();
+    let json: serde_json::Value = json.into_serde().unwrap();
     let mut universe = Universe::new();
     // universe.deserialize(json).unwrap();
 }
