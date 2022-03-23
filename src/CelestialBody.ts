@@ -60,7 +60,8 @@ export class CelestialBody{
     hyperbolicMesh?: THREE.Line = null;
     orbit?: THREE.Line = null;
     blastModel?: THREE.Object3D = null;
-    updatingState = false;
+    // updatingState = false;
+    lastUpdateCommand?: number = null;
 
     // Orbital elements
     orbitalElements: OrbitalElements;
@@ -396,11 +397,13 @@ export class CelestialBody{
                         const MICRO_ROTATION = 1e-6;
                         if(MICRO_ROTATION < select_obj.angularVelocity.lengthSq()){
                             select_obj.angularVelocity.add(select_obj.angularVelocity.clone().normalize().multiplyScalar(-angleAcceleration * deltaTime / div));
+                            let forceSendCommand = false;
                             if(select_obj.angularVelocity.lengthSq() <= MICRO_ROTATION){
                                 select_obj.angularVelocity.set(0, 0, 0);
+                                forceSendCommand = true;
                             }
                             // We want to send decelerate commands to the server until the rotation stops, otherwise it will rotate forever.
-                            a.sendControlCommand();
+                            a.sendControlCommand(forceSendCommand);
                         }
                         else
                             select_obj.angularVelocity.set(0, 0, 0);
@@ -470,11 +473,16 @@ export class CelestialBody{
         }
     }
 
-    sendControlCommand(){
-        if(!this.sessionId || this.updatingState)
+    sendControlCommand(force = false){
+        if(!this.sessionId)
             return;
-        this.updatingState = true;
-        (async () => {
+        const now = Date.now();
+        if(!force && this.lastUpdateCommand !== null && now - this.lastUpdateCommand < 500){
+            return;
+        }
+        this.lastUpdateCommand = now;
+        // this.updatingState = true;
+        // (async () => {
             // await fetch(`http://${location.hostname}:${port}/api/rocket_state`,                    {
                     // method: 'POST',
                     // mode: 'cors',
@@ -494,8 +502,8 @@ export class CelestialBody{
                     }),
                 );
             }
-            this.updatingState = false;
-        })();
+            // this.updatingState = false;
+        // })();
     }
 
     static findBody(name: string){

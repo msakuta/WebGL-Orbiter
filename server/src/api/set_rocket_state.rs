@@ -97,7 +97,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
                     rocket.quaternion = payload.quaternion.into();
                     rocket.angular_velocity = payload.angular_velocity;
                 }
-                ctx.text("ok")
             }
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
             _ => (),
