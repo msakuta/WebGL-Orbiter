@@ -55,6 +55,8 @@ let decelerate = false;
 
 export const port = 8088;
 
+export const websocket = new WebSocket(`ws://${location.hostname}:${port}/ws/`);
+
 function init() {
 
     container = document.createElement( 'div' );
@@ -302,11 +304,13 @@ function init() {
     window.addEventListener( 'resize', onWindowResize, false );
     window.addEventListener( 'keydown', onKeyDown, false );
     window.addEventListener( 'keyup', onKeyUp, false );
-    window.addEventListener( 'pageshow', async function(){
+    window.addEventListener( 'load', async function(){
         const restoredSession = localStorage.getItem('WebGLOrbiterSession');
         if(restoredSession){
             gameState.sessionId = JSON.parse(restoredSession).sessionId;
         }
+
+        console.log(`gameSession: ${gameState.sessionId}`);
 
         await tryLoadState();
 

@@ -7,7 +7,7 @@ import periapsisUrl from './images/periapsis.png';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
 import { GraphicsParams } from './GameState';
-import { port } from './orbiter';
+import { port, websocket } from './orbiter';
 
 export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
@@ -475,21 +475,25 @@ export class CelestialBody{
             return;
         this.updatingState = true;
         (async () => {
-            await fetch(`http://${location.hostname}:${port}/api/rocket_state`, {
-                method: 'POST',
-                mode: 'cors',
-                headers: {
-                    "Content-Type": 'application/json',
-                },
-                body: JSON.stringify({
-                    sessionId: this.sessionId,
-                    parent: this.parent.name,
-                    position: this.position,
-                    velocity: this.velocity,
-                    quaternion: this.quaternion,
-                    angularVelocity: this.angularVelocity,
-                }),
-            });
+            // await fetch(`http://${location.hostname}:${port}/api/rocket_state`,                    {
+                    // method: 'POST',
+                    // mode: 'cors',
+                    // headers: {
+                    //     "Content-Type": 'application/json',
+                    // },
+                    // body: 
+            if(websocket.readyState === 1){
+                websocket.send(
+                    JSON.stringify({
+                        sessionId: this.sessionId,
+                        parent: this.parent.name,
+                        position: this.position,
+                        velocity: this.velocity,
+                        quaternion: this.quaternion,
+                        angularVelocity: this.angularVelocity,
+                    }),
+                );
+            }
             this.updatingState = false;
         })();
     }

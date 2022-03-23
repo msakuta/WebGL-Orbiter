@@ -1,7 +1,9 @@
 use crate::OrbiterData;
+use ::actix::{Actor, StreamHandler};
 use ::actix_web::{web, HttpResponse};
 use ::orbiter_logic::{Quaternion, SessionId, Vector3};
 use ::serde::Deserialize;
+use actix_web_actors::ws;
 
 #[derive(Deserialize, Debug, Clone, Copy)]
 struct QuaternionSerial {
@@ -54,4 +56,51 @@ pub(crate) async fn set_rocket_state(
     }
 
     HttpResponse::Ok().body("Ok")
+}
+
+/// Define HTTP actor
+pub(crate) struct MyWs(pub web::Data<OrbiterData>);
+
+impl Actor for MyWs {
+    type Context = ws::WebsocketContext<Self>;
+}
+
+/// Handler for ws::Message message
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for MyWs {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+        match msg {
+            Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
+            Ok(ws::Message::Text(text)) => {
+                let payload: SetRocketState = if let Ok(payload) = serde_json::from_str(&text) {
+                    payload
+                } else {
+                    return ctx.text("fail");
+                };
+
+                let mut universe = self.0.universe.write().unwrap();
+
+                println!("Set rocket state from session: {}", payload.session_id);
+                let session_id = SessionId::from(&payload.session_id as &str);
+                let parent_id = universe
+                    .bodies
+                    .iter()
+                    .find(|body| body.name == payload.parent)
+                    .map(|body| body.id);
+                if let Some(rocket) = universe
+                    .bodies
+                    .iter_mut()
+                    .find(|body| body.get_session_id() == Some(session_id))
+                {
+                    rocket.parent = parent_id;
+                    rocket.position = payload.position;
+                    rocket.velocity = payload.velocity;
+                    rocket.quaternion = payload.quaternion.into();
+                    rocket.angular_velocity = payload.angular_velocity;
+                }
+                ctx.text("ok")
+            }
+            Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
+            _ => (),
+        }
+    }
 }
