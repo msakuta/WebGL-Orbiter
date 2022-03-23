@@ -4,14 +4,14 @@ mod api {
 }
 
 use crate::api::{
-    set_rocket_state::{set_rocket_state, MyWs},
+    set_rocket_state::{set_rocket_state, SessionWs},
     set_timescale::set_timescale,
 };
 use ::actix_cors::Cors;
 use ::actix_files::NamedFile;
 use ::actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer};
 use ::clap::Parser;
-use ::orbiter_logic::{serialize, Universe};
+use ::orbiter_logic::{serialize, SessionId, Universe};
 use actix_web_actors::ws;
 use std::{
     fs,
@@ -127,13 +127,26 @@ fn save_file(autosave_file: &Path, serialized: &str) {
     );
 }
 
-async fn index(
+#[actix_web::get("/ws/{session_id}")]
+async fn websocket_index(
     data: web::Data<OrbiterData>,
+    session_id: web::Path<String>,
     req: HttpRequest,
     stream: web::Payload,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let resp = ws::start(MyWs(data.clone()), &req, stream);
-    println!("websocket received: {:?}", resp);
+    let session_id: SessionId = session_id.into_inner().into();
+    let resp = ws::start(
+        SessionWs {
+            data: data.clone(),
+            session_id,
+        },
+        &req,
+        stream,
+    );
+    println!(
+        "websocket received for session {:?}: {:?}",
+        session_id, resp
+    );
     resp
 }
 
@@ -214,7 +227,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Compress::default())
             .wrap(cors)
             .app_data(data.clone())
-            .route("/ws/", web::get().to(index))
+            .service(websocket_index)
             .route("/api/session", web::post().to(new_session))
             .route("/api/load", web::get().to(get_state))
             .route("/api/time_scale", web::post().to(set_timescale))

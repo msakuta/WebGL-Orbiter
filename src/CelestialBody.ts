@@ -474,7 +474,7 @@ export class CelestialBody{
     }
 
     sendControlCommand(force = false){
-        if(!this.sessionId)
+        if(!this.sessionId && websocket)
             return;
         const now = Date.now();
         if(!force && this.lastUpdateCommand !== null && now - this.lastUpdateCommand < 500){
@@ -493,7 +493,7 @@ export class CelestialBody{
             if(websocket.readyState === 1){
                 websocket.send(
                     JSON.stringify({
-                        sessionId: this.sessionId,
+                        // sessionId: this.sessionId,
                         parent: this.parent.name,
                         position: this.position,
                         velocity: this.velocity,

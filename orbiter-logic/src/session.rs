@@ -38,6 +38,12 @@ impl From<&str> for SessionId {
     }
 }
 
+impl From<String> for SessionId {
+    fn from(s: String) -> Self {
+        Self::from(&s as &str)
+    }
+}
+
 impl Serialize for SessionId {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

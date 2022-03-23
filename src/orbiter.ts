@@ -55,7 +55,7 @@ let decelerate = false;
 
 export const port = 8088;
 
-export const websocket = new WebSocket(`ws://${location.hostname}:${port}/ws/`);
+export let websocket: WebSocket = null;
 
 function init() {
 
@@ -328,6 +328,8 @@ function init() {
             gameState.sessionId = sessionId;
             await tryLoadState();
         }
+
+        websocket = new WebSocket(`ws://${location.hostname}:${port}/ws/${gameState.sessionId}`);
 
         // const state = localStorage.getItem('WebGLOrbiterAutoSave');
         // if(state){
