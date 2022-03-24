@@ -1,4 +1,7 @@
-use crate::{ChatServer, ClientMessage, OrbiterData};
+use crate::{
+    server::{ClientMessage, Connect, Message},
+    ChatServer, OrbiterData,
+};
 use ::actix::{prelude::*, Actor, StreamHandler};
 use ::actix_web::{web, HttpResponse};
 use ::orbiter_logic::{Quaternion, SessionId, Vector3};
@@ -81,7 +84,7 @@ impl Actor for SessionWs {
         // across all routes within application
         let addr = ctx.address();
         self.addr
-            .send(crate::Connect {
+            .send(Connect {
                 session_id: self.session_id,
                 addr: addr.recipient(),
             })
@@ -99,10 +102,10 @@ impl Actor for SessionWs {
 }
 
 /// Handle messages from chat server, we simply send it to peer websocket
-impl Handler<crate::Message> for SessionWs {
+impl Handler<Message> for SessionWs {
     type Result = ();
 
-    fn handle(&mut self, msg: crate::Message, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: Message, ctx: &mut Self::Context) {
         ctx.text(msg.0);
     }
 }
