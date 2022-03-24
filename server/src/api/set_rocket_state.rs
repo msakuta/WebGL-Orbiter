@@ -5,10 +5,10 @@ use crate::{
 use ::actix::{prelude::*, Actor, StreamHandler};
 use ::actix_web::{web, HttpResponse};
 use ::orbiter_logic::{Quaternion, SessionId, Vector3};
-use ::serde::Deserialize;
+use ::serde::{Deserialize, Serialize};
 use actix_web_actors::ws;
 
-#[derive(Deserialize, Debug, Clone, Copy)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 struct QuaternionSerial {
     _x: f64,
     _y: f64,
@@ -110,7 +110,7 @@ impl Handler<Message> for SessionWs {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SetRocketStateWs {
     parent: String,
@@ -118,6 +118,14 @@ pub(crate) struct SetRocketStateWs {
     velocity: Vector3,
     quaternion: QuaternionSerial,
     angular_velocity: Vector3,
+}
+
+#[derive(Deserialize, Serialize, Debug, Message)]
+#[rtype(result = "()")]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct NotifyRocketState {
+    pub session_id: SessionId,
+    pub rocket_state: SetRocketStateWs,
 }
 
 /// Handler for ws::Message message
@@ -144,19 +152,20 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
                     .iter()
                     .find(|body| body.name == payload.parent)
                     .map(|body| body.id);
-                if let Some(rocket) = universe
+                if let Some((_, rocket)) = universe
                     .bodies
                     .iter_mut()
-                    .find(|body| body.get_session_id() == Some(session_id))
+                    .enumerate()
+                    .find(|(_, body)| body.get_session_id() == Some(session_id))
                 {
                     rocket.parent = parent_id;
                     rocket.position = payload.position;
                     rocket.velocity = payload.velocity;
                     rocket.quaternion = payload.quaternion.into();
                     rocket.angular_velocity = payload.angular_velocity;
-                    self.addr.do_send(ClientMessage {
-                        session_id: self.session_id,
-                        msg: format!("rocket_state {:?}", rocket.position),
+                    self.addr.do_send(NotifyRocketState {
+                        session_id,
+                        rocket_state: payload,
                     });
                 }
             }

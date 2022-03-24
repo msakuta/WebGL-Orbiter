@@ -167,6 +167,14 @@ export class CelestialBody{
         this.ignitionCount = json.ignitionCount || 0;
     }
 
+    clientUpdate(json: any){
+        this.setParent(CelestialBody.celestialBodies.get(json.parent));
+        this.position = deserializeVector3(json.position);
+        this.velocity = deserializeVector3(json.velocity);
+        this.quaternion = deserializeQuaternion(json.quaternion);
+        this.angularVelocity = deserializeVector3(json.angularVelocity);
+    }
+
     setParent(newParent?: CelestialBody){
         if(this.parent === newParent) return;
         if(this.parent){

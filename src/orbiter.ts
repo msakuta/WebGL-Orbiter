@@ -330,6 +330,17 @@ function init() {
         }
 
         websocket = new WebSocket(`ws://${location.hostname}:${port}/ws/${gameState.sessionId}`);
+        websocket.addEventListener("message", (event: MessageEvent) => {
+            // console.log(`Event through WebSocket: ${event.data}`);
+            const data = JSON.parse(event.data);
+            if(data.type === "clientUpdate"){
+                const payload = data.payload;
+                const rocket = gameState.universe.sun.findSessionRocket(payload.sessionId);
+                if(rocket){
+                    rocket.clientUpdate(payload.rocketState);
+                }
+            }
+        });
 
         // const state = localStorage.getItem('WebGLOrbiterAutoSave');
         // if(state){

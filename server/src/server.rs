@@ -1,3 +1,4 @@
+use crate::api::set_rocket_state::NotifyRocketState;
 use ::actix::prelude::*;
 use ::orbiter_logic::SessionId;
 use std::{collections::HashMap, sync::atomic::AtomicUsize, sync::Arc};
@@ -71,7 +72,10 @@ impl Handler<Connect> for ChatServer {
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         self.sessions.insert(msg.session_id, msg.addr);
-        let res_msg = format!("Someone joined: {}", msg.session_id.to_string());
+        let res_msg = format!(
+            "{{\"type\": \"joined\", \"sessionId\": \"{}\" }}",
+            msg.session_id.to_string()
+        );
 
         println!("{}", res_msg);
 
@@ -87,6 +91,39 @@ impl Handler<ClientMessage> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
-        self.send_message(msg.msg.as_str(), Some(msg.session_id));
+        println!("Handling ClientMessage: {}", msg.msg);
+        self.send_message(
+            &format!(
+                "{{\"type\": \"clientMessage\", \"payload\": \"{}\" }}",
+                msg.msg.as_str()
+            ),
+            Some(msg.session_id),
+        );
+    }
+}
+
+impl Handler<NotifyRocketState> for ChatServer {
+    type Result = ();
+
+    fn handle(&mut self, msg: NotifyRocketState, _: &mut Context<Self>) {
+        // println!("Handling NotifyRocketState: {}", msg.session_id.to_string());
+
+        let session_id = msg.session_id;
+
+        use serde::Serialize;
+
+        #[derive(Serialize)]
+        struct Payload {
+            #[serde(rename = "type")]
+            type_: &'static str,
+            payload: NotifyRocketState,
+        }
+
+        let payload = Payload {
+            type_: "clientUpdate",
+            payload: msg,
+        };
+
+        self.send_message(&serde_json::to_string(&payload).unwrap(), Some(session_id));
     }
 }
