@@ -7,15 +7,19 @@ use crate::api::{
     set_rocket_state::{set_rocket_state, SessionWs},
     set_timescale::set_timescale,
 };
+use ::actix::prelude::*;
 use ::actix_cors::Cors;
 use ::actix_files::NamedFile;
 use ::actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer};
+use ::actix_web_actors::ws;
 use ::clap::Parser;
 use ::orbiter_logic::{serialize, SessionId, Universe};
-use actix_web_actors::ws;
 use std::{
+    collections::HashMap,
     fs,
     path::{Path, PathBuf},
+    sync::atomic::AtomicUsize,
+    sync::Arc,
     sync::{Mutex, RwLock},
     time::Instant,
 };
@@ -49,11 +53,101 @@ struct Args {
     autosave_pretty: bool,
 }
 
+/// Message for chat server communications
+
+/// New chat session is created
+#[derive(Message)]
+#[rtype(usize)]
+pub struct Connect {
+    pub session_id: SessionId,
+    pub addr: Recipient<Message>,
+}
+
+/// Send message to specific room
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct ClientMessage {
+    /// Id of the client session
+    pub session_id: SessionId,
+    /// Peer message
+    pub msg: String,
+}
+
+/// Chat server sends this messages to session
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct Message(pub String);
+
+/// `ChatServer` manages chat rooms and responsible for coordinating chat session.
+///
+/// Implementation is very naïve.
+#[derive(Debug)]
+pub struct ChatServer {
+    sessions: HashMap<SessionId, Recipient<Message>>,
+    visitor_count: Arc<AtomicUsize>,
+}
+
+impl ChatServer {
+    pub fn new(visitor_count: Arc<AtomicUsize>) -> ChatServer {
+        ChatServer {
+            sessions: HashMap::new(),
+            visitor_count,
+        }
+    }
+}
+
+impl ChatServer {
+    /// Send message to all users
+    fn send_message(&self, message: &str, skip_id: Option<SessionId>) {
+        for (i, addr) in &self.sessions {
+            if Some(*i) != skip_id {
+                let _ = addr.do_send(Message(message.to_owned()));
+            }
+        }
+    }
+}
+
+/// Make actor from `ChatServer`
+impl Actor for ChatServer {
+    /// We are going to use simple Context, we just need ability to communicate
+    /// with other actors.
+    type Context = Context<Self>;
+}
+
+/// Handler for Connect message.
+///
+/// Register new session and assign unique id to this session
+impl Handler<Connect> for ChatServer {
+    type Result = usize;
+
+    fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
+        self.sessions.insert(msg.session_id, msg.addr);
+        let res_msg = format!("Someone joined: {}", msg.session_id.to_string());
+
+        println!("{}", res_msg);
+
+        // notify all users in same room
+        self.send_message(&res_msg, None);
+
+        self.visitor_count.load(std::sync::atomic::Ordering::SeqCst)
+    }
+}
+
+/// Handler for Message message.
+impl Handler<ClientMessage> for ChatServer {
+    type Result = ();
+
+    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
+        self.send_message(msg.msg.as_str(), Some(msg.session_id));
+    }
+}
+
 struct OrbiterData {
     universe: RwLock<Universe>,
     asset_path: PathBuf,
     last_saved: Mutex<Instant>,
     autosave_file: PathBuf,
+    srv: Addr<ChatServer>,
 }
 
 async fn new_session(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResponse> {
@@ -127,6 +221,8 @@ fn save_file(autosave_file: &Path, serialized: &str) {
     );
 }
 
+/// Open a WebSocket instance and give it to the client.
+/// `session_id` should be created by `/api/session` beforehand.
 #[actix_web::get("/ws/{session_id}")]
 async fn websocket_index(
     data: web::Data<OrbiterData>,
@@ -135,14 +231,17 @@ async fn websocket_index(
     stream: web::Payload,
 ) -> Result<HttpResponse, actix_web::Error> {
     let session_id: SessionId = session_id.into_inner().into();
-    let resp = ws::start(
-        SessionWs {
-            data: data.clone(),
-            session_id,
-        },
-        &req,
-        stream,
-    );
+
+    let session_ws = SessionWs {
+        data: data.clone(),
+        session_id,
+        addr: data.srv.clone(),
+    };
+
+    // let srv = data.srv.clone();
+    // srv.do_send(Connect{addr: Addr(session_ws).recipient()});
+
+    let resp = ws::start(session_ws, &req, stream);
     println!(
         "websocket received for session {:?}: {:?}",
         session_id, resp
@@ -173,11 +272,16 @@ async fn main() -> std::io::Result<()> {
         }
     }
 
+    // set up applications state
+    // keep a count of the number of visitors
+    let app_state = Arc::new(AtomicUsize::new(0));
+
     let data = web::Data::new(OrbiterData {
         universe: RwLock::new(universe),
         asset_path: args.asset_path,
         last_saved: Mutex::new(Instant::now()),
         autosave_file: args.autosave_file,
+        srv: ChatServer::new(app_state.clone()).start(),
     });
     let data_copy = data.clone();
     let data_copy2 = data.clone();

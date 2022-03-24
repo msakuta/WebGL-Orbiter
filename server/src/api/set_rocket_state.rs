@@ -1,5 +1,5 @@
-use crate::OrbiterData;
-use ::actix::{Actor, StreamHandler};
+use crate::{ChatServer, ClientMessage, OrbiterData};
+use ::actix::{prelude::*, Actor, StreamHandler};
 use ::actix_web::{web, HttpResponse};
 use ::orbiter_logic::{Quaternion, SessionId, Vector3};
 use ::serde::Deserialize;
@@ -62,10 +62,49 @@ pub(crate) async fn set_rocket_state(
 pub(crate) struct SessionWs {
     pub data: web::Data<OrbiterData>,
     pub session_id: SessionId,
+    pub addr: Addr<ChatServer>,
 }
 
 impl Actor for SessionWs {
     type Context = ws::WebsocketContext<Self>;
+
+    /// Method is called on actor start.
+    /// We register ws session with ChatServer
+    fn started(&mut self, ctx: &mut Self::Context) {
+        // we'll start heartbeat process on session start.
+        // self.hb(ctx);
+
+        // register self in chat server. `AsyncContext::wait` register
+        // future within context, but context waits until this future resolves
+        // before processing any other events.
+        // HttpContext::state() is instance of WsChatSessionState, state is shared
+        // across all routes within application
+        let addr = ctx.address();
+        self.addr
+            .send(crate::Connect {
+                session_id: self.session_id,
+                addr: addr.recipient(),
+            })
+            .into_actor(self)
+            .then(|res, _act, ctx| {
+                match res {
+                    Ok(_) => (),
+                    // something is wrong with chat server
+                    _ => ctx.stop(),
+                }
+                fut::ready(())
+            })
+            .wait(ctx);
+    }
+}
+
+/// Handle messages from chat server, we simply send it to peer websocket
+impl Handler<crate::Message> for SessionWs {
+    type Result = ();
+
+    fn handle(&mut self, msg: crate::Message, ctx: &mut Self::Context) {
+        ctx.text(msg.0);
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -112,6 +151,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
                     rocket.velocity = payload.velocity;
                     rocket.quaternion = payload.quaternion.into();
                     rocket.angular_velocity = payload.angular_velocity;
+                    self.addr.do_send(ClientMessage {
+                        session_id: self.session_id,
+                        msg: format!("rocket_state {:?}", rocket.position),
+                    });
                 }
             }
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
