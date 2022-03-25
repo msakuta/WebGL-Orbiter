@@ -2,22 +2,21 @@ mod api {
     pub(crate) mod set_rocket_state;
     pub(crate) mod set_timescale;
 }
+mod quaternion;
 mod server;
+mod websocket;
 
 use crate::{
-    api::{
-        set_rocket_state::{set_rocket_state, SessionWs},
-        set_timescale::set_timescale,
-    },
+    api::{set_rocket_state::set_rocket_state, set_timescale::set_timescale},
     server::ChatServer,
+    websocket::websocket_index,
 };
 use ::actix::prelude::*;
 use ::actix_cors::Cors;
 use ::actix_files::NamedFile;
 use ::actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer};
-use ::actix_web_actors::ws;
 use ::clap::Parser;
-use ::orbiter_logic::{serialize, SessionId, Universe};
+use ::orbiter_logic::{serialize, Universe};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -133,34 +132,6 @@ fn save_file(autosave_file: &Path, serialized: &str) {
         "Wrote in {:.3}ms",
         start.elapsed().as_micros() as f64 * 1e-3
     );
-}
-
-/// Open a WebSocket instance and give it to the client.
-/// `session_id` should be created by `/api/session` beforehand.
-#[actix_web::get("/ws/{session_id}")]
-async fn websocket_index(
-    data: web::Data<OrbiterData>,
-    session_id: web::Path<String>,
-    req: HttpRequest,
-    stream: web::Payload,
-) -> Result<HttpResponse, actix_web::Error> {
-    let session_id: SessionId = session_id.into_inner().into();
-
-    let session_ws = SessionWs {
-        data: data.clone(),
-        session_id,
-        addr: data.srv.clone(),
-    };
-
-    // let srv = data.srv.clone();
-    // srv.do_send(Connect{addr: Addr(session_ws).recipient()});
-
-    let resp = ws::start(session_ws, &req, stream);
-    println!(
-        "websocket received for session {:?}: {:?}",
-        session_id, resp
-    );
-    resp
 }
 
 #[actix_web::main]

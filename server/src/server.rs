@@ -1,4 +1,4 @@
-use crate::api::set_rocket_state::{NotifyMessage, NotifyRocketState};
+use crate::websocket::{NotifyMessage, NotifyRocketState};
 use ::actix::prelude::*;
 use ::orbiter_logic::SessionId;
 use serde::Serialize;
@@ -131,8 +131,6 @@ impl Handler<NotifyMessage> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: NotifyMessage, _: &mut Context<Self>) {
-        let session_id = msg.session_id.clone();
-
         #[derive(Serialize)]
         struct Payload {
             #[serde(rename = "type")]
