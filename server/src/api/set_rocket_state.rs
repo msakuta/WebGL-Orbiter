@@ -120,6 +120,13 @@ pub(crate) struct SetRocketStateWs {
     angular_velocity: Vector3,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(tag = "type", rename_all = "camelCase")]
+pub(crate) enum WsMessage {
+    SetRocketState(SetRocketStateWs),
+    Message { payload: String },
+}
+
 #[derive(Deserialize, Serialize, Debug, Message)]
 #[rtype(result = "()")]
 #[serde(rename_all = "camelCase")]
@@ -128,45 +135,64 @@ pub(crate) struct NotifyRocketState {
     pub rocket_state: SetRocketStateWs,
 }
 
+#[derive(Deserialize, Serialize, Debug, Message)]
+#[rtype(result = "()")]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct NotifyMessage {
+    pub session_id: SessionId,
+    pub message: String,
+}
+
 /// Handler for ws::Message message
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Text(text)) => {
-                let payload: SetRocketStateWs = if let Ok(payload) = serde_json::from_str(&text) {
+                let payload: WsMessage = if let Ok(payload) = serde_json::from_str(&text) {
                     payload
                 } else {
-                    return ctx.text("fail");
+                    return ctx.text("{\"type\": \"response\", \"payload\": \"fail\"}");
                 };
 
-                let mut universe = self.data.universe.write().unwrap();
+                match payload {
+                    WsMessage::SetRocketState(payload) => {
+                        let mut universe = self.data.universe.write().unwrap();
 
-                println!(
-                    "Set rocket state from session: {}",
-                    self.session_id.to_string()
-                );
-                let session_id = self.session_id;
-                let parent_id = universe
-                    .bodies
-                    .iter()
-                    .find(|body| body.name == payload.parent)
-                    .map(|body| body.id);
-                if let Some((_, rocket)) = universe
-                    .bodies
-                    .iter_mut()
-                    .enumerate()
-                    .find(|(_, body)| body.get_session_id() == Some(session_id))
-                {
-                    rocket.parent = parent_id;
-                    rocket.position = payload.position;
-                    rocket.velocity = payload.velocity;
-                    rocket.quaternion = payload.quaternion.into();
-                    rocket.angular_velocity = payload.angular_velocity;
-                    self.addr.do_send(NotifyRocketState {
-                        session_id,
-                        rocket_state: payload,
-                    });
+                        println!(
+                            "Set rocket state from session: {}",
+                            self.session_id.to_string()
+                        );
+                        let session_id = self.session_id;
+                        let parent_id = universe
+                            .bodies
+                            .iter()
+                            .find(|body| body.name == payload.parent)
+                            .map(|body| body.id);
+                        if let Some((_, rocket)) = universe
+                            .bodies
+                            .iter_mut()
+                            .enumerate()
+                            .find(|(_, body)| body.get_session_id() == Some(session_id))
+                        {
+                            rocket.parent = parent_id;
+                            rocket.position = payload.position;
+                            rocket.velocity = payload.velocity;
+                            rocket.quaternion = payload.quaternion.into();
+                            rocket.angular_velocity = payload.angular_velocity;
+                            self.addr.do_send(NotifyRocketState {
+                                session_id,
+                                rocket_state: payload,
+                            });
+                        }
+                    }
+                    WsMessage::Message { payload } => {
+                        println!("Got message: {:?}", payload);
+                        self.addr.do_send(NotifyMessage {
+                            session_id: self.session_id,
+                            message: payload,
+                        });
+                    }
                 }
             }
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),

@@ -501,6 +501,7 @@ export class CelestialBody{
             if(websocket.readyState === 1){
                 websocket.send(
                     JSON.stringify({
+                        type: "setRocketState",
                         // sessionId: this.sessionId,
                         parent: this.parent.name,
                         position: this.position,

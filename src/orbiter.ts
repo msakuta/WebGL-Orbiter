@@ -41,6 +41,7 @@ let grids: THREE.Object3D;
 let scenarioSelectorControl: ScenarioSelectorControl;
 let saveControl: SaveControl;
 let loadControl: LoadControl;
+let textElement: HTMLInputElement;
 
 let windowHalfX = window.innerWidth / 2;
 let windowHalfY = window.innerHeight / 2;
@@ -169,6 +170,32 @@ function init() {
 
     const rotationControl = new RotationControl(buttons);
     container.appendChild( rotationControl.domElement );
+
+    
+    textElement = document.createElement('input');
+    textElement.type = "text";
+    textElement.style.position = "absolute";
+    textElement.style.bottom = `${navballRadius * 2 + 50}px`;
+    textElement.addEventListener('keydown', (event) => {
+        // Annoying browser incompatibilities
+        const code = event.which || event.keyCode;
+
+        if(code === 13){ // 'enter'
+            websocket.send(JSON.stringify({
+                type: "message",
+                payload: textElement.value,
+            }))
+            textElement.value = "";
+            textElement.blur();
+        }
+        if(code === 27){ // escape
+            textElement.blur();
+        }
+        event.stopPropagation();
+    });
+
+    container.appendChild( textElement );
+
 
     class SpeedControl{
         protected element: HTMLDivElement;
@@ -339,6 +366,9 @@ function init() {
                 if(rocket){
                     rocket.clientUpdate(payload.rocketState);
                 }
+            }
+            else if(data.type === "message"){
+                messageControl.setText(data.payload.message);
             }
         });
 

@@ -1,6 +1,7 @@
-use crate::api::set_rocket_state::NotifyRocketState;
+use crate::api::set_rocket_state::{NotifyMessage, NotifyRocketState};
 use ::actix::prelude::*;
 use ::orbiter_logic::SessionId;
+use serde::Serialize;
 use std::{collections::HashMap, sync::atomic::AtomicUsize, sync::Arc};
 
 /// Message for chat server communications
@@ -110,8 +111,6 @@ impl Handler<NotifyRocketState> for ChatServer {
 
         let session_id = msg.session_id;
 
-        use serde::Serialize;
-
         #[derive(Serialize)]
         struct Payload {
             #[serde(rename = "type")]
@@ -125,5 +124,27 @@ impl Handler<NotifyRocketState> for ChatServer {
         };
 
         self.send_message(&serde_json::to_string(&payload).unwrap(), Some(session_id));
+    }
+}
+
+impl Handler<NotifyMessage> for ChatServer {
+    type Result = ();
+
+    fn handle(&mut self, msg: NotifyMessage, _: &mut Context<Self>) {
+        let session_id = msg.session_id.clone();
+
+        #[derive(Serialize)]
+        struct Payload {
+            #[serde(rename = "type")]
+            type_: &'static str,
+            payload: NotifyMessage,
+        }
+
+        let payload = Payload {
+            type_: "message",
+            payload: msg,
+        };
+
+        self.send_message(&serde_json::to_string(&payload).unwrap(), None);
     }
 }
