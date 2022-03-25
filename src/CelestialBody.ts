@@ -7,7 +7,7 @@ import periapsisUrl from './images/periapsis.png';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
 import { GraphicsParams } from './GameState';
-import { port, websocket } from './orbiter';
+import { websocket } from './orbiter';
 
 export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)

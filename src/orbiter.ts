@@ -58,6 +58,26 @@ export const port = 8088;
 
 export let websocket: WebSocket = null;
 
+export function reconnectWebSocket(){
+    if(gameState.sessionId){
+        websocket = new WebSocket(`ws://${location.hostname}:${port}/ws/${gameState.sessionId}`);
+        websocket.addEventListener("message", (event: MessageEvent) => {
+            // console.log(`Event through WebSocket: ${event.data}`);
+            const data = JSON.parse(event.data);
+            if(data.type === "clientUpdate"){
+                const payload = data.payload;
+                const body = CelestialBody.celestialBodies.get(payload.bodyState.name);
+                if(body){
+                    body.clientUpdate(payload.bodyState);
+                }
+            }
+            else if(data.type === "message"){
+                messageControl.setText(data.payload.message);
+            }
+        });
+    }
+}
+
 function init() {
 
     container = document.createElement( 'div' );
@@ -356,21 +376,9 @@ function init() {
             await tryLoadState();
         }
 
-        websocket = new WebSocket(`ws://${location.hostname}:${port}/ws/${gameState.sessionId}`);
-        websocket.addEventListener("message", (event: MessageEvent) => {
-            // console.log(`Event through WebSocket: ${event.data}`);
-            const data = JSON.parse(event.data);
-            if(data.type === "clientUpdate"){
-                const payload = data.payload;
-                const body = CelestialBody.celestialBodies.get(payload.name);
-                if(body){
-                    body.clientUpdate(payload.bodyState);
-                }
-            }
-            else if(data.type === "message"){
-                messageControl.setText(data.payload.message);
-            }
-        });
+        if(!websocket){
+            reconnectWebSocket();
+        }
 
         // const state = localStorage.getItem('WebGLOrbiterAutoSave');
         // if(state){
@@ -411,6 +419,9 @@ function animate() {
     render();
     stats.update();
 
+    if(!websocket || websocket.readyState === 3){
+        reconnectWebSocket();
+    }
 }
 
 function render() {
