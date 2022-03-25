@@ -1,5 +1,4 @@
 mod api {
-    pub(crate) mod set_rocket_state;
     pub(crate) mod set_timescale;
 }
 mod quaternion;
@@ -7,7 +6,7 @@ mod server;
 mod websocket;
 
 use crate::{
-    api::{set_rocket_state::set_rocket_state, set_timescale::set_timescale},
+    api::{set_timescale::set_timescale},
     server::ChatServer,
     websocket::{websocket_index, NotifyBodyState, SetRocketStateWs},
 };
@@ -235,8 +234,7 @@ async fn main() -> std::io::Result<()> {
             .service(websocket_index)
             .route("/api/session", web::post().to(new_session))
             .route("/api/load", web::get().to(get_state))
-            .route("/api/time_scale", web::post().to(set_timescale))
-            .route("/api/rocket_state", web::post().to(set_rocket_state));
+            .route("/api/time_scale", web::post().to(set_timescale));
         #[cfg(not(debug_assertions))]
         {
             app.route("/", web::get().to(get_index))
