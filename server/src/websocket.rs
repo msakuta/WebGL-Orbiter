@@ -5,7 +5,7 @@ use crate::{
 };
 use ::actix::{prelude::*, Actor, StreamHandler};
 use ::actix_web::{web, HttpRequest, HttpResponse};
-use ::orbiter_logic::{SessionId, Vector3};
+use ::orbiter_logic::{CelestialBody, SessionId, Vector3};
 use ::serde::{Deserialize, Serialize};
 use actix_web_actors::ws;
 
@@ -89,16 +89,36 @@ impl Handler<Message> for SessionWs {
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SetRocketStateWs {
-    parent: String,
+    name: String,
+    parent: Option<String>,
     position: Vector3,
     velocity: Vector3,
     quaternion: QuaternionSerial,
     angular_velocity: Vector3,
 }
 
+impl SetRocketStateWs {
+    pub(crate) fn from<'a>(
+        body: &'a CelestialBody,
+        mut bodies: impl Iterator<Item = &'a CelestialBody>,
+    ) -> Self {
+        Self {
+            name: body.name.clone(),
+            parent: body
+                .parent
+                .and_then(|parent| bodies.nth(parent))
+                .map(|b| b.name.clone()),
+            position: body.position,
+            velocity: body.velocity,
+            quaternion: body.quaternion.into(),
+            angular_velocity: body.angular_velocity,
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug)]
 #[serde(tag = "type", rename_all = "camelCase")]
-pub(crate) enum WsMessage {
+enum WsMessage {
     SetRocketState(SetRocketStateWs),
     Message { payload: String },
 }
@@ -106,9 +126,9 @@ pub(crate) enum WsMessage {
 #[derive(Deserialize, Serialize, Debug, Message)]
 #[rtype(result = "()")]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct NotifyRocketState {
-    pub session_id: SessionId,
-    pub rocket_state: SetRocketStateWs,
+pub(crate) struct NotifyBodyState {
+    pub session_id: Option<SessionId>,
+    pub body_state: SetRocketStateWs,
 }
 
 #[derive(Deserialize, Serialize, Debug, Message)]
@@ -139,26 +159,31 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
                             "Set rocket state from session: {}",
                             self.session_id.to_string()
                         );
-                        let session_id = self.session_id;
-                        let parent_id = universe
-                            .bodies
-                            .iter()
-                            .find(|body| body.name == payload.parent)
-                            .map(|body| body.id);
+                        let parent_id = payload
+                            .parent
+                            .as_ref()
+                            .and_then(|parent| {
+                                universe
+                                    .bodies
+                                    .iter()
+                                    .enumerate()
+                                    .find(|(_, body)| body.name == *parent)
+                            })
+                            .map(|(i, _)| i);
                         if let Some((_, rocket)) = universe
                             .bodies
                             .iter_mut()
                             .enumerate()
-                            .find(|(_, body)| body.get_session_id() == Some(session_id))
+                            .find(|(_, body)| body.name == payload.name)
                         {
                             rocket.parent = parent_id;
                             rocket.position = payload.position;
                             rocket.velocity = payload.velocity;
                             rocket.quaternion = payload.quaternion.into();
                             rocket.angular_velocity = payload.angular_velocity;
-                            self.addr.do_send(NotifyRocketState {
-                                session_id,
-                                rocket_state: payload,
+                            self.addr.do_send(NotifyBodyState {
+                                session_id: Some(self.session_id),
+                                body_state: payload,
                             });
                         }
                     }

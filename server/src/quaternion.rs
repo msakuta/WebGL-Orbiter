@@ -14,3 +14,14 @@ impl From<QuaternionSerial> for Quaternion {
         Self::new(serial._w, serial._x, serial._y, serial._z)
     }
 }
+
+impl From<Quaternion> for QuaternionSerial {
+    fn from(q: Quaternion) -> Self {
+        Self {
+            _x: q.v.x,
+            _y: q.v.y,
+            _z: q.v.z,
+            _w: q.s,
+        }
+    }
+}

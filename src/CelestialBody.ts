@@ -502,7 +502,7 @@ export class CelestialBody{
                 websocket.send(
                     JSON.stringify({
                         type: "setRocketState",
-                        // sessionId: this.sessionId,
+                        name: this.name,
                         parent: this.parent.name,
                         position: this.position,
                         velocity: this.velocity,

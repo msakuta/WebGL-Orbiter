@@ -362,9 +362,9 @@ function init() {
             const data = JSON.parse(event.data);
             if(data.type === "clientUpdate"){
                 const payload = data.payload;
-                const rocket = gameState.universe.sun.findSessionRocket(payload.sessionId);
-                if(rocket){
-                    rocket.clientUpdate(payload.rocketState);
+                const body = CelestialBody.celestialBodies.get(payload.name);
+                if(body){
+                    body.clientUpdate(payload.bodyState);
                 }
             }
             else if(data.type === "message"){
@@ -387,7 +387,7 @@ function init() {
         //     body: gameSerialized
         // });
     });
-    setInterval(tryLoadState, 10000);
+    // setInterval(tryLoadState, 10000);
 
     gameState.startTicking();
 }

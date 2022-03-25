@@ -9,7 +9,7 @@ mod websocket;
 use crate::{
     api::{set_rocket_state::set_rocket_state, set_timescale::set_timescale},
     server::ChatServer,
-    websocket::websocket_index,
+    websocket::{websocket_index, NotifyBodyState, SetRocketStateWs},
 };
 use ::actix::prelude::*;
 use ::actix_cors::Cors;
@@ -53,12 +53,15 @@ struct Args {
     autosave_period_s: f64,
     #[clap(long)]
     autosave_pretty: bool,
+    #[clap(long, default_value = "10")]
+    push_period_s: f64,
 }
 
 struct OrbiterData {
     universe: RwLock<Universe>,
     asset_path: PathBuf,
     last_saved: Mutex<Instant>,
+    last_pushed: Mutex<Instant>,
     autosave_file: PathBuf,
     srv: Addr<ChatServer>,
 }
@@ -165,6 +168,7 @@ async fn main() -> std::io::Result<()> {
         universe: RwLock::new(universe),
         asset_path: args.asset_path,
         last_saved: Mutex::new(Instant::now()),
+        last_pushed: Mutex::new(Instant::now()),
         autosave_file: args.autosave_file,
         srv: ChatServer::new(app_state.clone()).start(),
     });
@@ -173,6 +177,7 @@ async fn main() -> std::io::Result<()> {
 
     let autosave_period_s = args.autosave_period_s;
     let autosave_pretty = args.autosave_pretty;
+    let push_period_s = args.push_period_s;
 
     actix_web::rt::spawn(async move {
         let mut interval = actix_web::rt::time::interval(std::time::Duration::from_secs(1));
@@ -193,6 +198,17 @@ async fn main() -> std::io::Result<()> {
                     });
                 }
                 *last_saved = Instant::now();
+            }
+
+            let mut last_pushed = data_copy.last_pushed.lock().unwrap();
+            if push_period_s < last_pushed.elapsed().as_micros() as f64 * 1e-6 {
+                for body in universe.bodies.iter() {
+                    data_copy.srv.do_send(NotifyBodyState {
+                        session_id: None,
+                        body_state: SetRocketStateWs::from(body, universe.bodies.iter()),
+                    });
+                }
+                *last_pushed = Instant::now();
             }
 
             println!(

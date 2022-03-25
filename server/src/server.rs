@@ -1,4 +1,4 @@
-use crate::websocket::{NotifyMessage, NotifyRocketState};
+use crate::websocket::{NotifyBodyState, NotifyMessage};
 use ::actix::prelude::*;
 use ::orbiter_logic::SessionId;
 use serde::Serialize;
@@ -103,19 +103,17 @@ impl Handler<ClientMessage> for ChatServer {
     }
 }
 
-impl Handler<NotifyRocketState> for ChatServer {
+impl Handler<NotifyBodyState> for ChatServer {
     type Result = ();
 
-    fn handle(&mut self, msg: NotifyRocketState, _: &mut Context<Self>) {
-        // println!("Handling NotifyRocketState: {}", msg.session_id.to_string());
-
+    fn handle(&mut self, msg: NotifyBodyState, _: &mut Context<Self>) {
         let session_id = msg.session_id;
 
         #[derive(Serialize)]
         struct Payload {
             #[serde(rename = "type")]
             type_: &'static str,
-            payload: NotifyRocketState,
+            payload: NotifyBodyState,
         }
 
         let payload = Payload {
@@ -123,7 +121,7 @@ impl Handler<NotifyRocketState> for ChatServer {
             payload: msg,
         };
 
-        self.send_message(&serde_json::to_string(&payload).unwrap(), Some(session_id));
+        self.send_message(&serde_json::to_string(&payload).unwrap(), session_id);
     }
 }
 
