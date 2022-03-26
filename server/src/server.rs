@@ -87,6 +87,13 @@ impl Handler<Connect> for ChatServer {
     }
 }
 
+#[derive(Serialize)]
+struct Payload<T: Serialize> {
+    #[serde(rename = "type")]
+    type_: &'static str,
+    payload: T,
+}
+
 /// Handler for Message message.
 impl Handler<ClientMessage> for ChatServer {
     type Result = ();
@@ -94,10 +101,11 @@ impl Handler<ClientMessage> for ChatServer {
     fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
         println!("Handling ClientMessage: {}", msg.msg);
         self.send_message(
-            &format!(
-                "{{\"type\": \"clientMessage\", \"payload\": \"{}\" }}",
-                msg.msg.as_str()
-            ),
+            &serde_json::to_string(&Payload {
+                type_: "clientMessage",
+                payload: &msg.msg,
+            })
+            .unwrap(),
             Some(msg.session_id),
         );
     }
@@ -108,13 +116,6 @@ impl Handler<NotifyBodyState> for ChatServer {
 
     fn handle(&mut self, msg: NotifyBodyState, _: &mut Context<Self>) {
         let session_id = msg.session_id;
-
-        #[derive(Serialize)]
-        struct Payload {
-            #[serde(rename = "type")]
-            type_: &'static str,
-            payload: NotifyBodyState,
-        }
 
         let payload = Payload {
             type_: "clientUpdate",
@@ -129,13 +130,6 @@ impl Handler<NotifyMessage> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: NotifyMessage, _: &mut Context<Self>) {
-        #[derive(Serialize)]
-        struct Payload {
-            #[serde(rename = "type")]
-            type_: &'static str,
-            payload: NotifyMessage,
-        }
-
         let payload = Payload {
             type_: "message",
             payload: msg,
@@ -149,13 +143,6 @@ impl Handler<TimeScaleMessage> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: TimeScaleMessage, _: &mut Context<Self>) {
-        #[derive(Serialize)]
-        struct Payload {
-            #[serde(rename = "type")]
-            type_: &'static str,
-            payload: TimeScaleMessage,
-        }
-
         let payload = Payload {
             type_: "timeScale",
             payload: msg,
