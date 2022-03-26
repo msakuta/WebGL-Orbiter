@@ -1,6 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const Dotenv = require('dotenv-webpack');
 
 module.exports = {
   entry: './src/orbiter.ts',
@@ -9,6 +10,7 @@ module.exports = {
       title: 'Orbital simulation with three.js',
     }),
     new CleanWebpackPlugin(),
+    new Dotenv(),
   ],
   module: {
     rules: [

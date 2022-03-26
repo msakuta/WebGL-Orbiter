@@ -54,7 +54,7 @@ let buttons = new RotationButtons();
 let accelerate = false;
 let decelerate = false;
 
-export const port = 8088;
+export const port = process.env.SERVER_PORT || 8088;
 
 export let websocket: WebSocket = null;
 
