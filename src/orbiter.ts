@@ -75,6 +75,7 @@ export function reconnectWebSocket(){
                 messageControl.setText(data.payload.message);
             }
             else if(data.type === "timeScale"){
+                gameState.timescale = data.payload.timeScale;
                 timescaleControl.setFromServer(data.payload.timeScale);
             }
         });

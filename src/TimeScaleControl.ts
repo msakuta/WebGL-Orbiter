@@ -40,6 +40,10 @@ export class TimeScaleControl{
     protected clickForward(number: number){
         if(!this.setTimeScale(TimeScaleControl.series[number]))
             return;
+        this.setGui(number);
+    }
+
+    protected setGui(number: number){
         for(let i = 0; i < this.forwards.length; i++)
             this.forwards[i].src = i <= number ? forwardActiveUrl : forwardInactiveUrl;
         this.text.innerHTML = 'Timescale: x' + TimeScaleControl.series[number];
@@ -66,8 +70,7 @@ export class TimeScaleControl{
     setFromServer(value: number){
         for(let i = 0; i < this.forwards.length; i++){
             if(TimeScaleControl.series[i] === value){
-                this.text.innerHTML = 'Timescale: x' + TimeScaleControl.series[i];
-                this.timeIndex = i;
+                this.setGui(i);
                 return;
             }
         }
