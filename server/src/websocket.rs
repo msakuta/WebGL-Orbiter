@@ -121,6 +121,7 @@ impl SetRocketStateWs {
 enum WsMessage {
     SetRocketState(SetRocketStateWs),
     Message { payload: String },
+    TimeScale { payload: TimeScaleMessage },
 }
 
 #[derive(Deserialize, Serialize, Debug, Message)]
@@ -137,6 +138,13 @@ pub(crate) struct NotifyBodyState {
 pub(crate) struct NotifyMessage {
     pub session_id: SessionId,
     pub message: String,
+}
+
+#[derive(Deserialize, Serialize, Debug, Message)]
+#[rtype(result = "()")]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct TimeScaleMessage {
+    pub time_scale: f64,
 }
 
 /// Handler for ws::Message message
@@ -193,6 +201,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
                             session_id: self.session_id,
                             message: payload,
                         });
+                    }
+                    WsMessage::TimeScale { payload } => {
+                        let mut data = self.data.universe.write().unwrap();
+                        println!("Got timeScale: {}", payload.time_scale);
+                        data.time_scale = payload.time_scale;
+                        self.addr.do_send(payload);
                     }
                 }
             }

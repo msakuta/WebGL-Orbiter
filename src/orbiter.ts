@@ -74,6 +74,9 @@ export function reconnectWebSocket(){
             else if(data.type === "message"){
                 messageControl.setText(data.payload.message);
             }
+            else if(data.type === "timeScale"){
+                timescaleControl.setFromServer(data.payload.time);
+            }
         });
     }
 }

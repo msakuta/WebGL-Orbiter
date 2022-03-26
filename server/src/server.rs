@@ -1,7 +1,7 @@
-use crate::websocket::{NotifyBodyState, NotifyMessage};
+use crate::websocket::{NotifyBodyState, NotifyMessage, TimeScaleMessage};
 use ::actix::prelude::*;
 use ::orbiter_logic::SessionId;
-use serde::Serialize;
+use ::serde::Serialize;
 use std::{collections::HashMap, sync::atomic::AtomicUsize, sync::Arc};
 
 /// Message for chat server communications
@@ -138,6 +138,26 @@ impl Handler<NotifyMessage> for ChatServer {
 
         let payload = Payload {
             type_: "message",
+            payload: msg,
+        };
+
+        self.send_message(&serde_json::to_string(&payload).unwrap(), None);
+    }
+}
+
+impl Handler<TimeScaleMessage> for ChatServer {
+    type Result = ();
+
+    fn handle(&mut self, msg: TimeScaleMessage, _: &mut Context<Self>) {
+        #[derive(Serialize)]
+        struct Payload {
+            #[serde(rename = "type")]
+            type_: &'static str,
+            payload: TimeScaleMessage,
+        }
+
+        let payload = Payload {
+            type_: "timeScale",
             payload: msg,
         };
 

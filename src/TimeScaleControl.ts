@@ -61,4 +61,15 @@ export class TimeScaleControl{
     setDate(text: string){
         this.date.innerHTML = text;
     }
+
+    /// Set time scale from server without notifying the server
+    setFromServer(value: number){
+        for(let i = 0; i < this.forwards.length; i++){
+            if(TimeScaleControl.series[i] === value){
+                this.text.innerHTML = 'Timescale: x' + TimeScaleControl.series[i];
+                this.timeIndex = i;
+                return;
+            }
+        }
+    }
 }

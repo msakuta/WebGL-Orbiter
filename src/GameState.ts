@@ -3,7 +3,7 @@ import { CelestialBody, addPlanet, OrbitalElements, AddPlanetParams } from './Ce
 import { Settings } from './SettingsControl';
 import Universe from './Universe';
 import { RotationButtons } from './RotationControl';
-import { port } from './orbiter';
+import { port, websocket } from './orbiter';
 import rocketModelUrl from './rocket.obj';
 
 const selectedOrbitMaterial = new THREE.LineBasicMaterial({color: 0xff7fff});
@@ -122,17 +122,27 @@ export default class GameState{
             return false;
         }
         this.timescale = scale;
-        fetch(`http://${location.hostname}:${port}/api/time_scale`, {
-            method: 'POST',
-            mode: 'cors',
-            headers: {
-                "Content-Type": 'application/json',
-                // "Access-Control-Allow-Origin": "*",
-                // "Access-Control-Allow-Methods": "OPTIONS, POST, GET",
-                // "Access-Control-Max-Age": "2592000",
-            },
-            body: JSON.stringify({time_scale: scale}),
-        });
+        if(websocket && websocket.readyState === 1){
+            websocket.send(JSON.stringify({
+                type: "timeScale",
+                payload: {
+                    timeScale: this.timescale,
+                }
+            }));
+        }
+        else{
+            fetch(`http://${location.hostname}:${port}/api/time_scale`, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    "Content-Type": 'application/json',
+                    // "Access-Control-Allow-Origin": "*",
+                    // "Access-Control-Allow-Methods": "OPTIONS, POST, GET",
+                    // "Access-Control-Max-Age": "2592000",
+                },
+                body: JSON.stringify({time_scale: scale}),
+            });
+        }
         return true;
     }
 

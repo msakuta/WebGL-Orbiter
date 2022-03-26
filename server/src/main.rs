@@ -6,7 +6,7 @@ mod server;
 mod websocket;
 
 use crate::{
-    api::{set_timescale::set_timescale},
+    api::set_timescale::set_timescale,
     server::ChatServer,
     websocket::{websocket_index, NotifyBodyState, SetRocketStateWs},
 };
