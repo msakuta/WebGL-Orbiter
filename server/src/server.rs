@@ -1,8 +1,12 @@
-use crate::websocket::{NotifyBodyState, NotifyMessage, TimeScaleMessage};
+use crate::websocket::{ChatHistoryRequest, ClientMessage, NotifyBodyState, TimeScaleMessage};
 use ::actix::prelude::*;
 use ::orbiter_logic::SessionId;
 use ::serde::Serialize;
-use std::{collections::HashMap, sync::atomic::AtomicUsize, sync::Arc};
+use std::{
+    collections::{HashMap, VecDeque},
+    sync::atomic::AtomicUsize,
+    sync::Arc,
+};
 
 /// Message for chat server communications
 
@@ -14,27 +18,19 @@ pub struct Connect {
     pub addr: Recipient<Message>,
 }
 
-/// Send message to specific room
-#[derive(Serialize, Message)]
-#[rtype(result = "()")]
-pub struct ClientMessage {
-    /// Id of the client session
-    pub session_id: SessionId,
-    /// Peer message
-    pub msg: String,
-}
-
 /// Chat server sends this messages to session
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct Message(pub String);
 
+const CHAT_HISTORY_MAX: usize = 100;
+
 /// `ChatServer` manages chat rooms and responsible for coordinating chat session.
 ///
 /// Implementation is very naïve.
-#[derive(Debug)]
 pub(crate) struct ChatServer {
     sessions: HashMap<SessionId, Recipient<Message>>,
+    chat_history: VecDeque<ClientMessage>,
     visitor_count: Arc<AtomicUsize>,
 }
 
@@ -42,6 +38,7 @@ impl ChatServer {
     pub fn new(visitor_count: Arc<AtomicUsize>) -> ChatServer {
         ChatServer {
             sessions: HashMap::new(),
+            chat_history: VecDeque::new(),
             visitor_count,
         }
     }
@@ -94,25 +91,6 @@ struct Payload<T: Serialize> {
     payload: T,
 }
 
-/// Handler for Message message.
-impl Handler<ClientMessage> for ChatServer {
-    type Result = ();
-
-    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
-        println!("Handling ClientMessage: {}", msg.msg);
-        let session_id = msg.session_id;
-
-        self.send_message(
-            &serde_json::to_string(&Payload {
-                type_: "clientMessage",
-                payload: msg,
-            })
-            .unwrap(),
-            Some(session_id),
-        );
-    }
-}
-
 impl Handler<NotifyBodyState> for ChatServer {
     type Result = ();
 
@@ -128,10 +106,14 @@ impl Handler<NotifyBodyState> for ChatServer {
     }
 }
 
-impl Handler<NotifyMessage> for ChatServer {
+impl Handler<ClientMessage> for ChatServer {
     type Result = ();
 
-    fn handle(&mut self, msg: NotifyMessage, _: &mut Context<Self>) {
+    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
+        if CHAT_HISTORY_MAX <= self.chat_history.len() {
+            self.chat_history.pop_front();
+        }
+        self.chat_history.push_back(msg.clone());
         let payload = Payload {
             type_: "message",
             payload: msg,
@@ -151,5 +133,27 @@ impl Handler<TimeScaleMessage> for ChatServer {
         };
 
         self.send_message(&serde_json::to_string(&payload).unwrap(), None);
+    }
+}
+
+impl Handler<ChatHistoryRequest> for ChatServer {
+    type Result = ();
+
+    fn handle(&mut self, msg: ChatHistoryRequest, _: &mut Context<Self>) {
+        println!(
+            "Handling ChatHistoryRequest returning {} items",
+            self.chat_history.len()
+        );
+        let session_id = msg.0;
+
+        if let Some(session) = self.sessions.get(&session_id) {
+            session.do_send(Message(
+                serde_json::to_string(&Payload {
+                    type_: "chatHistory",
+                    payload: &self.chat_history,
+                })
+                .unwrap(),
+            ));
+        }
     }
 }

@@ -74,6 +74,8 @@ impl Actor for SessionWs {
                 fut::ready(())
             })
             .wait(ctx);
+
+        self.addr.do_send(ChatHistoryRequest(self.session_id));
     }
 }
 
@@ -122,6 +124,7 @@ enum WsMessage {
     SetRocketState(SetRocketStateWs),
     Message { payload: String },
     TimeScale { payload: TimeScaleMessage },
+    ChatHistoryRequest,
 }
 
 #[derive(Deserialize, Serialize, Debug, Message)]
@@ -132,10 +135,10 @@ pub(crate) struct NotifyBodyState {
     pub body_state: SetRocketStateWs,
 }
 
-#[derive(Deserialize, Serialize, Debug, Message)]
+#[derive(Deserialize, Serialize, Debug, Message, Clone)]
 #[rtype(result = "()")]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct NotifyMessage {
+pub(crate) struct ClientMessage {
     pub session_id: SessionId,
     pub message: String,
 }
@@ -146,6 +149,11 @@ pub(crate) struct NotifyMessage {
 pub(crate) struct TimeScaleMessage {
     pub time_scale: f64,
 }
+
+#[derive(Deserialize, Serialize, Debug, Message)]
+#[rtype(result = "()")]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct ChatHistoryRequest(pub SessionId);
 
 /// Handler for ws::Message message
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
@@ -197,7 +205,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
                     }
                     WsMessage::Message { payload } => {
                         println!("Got message: {:?}", payload);
-                        self.addr.do_send(NotifyMessage {
+                        self.addr.do_send(ClientMessage {
                             session_id: self.session_id,
                             message: payload,
                         });
@@ -207,6 +215,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
                         println!("Got timeScale: {}", payload.time_scale);
                         data.time_scale = payload.time_scale;
                         self.addr.do_send(payload);
+                    }
+                    WsMessage::ChatHistoryRequest => {
+                        self.addr.do_send(ChatHistoryRequest(self.session_id));
                     }
                 }
             }

@@ -173,4 +173,11 @@ export class ChatControl {
         this.chatHistory.push(msg);
         this.updateChatHistory();
     }
+
+    setHistory(msg: Array<ClientMessage>){
+        if(maxHistory <= this.chatHistory.length)
+            this.chatHistory.shift();
+        this.chatHistory = msg;
+        this.updateChatHistory();
+    }
 }

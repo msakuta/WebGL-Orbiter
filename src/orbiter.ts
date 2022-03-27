@@ -80,6 +80,9 @@ export function reconnectWebSocket(){
                 gameState.timescale = data.payload.timeScale;
                 timescaleControl.setFromServer(data.payload.timeScale);
             }
+            else if(data.type === "chatHistory"){
+                chatControl.setHistory(data.payload);
+            }
         });
     }
 }
