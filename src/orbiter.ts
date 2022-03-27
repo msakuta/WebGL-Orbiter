@@ -218,6 +218,7 @@ function init() {
     container.appendChild( bodiesControl.domElement );
 
     bodiesControl.setContent(gameState.universe.sun);
+    bodiesControl.selectBody(gameState.select_obj);
 
     settingsControl = new SettingsControl(settings);
     statsControl = new StatsControl(settingsControl, function() { return gameState.getSelectObj(); });
