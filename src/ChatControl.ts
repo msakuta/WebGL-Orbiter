@@ -84,8 +84,12 @@ export class ChatControl {
         inputContainer.style.flexShrink = "0";
         const inputTitle = document.createElement('div');
         inputTitle.innerHTML = 'Chat';
+        const inputRow = document.createElement('div');
+        inputRow.style.display = 'flex';
+        inputRow.style.flexDirection = 'row';
         const inputElement = document.createElement('input');
         inputElement.setAttribute('type', 'text');
+        inputElement.style.flexGrow = '1';
         const inputButton = document.createElement('button');
         inputButton.innerHTML = 'Send'
         inputButton.onclick = (event) => {
@@ -105,8 +109,9 @@ export class ChatControl {
         });
     
         inputContainer.appendChild(inputTitle);
-        inputContainer.appendChild(inputElement);
-        inputContainer.appendChild(inputButton);
+        inputRow.appendChild(inputElement);
+        inputRow.appendChild(inputButton);
+        inputContainer.appendChild(inputRow);
         this.valueElement.appendChild(inputContainer);
 
         const chatHistoryContainer = document.createElement('div');
@@ -153,11 +158,13 @@ export class ChatControl {
     }
 
     send(textElement: HTMLInputElement){
-        websocket.send(JSON.stringify({
-            type: "message",
-            payload: textElement.value,
-        }))
-        textElement.value = "";
+        if(textElement.value !== ""){
+            websocket.send(JSON.stringify({
+                type: "message",
+                payload: textElement.value,
+            }))
+            textElement.value = "";
+        }
     }
 
     addMessage(msg: ClientMessage){
