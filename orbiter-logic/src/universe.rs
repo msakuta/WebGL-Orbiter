@@ -163,7 +163,10 @@ impl Universe {
                     epoch: 0.,
                     mean_anomaly: 0.,
                 },
-                AddPlanetParams::default(),
+                AddPlanetParams {
+                    axial_tilt: 1.5424 * rad_per_deg,
+                    rotation_period: 27.321661 * 24. * 60. * 60.,
+                },
             );
 
         this.add_body(moon);
@@ -185,7 +188,10 @@ impl Universe {
                     epoch: 0.,
                     mean_anomaly: 0.,
                 },
-                AddPlanetParams::default(),
+                AddPlanetParams {
+                    axial_tilt: 25.19 * rad_per_deg,
+                    rotation_period: 24.6229 * 60. * 60.,
+                },
             );
 
         this.add_body(mars);
@@ -207,7 +213,10 @@ impl Universe {
                     epoch: 0.,
                     mean_anomaly: 0.,
                 },
-                AddPlanetParams::default(),
+                AddPlanetParams {
+                    axial_tilt: 3.13 * rad_per_deg,
+                    rotation_period: 9.925 * 60. * 60.,
+                },
             );
 
         this.add_body(jupiter);
