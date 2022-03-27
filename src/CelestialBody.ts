@@ -13,6 +13,7 @@ export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 const epsilon = 1e-40; // Doesn't the machine epsilon depend on browsers!??
 const acceleration = 5e-10;
+const statePublishInterval_ms = 100;
 
 function deserializeVector3(json: any){
     return new THREE.Vector3(json.x, json.y, json.z);
@@ -485,34 +486,23 @@ export class CelestialBody{
         if(!this.sessionId && websocket)
             return;
         const now = Date.now();
-        if(!force && this.lastUpdateCommand !== null && now - this.lastUpdateCommand < 500){
+        if(!force && this.lastUpdateCommand !== null && now - this.lastUpdateCommand < statePublishInterval_ms){
             return;
         }
         this.lastUpdateCommand = now;
-        // this.updatingState = true;
-        // (async () => {
-            // await fetch(`http://${location.hostname}:${port}/api/rocket_state`,                    {
-                    // method: 'POST',
-                    // mode: 'cors',
-                    // headers: {
-                    //     "Content-Type": 'application/json',
-                    // },
-                    // body: 
-            if(websocket.readyState === 1){
-                websocket.send(
-                    JSON.stringify({
-                        type: "setRocketState",
-                        name: this.name,
-                        parent: this.parent.name,
-                        position: this.position,
-                        velocity: this.velocity,
-                        quaternion: this.quaternion,
-                        angularVelocity: this.angularVelocity,
-                    }),
-                );
-            }
-            // this.updatingState = false;
-        // })();
+        if(websocket.readyState === 1){
+            websocket.send(
+                JSON.stringify({
+                    type: "setRocketState",
+                    name: this.name,
+                    parent: this.parent.name,
+                    position: this.position,
+                    velocity: this.velocity,
+                    quaternion: this.quaternion,
+                    angularVelocity: this.angularVelocity,
+                }),
+            );
+        }
     }
 
     static findBody(name: string){
