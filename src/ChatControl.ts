@@ -8,6 +8,8 @@ interface ClientMessage {
     message: string
 }
 
+const buttonHeight = 32;
+const buttonWidth = 32;
 const panelHeight = 300;
 const maxHistory = 100;
 
@@ -72,8 +74,11 @@ export class ChatControl {
         this.title.innerHTML = titleString;
         this.title.style.display = 'none';
         this.title.style.position = 'absolute';
+        this.title.style.bottom = '0px';
+        this.title.style.right = `${buttonHeight}px`;
         this.title.style.background = 'rgba(0, 0, 0, 0.5)';
         this.title.style.zIndex = '20';
+        this.title.style.pointerEvents = 'none';
         element.appendChild(this.title);
 
         const inputContainer = document.createElement('div');
@@ -143,12 +148,14 @@ export class ChatControl {
         if(this.visible){
             this.valueElement.style.display = 'flex';
             this.icon.style.bottom = `${panelHeight + 16}px`;
+            this.title.style.bottom = `${panelHeight + 16}px`;
         }
         else{
             this.valueElement.style.display = 'none';
             if(!this.iconMouseOver)
                 this.title.style.display = 'none';
             this.icon.style.bottom = `0px`;
+            this.title.style.bottom = `0px`;
         }
         if(this.visible){
             this.showEvent();
