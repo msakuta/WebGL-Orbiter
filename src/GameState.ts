@@ -4,7 +4,6 @@ import { Settings } from './SettingsControl';
 import Universe from './Universe';
 import { RotationButtons } from './RotationControl';
 
-const selectedOrbitMaterial = new THREE.LineBasicMaterial({color: 0xff7fff});
 
 export interface GraphicsParams {
     scene: THREE.Scene;

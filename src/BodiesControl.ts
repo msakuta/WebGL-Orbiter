@@ -1,6 +1,6 @@
 import { CelestialBody, AU } from './CelestialBody';
 
-import orbitIconUrl from './images/bodiesIcon.png';
+import bodiesIconUrl from './images/bodiesIcon.png';
 
 const buttonTop = 160;
 const buttonHeight = 32;
@@ -28,7 +28,7 @@ export class BodiesControl{
         iconContainer.style.position = 'relative';
 
         const icon = document.createElement('img');
-        icon.src = orbitIconUrl;
+        icon.src = bodiesIconUrl;
         iconContainer.appendChild(icon);
 
         const title = document.createElement('div');
@@ -48,7 +48,6 @@ export class BodiesControl{
         element.appendChild(this.valueElement);
         this.valueElement.id = 'orbit';
 
-        // Register event handlers
         icon.ondragstart = (event) => event.preventDefault();
         icon.onclick = (event) => {
             this.visible = !this.visible;
