@@ -1,6 +1,6 @@
 import { CelestialBody, AU } from './CelestialBody';
 
-import orbitIconUrl from './images/orbitIcon.png';
+import orbitIconUrl from './images/bodiesIcon.png';
 
 const buttonTop = 160;
 const buttonHeight = 32;
