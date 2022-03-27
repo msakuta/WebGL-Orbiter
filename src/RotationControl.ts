@@ -1,3 +1,5 @@
+import { CelestialBody } from './CelestialBody';
+
 export const navballRadius = 64;
 
 
@@ -24,13 +26,15 @@ export class RotationControl{
     protected element: HTMLElement;
     get domElement(): HTMLElement{ return this.element; }
     protected buttons: RotationButtons;
+    protected getSelectObj: () => CelestialBody;
 
     setSize(){
         this.element.style.top = (window.innerHeight - 2 * navballRadius) + 'px';
         this.element.style.left = (window.innerWidth / 2 - navballRadius) + 'px';
     }
 
-    constructor(buttons: RotationButtons){
+    constructor(buttons: RotationButtons, getSelectObj: () => CelestialBody){
+        this.getSelectObj = getSelectObj;
         this.buttons = buttons;
         function absorbEvent_(event: MouseEvent | TouchEvent) {
             const e = event || window.event;
@@ -85,8 +89,11 @@ export class RotationControl{
         element.style.height = '100%';
         element.style.display = 'none';
         this.element.appendChild(element);
-        this.element.onmouseenter = function(event){
-            element.style.display = 'block';
+        this.element.onmouseenter = (event) => {
+            const selectObj = this.getSelectObj();
+            if(selectObj.controllable){
+                element.style.display = 'block';
+            }
         };
         this.element.onmouseleave = function(event){
             element.style.display = 'none';
