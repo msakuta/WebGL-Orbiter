@@ -11,6 +11,7 @@ import { ThrottleControl } from './ThrottleControl';
 import { navballRadius, RotationControl, RotationButtons } from './RotationControl';
 import { OrbitalElementsControl } from './OrbitalElementsControl';
 import { zerofill, StatsControl } from './StatsControl';
+import { BodiesControl } from './BodiesControl';
 import { MessageControl } from './MessageControl';
 import { ScenarioSelectorControl } from './ScenarioSelectorControl';
 import { SaveControl } from './SaveControl';
@@ -33,6 +34,7 @@ let throttleControl: ThrottleControl;
 let speedControl: any;
 let orbitalElementsControl: OrbitalElementsControl;
 let statsControl: StatsControl;
+let bodiesControl: BodiesControl;
 let settingsControl: SettingsControl;
 let altitudeControl: any;
 let messageControl: MessageControl;
@@ -210,6 +212,13 @@ function init() {
     orbitalElementsControl = new OrbitalElementsControl();
     container.appendChild( orbitalElementsControl.domElement );
 
+    bodiesControl = new BodiesControl((selectedObj) => {
+        gameState.select_obj = selectedObj
+    });
+    container.appendChild( bodiesControl.domElement );
+
+    bodiesControl.setContent(gameState.universe.sun);
+
     settingsControl = new SettingsControl(settings);
     statsControl = new StatsControl(settingsControl, function() { return gameState.getSelectObj(); });
     container.appendChild( statsControl.domElement );
@@ -381,6 +390,9 @@ function render() {
         camera.quaternion.set(1,0,0,0);
         overlay.render(renderer);
     }
+
+    const orbitalElementsBottom = orbitalElementsControl.getBottom();
+    bodiesControl.domElement.style.top = `${orbitalElementsBottom + 4}px`;
 
     // Restore the original state because cameraControls expect these variables unchanged
     camera.quaternion.copy(oldQuaternion);

@@ -2,6 +2,7 @@ import { CelestialBody, AU } from './CelestialBody';
 
 import orbitIconUrl from './images/orbitIcon.png';
 
+const buttonTop = 120;
 const buttonHeight = 32;
 const buttonWidth = 32;
 
@@ -15,18 +16,27 @@ export class OrbitalElementsControl{
         const element = this.domElement;
         element.style.position = 'absolute';
         element.style.textAlign = 'left';
-        element.style.top = 120 + 'px';
+        element.style.top = `${buttonTop}px`;
         element.style.left = 0 + 'px';
         element.style.zIndex = '7';
         let visible = false;
-        let icon = document.createElement('img');
+
+        const iconContainer = document.createElement('div');
+        iconContainer.style.position = 'relative';
+
+        const icon = document.createElement('img');
         icon.src = orbitIconUrl;
-        element.appendChild(icon);
+        iconContainer.appendChild(icon);
 
         const title = document.createElement('div');
-        title.innerHTML = 'Orbital Elements';
+        title.innerHTML = 'Orbital&nbsp;Elements';
         title.style.display = 'none';
-        element.appendChild(title);
+        title.style.position = 'absolute';
+        title.style.left = `${buttonWidth}px`;
+        title.style.bottom = '0px';
+        iconContainer.appendChild(title);
+
+        element.appendChild(iconContainer);
 
         this.valueElement = document.createElement('div');
         element.appendChild(this.valueElement);
@@ -79,5 +89,13 @@ export class OrbitalElementsControl{
             + ' <tr><td>head</td><td>' + headingApoapsis.toFixed(5) + '</td></tr>'
     //							+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + '<br>' + this.angularVelocity.y.toFixed(10) + ',' + '<br>' + this.angularVelocity.z.toFixed(10)
             +'</table>';
+    }
+
+    getBottom(){
+        if(this.valueElement.style.display === "none"){
+            return buttonTop + buttonHeight;
+        }
+        const rect = this.valueElement.getBoundingClientRect();
+        return rect.bottom;
     }
 }
