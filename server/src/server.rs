@@ -1,9 +1,10 @@
 use crate::websocket::{ChatHistoryRequest, ClientMessage, NotifyBodyState, TimeScaleMessage};
 use ::actix::prelude::*;
 use ::orbiter_logic::SessionId;
-use ::serde::Serialize;
+use ::serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, VecDeque},
+    io::Write,
     sync::atomic::AtomicUsize,
     sync::Arc,
 };
@@ -24,6 +25,7 @@ pub struct Connect {
 pub struct Message(pub String);
 
 const CHAT_HISTORY_MAX: usize = 100;
+const CHAT_LOG_FILE: &'static str = "chatlog.json";
 
 /// `ChatServer` manages chat rooms and responsible for coordinating chat session.
 ///
@@ -36,9 +38,35 @@ pub(crate) struct ChatServer {
 
 impl ChatServer {
     pub fn new(visitor_count: Arc<AtomicUsize>) -> ChatServer {
+        fn load_log() -> anyhow::Result<VecDeque<ClientMessage>> {
+            #[derive(Deserialize)]
+            #[serde(rename_all = "camelCase")]
+            struct ClientMessageSerial {
+                session_id: String,
+                message: String,
+            }
+            let data = std::fs::read(CHAT_LOG_FILE)?;
+            let data = String::from_utf8(data)?;
+            let ret: Vec<ClientMessageSerial> = serde_json::from_str(&data)?;
+            println!("Loaded {} chat items from log file", ret.len());
+            Ok(ret
+                .into_iter()
+                .map(|val| ClientMessage {
+                    session_id: SessionId::from(val.session_id),
+                    message: val.message,
+                })
+                .collect())
+        }
+
         ChatServer {
             sessions: HashMap::new(),
-            chat_history: VecDeque::new(),
+            chat_history: match load_log() {
+                Ok(val) => val,
+                Err(e) => {
+                    println!("Failed to load chat log: {:?}", e);
+                    VecDeque::new()
+                }
+            },
             visitor_count,
         }
     }
@@ -114,6 +142,13 @@ impl Handler<ClientMessage> for ChatServer {
             self.chat_history.pop_front();
         }
         self.chat_history.push_back(msg.clone());
+        if let Ok(mut f) = std::fs::File::create(CHAT_LOG_FILE) {
+            if let Ok(s) = serde_json::to_string(&self.chat_history) {
+                if let Err(e) = f.write_all(s.as_bytes()) {
+                    println!("Failed to save chat log: {:?}", e);
+                }
+            }
+        }
         let payload = Payload {
             type_: "message",
             payload: msg,
