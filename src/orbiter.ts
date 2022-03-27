@@ -165,7 +165,7 @@ function init() {
         function(){ return gameState.getSelectObj(); });
     container.appendChild( throttleControl.domElement );
 
-    const rotationControl = new RotationControl(buttons);
+    const rotationControl = new RotationControl(buttons, () => gameState.getSelectObj());
     container.appendChild( rotationControl.domElement );
 
     class SpeedControl{
@@ -213,7 +213,8 @@ function init() {
     container.appendChild( orbitalElementsControl.domElement );
 
     bodiesControl = new BodiesControl((selectedObj) => {
-        gameState.select_obj = selectedObj
+        gameState.select_obj = selectedObj;
+        throttleControl.visible = selectedObj.controllable;
     });
     container.appendChild( bodiesControl.domElement );
 
