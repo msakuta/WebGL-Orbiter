@@ -505,6 +505,11 @@ export class CelestialBody{
         }
     }
 
+    forEachBody(f: (o: CelestialBody) => void){
+        f(this);
+        this.children.forEach(child => child.forEachBody(f));
+    }
+
     static findBody(name: string){
         return this.celestialBodies.get(name);
     }

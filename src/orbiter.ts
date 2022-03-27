@@ -11,6 +11,7 @@ import { ThrottleControl } from './ThrottleControl';
 import { navballRadius, RotationControl, RotationButtons } from './RotationControl';
 import { OrbitalElementsControl } from './OrbitalElementsControl';
 import { zerofill, StatsControl } from './StatsControl';
+import { BodiesControl } from './BodiesControl';
 import { MessageControl } from './MessageControl';
 import { ChatControl } from './ChatControl';
 import Overlay from './Overlay';
@@ -31,6 +32,7 @@ let throttleControl: ThrottleControl;
 let speedControl: any;
 let orbitalElementsControl: OrbitalElementsControl;
 let statsControl: StatsControl;
+let bodiesControl: BodiesControl;
 let settingsControl: SettingsControl;
 let altitudeControl: any;
 let messageControl: MessageControl;
@@ -190,7 +192,7 @@ function init() {
         function(){ return gameState.getSelectObj(); });
     container.appendChild( throttleControl.domElement );
 
-    const rotationControl = new RotationControl(buttons);
+    const rotationControl = new RotationControl(buttons, () => gameState.getSelectObj());
     container.appendChild( rotationControl.domElement );
 
 
@@ -237,6 +239,15 @@ function init() {
 
     orbitalElementsControl = new OrbitalElementsControl();
     container.appendChild( orbitalElementsControl.domElement );
+
+    bodiesControl = new BodiesControl((selectedObj) => {
+        gameState.select_obj = selectedObj;
+        throttleControl.visible = selectedObj.controllable;
+    });
+    container.appendChild( bodiesControl.domElement );
+
+    bodiesControl.setContent(gameState.universe.sun);
+    bodiesControl.selectBody(gameState.select_obj);
 
     settingsControl = new SettingsControl(settings);
     statsControl = new StatsControl(settingsControl, function() { return gameState.getSelectObj(); });
@@ -433,6 +444,9 @@ function render() {
         camera.quaternion.set(1,0,0,0);
         overlay.render(renderer);
     }
+
+    const orbitalElementsBottom = orbitalElementsControl.getBottom();
+    bodiesControl.domElement.style.top = `${orbitalElementsBottom + 4}px`;
 
     // Restore the original state because cameraControls expect these variables unchanged
     camera.quaternion.copy(oldQuaternion);

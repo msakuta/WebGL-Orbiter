@@ -112,7 +112,7 @@ export default class Universe{
             texture: venusUrl,
             GM: 324859 / AU / AU / AU,
             radius: 6051.8,
-            axialTilt: 23.4392811 * rad_per_deg,
+            axialTilt: 	2.64 * rad_per_deg,
             rotationPeriod: -243. * 24. * 60. * 60.,
             sphereOfInfluence: 5e5,
         });
@@ -163,6 +163,8 @@ export default class Universe{
             texture: moonUrl,
             GM: 4904.8695 / AU / AU / AU,
             radius: 1737.1,
+            axialTilt: 	1.5424 * rad_per_deg,
+            rotationPeriod: 27.321661 * 24. * 60. * 60.,
             sphereOfInfluence: 1e5,
         });
 
@@ -180,6 +182,8 @@ export default class Universe{
             texture: marsUrl,
             GM: 42828 / AU / AU / AU,
             radius: 3389.5,
+            axialTilt: 	25.19 * rad_per_deg,
+            rotationPeriod: 24.6229 * 60. * 60.,
             sphereOfInfluence: 3e5
         });
 
@@ -197,6 +201,8 @@ export default class Universe{
             texture: jupiterUrl,
             GM: 126686534 / AU / AU / AU,
             radius: 69911,
+            axialTilt: 3.13 * rad_per_deg,
+            rotationPeriod: 9.925 * 60. * 60.,
             sphereOfInfluence: 10e6,
         });
 
