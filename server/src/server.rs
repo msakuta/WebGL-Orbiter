@@ -5,15 +5,13 @@ use ::serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, VecDeque},
     io::Write,
-    sync::atomic::AtomicUsize,
-    sync::Arc,
 };
 
 /// Message for chat server communications
 
 /// New chat session is created
 #[derive(Message)]
-#[rtype(usize)]
+#[rtype("()")]
 pub struct Connect {
     pub session_id: SessionId,
     pub addr: Recipient<Message>,
@@ -33,11 +31,10 @@ const CHAT_LOG_FILE: &'static str = "chatlog.json";
 pub(crate) struct ChatServer {
     sessions: HashMap<SessionId, Recipient<Message>>,
     chat_history: VecDeque<ClientMessage>,
-    visitor_count: Arc<AtomicUsize>,
 }
 
 impl ChatServer {
-    pub fn new(visitor_count: Arc<AtomicUsize>) -> ChatServer {
+    pub fn new() -> ChatServer {
         fn load_log() -> anyhow::Result<VecDeque<ClientMessage>> {
             #[derive(Deserialize)]
             #[serde(rename_all = "camelCase")]
@@ -67,7 +64,6 @@ impl ChatServer {
                     VecDeque::new()
                 }
             },
-            visitor_count,
         }
     }
 }
@@ -94,7 +90,7 @@ impl Actor for ChatServer {
 ///
 /// Register new session and assign unique id to this session
 impl Handler<Connect> for ChatServer {
-    type Result = usize;
+    type Result = ();
 
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         self.sessions.insert(msg.session_id, msg.addr);
@@ -107,8 +103,6 @@ impl Handler<Connect> for ChatServer {
 
         // notify all users in same room
         self.send_message(&res_msg, None);
-
-        self.visitor_count.load(std::sync::atomic::Ordering::SeqCst)
     }
 }
 

@@ -19,8 +19,6 @@ use ::orbiter_logic::{serialize, Universe};
 use std::{
     fs,
     path::{Path, PathBuf},
-    sync::atomic::AtomicUsize,
-    sync::Arc,
     sync::{Mutex, RwLock},
     time::Instant,
 };
@@ -159,17 +157,13 @@ async fn main() -> std::io::Result<()> {
         }
     }
 
-    // set up applications state
-    // keep a count of the number of visitors
-    let app_state = Arc::new(AtomicUsize::new(0));
-
     let data = web::Data::new(OrbiterData {
         universe: RwLock::new(universe),
         asset_path: args.asset_path,
         last_saved: Mutex::new(Instant::now()),
         last_pushed: Mutex::new(Instant::now()),
         autosave_file: args.autosave_file,
-        srv: ChatServer::new(app_state.clone()).start(),
+        srv: ChatServer::new().start(),
     });
     let data_copy = data.clone();
     let data_copy2 = data.clone();
