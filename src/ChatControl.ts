@@ -1,8 +1,7 @@
 import { Config } from './MenuControl';
 import { websocket } from './orbiter';
 
-import saveIconUrl from './images/saveIcon.png';
-import trashcanUrl from './images/trashcan.png';
+import chatIconUrl from './images/chatIcon.png';
 
 interface ClientMessage {
     sessionId: string,
@@ -40,7 +39,7 @@ export class ChatControl {
         element.style.right = 0 + 'px';
         element.style.zIndex = '7';
         this.icon = document.createElement('img');
-        this.icon.src = saveIconUrl;
+        this.icon.src = chatIconUrl;
         this.icon.style.position = 'absolute';
         this.icon.style.bottom = '0px';
         this.icon.style.right = '0px';
