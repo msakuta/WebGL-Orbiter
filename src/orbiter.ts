@@ -12,9 +12,6 @@ import { navballRadius, RotationControl, RotationButtons } from './RotationContr
 import { OrbitalElementsControl } from './OrbitalElementsControl';
 import { zerofill, StatsControl } from './StatsControl';
 import { MessageControl } from './MessageControl';
-import { ScenarioSelectorControl } from './ScenarioSelectorControl';
-import { SaveControl } from './SaveControl';
-import { LoadControl } from './LoadControl';
 import { ChatControl } from './ChatControl';
 import Overlay from './Overlay';
 import GameState from './GameState';
@@ -39,11 +36,7 @@ let altitudeControl: any;
 let messageControl: MessageControl;
 let cameraControls: OrbitControls;
 let grids: THREE.Object3D;
-let scenarioSelectorControl: ScenarioSelectorControl;
-let saveControl: SaveControl;
-let loadControl: LoadControl;
 let chatControl: ChatControl;
-let textElement: HTMLInputElement;
 
 let windowHalfX = window.innerWidth / 2;
 let windowHalfY = window.innerHeight / 2;
@@ -290,36 +283,7 @@ function init() {
     messageControl = new MessageControl();
     container.appendChild( messageControl.domElement );
 
-    scenarioSelectorControl = new ScenarioSelectorControl(
-        function(){ return gameState.getSelectObj(); },
-        function(throttle){ throttleControl.setThrottle(throttle); },
-        function(){ gameState.resetTime(); },
-        function(msg){ messageControl.setText(msg); },
-        function(){
-            [saveControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
-        }
-    );
-    container.appendChild( scenarioSelectorControl.domElement );
-
-    saveControl = new SaveControl(
-        function(){ return gameState.serializeState(); },
-        function(msg){ messageControl.setText(msg); },
-        function(){
-            [scenarioSelectorControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
-        }
-    );
-    container.appendChild( saveControl.domElement );
-
     gameState.onStateLoad = () => throttleControl.setThrottle(gameState.select_obj.throttle);
-
-    loadControl = new LoadControl(
-        function(state){ gameState.loadState(state, settings) },
-        function(msg){ messageControl.setText(msg); },
-        function(){
-            [scenarioSelectorControl, saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
-        }
-    );
-    container.appendChild( loadControl.domElement );
 
     chatControl = new ChatControl(messageControl.setText);
     container.appendChild(chatControl.domElement);
