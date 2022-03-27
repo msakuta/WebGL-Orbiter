@@ -15,6 +15,7 @@ import { MessageControl } from './MessageControl';
 import { ScenarioSelectorControl } from './ScenarioSelectorControl';
 import { SaveControl } from './SaveControl';
 import { LoadControl } from './LoadControl';
+import { ChatControl } from './ChatControl';
 import Overlay from './Overlay';
 import GameState from './GameState';
 
@@ -41,6 +42,7 @@ let grids: THREE.Object3D;
 let scenarioSelectorControl: ScenarioSelectorControl;
 let saveControl: SaveControl;
 let loadControl: LoadControl;
+let chatControl: ChatControl;
 let textElement: HTMLInputElement;
 
 let windowHalfX = window.innerWidth / 2;
@@ -72,7 +74,7 @@ export function reconnectWebSocket(){
                 }
             }
             else if(data.type === "message"){
-                messageControl.setText(data.payload.message);
+                chatControl.addMessage(data.payload);
             }
             else if(data.type === "timeScale"){
                 gameState.timescale = data.payload.timeScale;
@@ -195,31 +197,6 @@ function init() {
     const rotationControl = new RotationControl(buttons);
     container.appendChild( rotationControl.domElement );
 
-    
-    textElement = document.createElement('input');
-    textElement.type = "text";
-    textElement.style.position = "absolute";
-    textElement.style.bottom = `${navballRadius * 2 + 50}px`;
-    textElement.addEventListener('keydown', (event) => {
-        // Annoying browser incompatibilities
-        const code = event.which || event.keyCode;
-
-        if(code === 13){ // 'enter'
-            websocket.send(JSON.stringify({
-                type: "message",
-                payload: textElement.value,
-            }))
-            textElement.value = "";
-            textElement.blur();
-        }
-        if(code === 27){ // escape
-            textElement.blur();
-        }
-        event.stopPropagation();
-    });
-
-    container.appendChild( textElement );
-
 
     class SpeedControl{
         protected element: HTMLDivElement;
@@ -340,6 +317,9 @@ function init() {
         }
     );
     container.appendChild( loadControl.domElement );
+
+    chatControl = new ChatControl(messageControl.setText);
+    container.appendChild(chatControl.domElement);
 
     async function tryLoadState(){
         const res = await fetch(`http://${location.hostname}:${port}/api/load`, {

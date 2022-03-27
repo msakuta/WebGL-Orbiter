@@ -15,7 +15,7 @@ pub struct Connect {
 }
 
 /// Send message to specific room
-#[derive(Message)]
+#[derive(Serialize, Message)]
 #[rtype(result = "()")]
 pub struct ClientMessage {
     /// Id of the client session
@@ -100,13 +100,15 @@ impl Handler<ClientMessage> for ChatServer {
 
     fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
         println!("Handling ClientMessage: {}", msg.msg);
+        let session_id = msg.session_id;
+
         self.send_message(
             &serde_json::to_string(&Payload {
                 type_: "clientMessage",
-                payload: &msg.msg,
+                payload: msg,
             })
             .unwrap(),
-            Some(msg.session_id),
+            Some(session_id),
         );
     }
 }
