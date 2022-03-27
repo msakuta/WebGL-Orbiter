@@ -128,6 +128,30 @@ impl Handler<NotifyBodyState> for ChatServer {
     }
 }
 
+#[derive(Deserialize, Serialize, Debug, Message)]
+#[rtype(result = "()")]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct NotifyNewBody {
+    pub session_id: SessionId,
+    pub body: serde_json::Value,
+    pub body_parent: String,
+}
+
+impl Handler<NotifyNewBody> for ChatServer {
+    type Result = ();
+
+    fn handle(&mut self, msg: NotifyNewBody, _: &mut Context<Self>) {
+        let session_id = msg.session_id;
+
+        let payload = Payload {
+            type_: "newBody",
+            payload: msg,
+        };
+
+        self.send_message(&serde_json::to_string(&payload).unwrap(), Some(session_id));
+    }
+}
+
 impl Handler<ClientMessage> for ChatServer {
     type Result = ();
 

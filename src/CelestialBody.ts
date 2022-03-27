@@ -154,10 +154,14 @@ export class CelestialBody{
         return ret;
     }
 
-    deserialize(json: any, bodies: [any]){
+    deserialize(json: any, bodies?: [any]){
         this.name = json.name;
         if(json.parent !== null){
-            this.setParent(CelestialBody.celestialBodies.get(bodies[json.parent].name));
+            if(bodies && json.parent < bodies.length){
+                const parent = CelestialBody.celestialBodies.get(bodies[json.parent].name);
+                if(parent)
+                    this.setParent(parent);
+            }
         }
         this.sessionId = json.sessionId;
         this.position = deserializeVector3(json.position);

@@ -1,5 +1,5 @@
 use crate::{
-    celestial_body::{builder::AddPlanetParams, CelestialBody, OrbitalElements},
+    celestial_body::{builder::AddPlanetParams, CelestialBody, CelestialId, OrbitalElements},
     dyn_iter::{Chained, DynIterMut, MutRef},
     session::SessionId,
     GMsun, Quaternion, AU,
@@ -224,7 +224,7 @@ impl Universe {
         this
     }
 
-    pub fn new_rocket(&mut self) -> SessionId {
+    pub fn new_rocket(&mut self) -> (SessionId, CelestialId) {
         let earth_id = self
             .bodies
             .iter()
@@ -265,9 +265,11 @@ impl Universe {
         let session_id = SessionId::new();
         rocket.session_id = Some(session_id);
 
+        let rocket_id = rocket.id;
+
         self.add_body(rocket);
 
-        session_id
+        (session_id, rocket_id)
     }
 
     fn add_body(&mut self, body: CelestialBody) {

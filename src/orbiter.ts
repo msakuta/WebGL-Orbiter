@@ -68,6 +68,19 @@ export function reconnectWebSocket(){
                     body.clientUpdate(payload.bodyState);
                 }
             }
+            else if(data.type === "newBody"){
+                const payload = data.payload;
+                const body = payload.body;
+                const parent = CelestialBody.celestialBodies.get(payload.bodyParent);
+                const obj = gameState.universe.addRocket(
+                    body.name,
+                    body.orbitalElements,
+                    parent,
+                    gameState.graphicsParams,
+                    settings,
+                    body.modelColor);
+                obj.deserialize(body);
+            }
             else if(data.type === "message"){
                 chatControl.addMessage(data.payload);
             }
