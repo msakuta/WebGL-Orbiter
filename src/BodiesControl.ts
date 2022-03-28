@@ -83,6 +83,7 @@ export class BodiesControl{
     setContent(root: CelestialBody){
         while(this.valueElement.hasChildNodes())
             this.valueElement.removeChild(this.valueElement.firstChild);
+        this.bodyList.length = 0;
 
         root.forEachBody((body) => {
             const elem = document.createElement('div');
