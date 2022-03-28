@@ -460,6 +460,18 @@ export class CelestialBody{
     static findBody(name: string){
         return this.celestialBodies.get(name);
     }
+
+    findRocket(): CelestialBody | null {
+        for(let i = 0; i < this.children.length; i++){
+            const obj = this.children[i];
+            if(obj.name === "rocket")
+                return obj;
+            const res = obj.findRocket();
+            if(res)
+                return res;
+        }
+        return null;
+    }
 }
 
 

@@ -267,7 +267,8 @@ function init() {
     container.appendChild( messageControl.domElement );
 
     scenarioSelectorControl = new ScenarioSelectorControl(
-        function(){ return gameState.getSelectObj(); },
+        () => gameState.universe.sun.findRocket(),
+        (obj) => bodiesControl.selectBody(obj),
         function(throttle){ throttleControl.setThrottle(throttle); },
         function(){ gameState.resetTime(); },
         function(msg){ messageControl.setText(msg); },

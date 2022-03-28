@@ -145,7 +145,7 @@ export default class Universe{
             ascending_node: 0,
             argument_of_perihelion: 0
         },
-        earth, 
+        earth,
         graphicsParams,
         settings);
 
