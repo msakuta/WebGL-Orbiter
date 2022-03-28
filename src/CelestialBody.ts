@@ -524,6 +524,15 @@ export class CelestialBody{
             if(obj.sessionId === sessionId)
                 return obj;
             const res = obj.findSessionRocket(sessionId);
+        }
+    }
+
+    findRocket(): CelestialBody | null {
+        for(let i = 0; i < this.children.length; i++){
+            const obj = this.children[i];
+            if(obj.name === "rocket")
+                return obj;
+            const res = obj.findRocket();
             if(res)
                 return res;
         }
