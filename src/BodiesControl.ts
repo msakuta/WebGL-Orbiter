@@ -93,4 +93,12 @@ export class BodiesControl{
             this.bodyList.push([body, elem]);
         });
     }
+
+    highlightBody(body: CelestialBody){
+        const idx = this.bodyList.findIndex((value) => value[0] === body);
+        for(let i = 0; i < this.bodyList.length; i++){
+            this.bodyList[i][1].style.fontWeight = i === idx ? "bold" : "";
+            this.bodyList[i][1].style.color = i === idx ? "rgb(255, 255, 127)" : "";
+        }
+    }
 }

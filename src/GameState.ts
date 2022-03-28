@@ -84,8 +84,8 @@ export default class GameState{
             this.onStateLoad();
     }
 
-    findSessionRocket(sessionId: string){
-        return this.universe.sun.findSessionRocket(sessionId);
+    findSessionRocket(){
+        return this.universe.sun.findSessionRocket(this.sessionId);
     }
 
     startTicking(){

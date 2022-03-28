@@ -81,6 +81,7 @@ export function reconnectWebSocket(){
                     body.modelColor);
                 obj.deserialize(body);
                 bodiesControl.setContent(gameState.universe.sun);
+                bodiesControl.highlightBody(gameState.findSessionRocket());
             }
             else if(data.type === "message"){
                 chatControl.addMessage(data.payload);
@@ -262,6 +263,7 @@ function init() {
 
     bodiesControl.setContent(gameState.universe.sun);
     bodiesControl.selectBody(gameState.select_obj);
+    bodiesControl.highlightBody(gameState.findSessionRocket());
 
     settingsControl = new SettingsControl(settings);
     statsControl = new StatsControl(settingsControl, function() { return gameState.getSelectObj(); });
@@ -322,6 +324,7 @@ function init() {
             console.log(data);
             gameState.loadState(data, settings);
             bodiesControl.setContent(gameState.universe.sun);
+            bodiesControl.highlightBody(gameState.findSessionRocket());
         }
     }
 
@@ -340,7 +343,7 @@ function init() {
 
         let sessionRocket;
         if(gameState.sessionId){
-            sessionRocket = gameState.findSessionRocket(gameState.sessionId);
+            sessionRocket = gameState.findSessionRocket();
             if(sessionRocket)
                 gameState.select_obj = sessionRocket;
         }

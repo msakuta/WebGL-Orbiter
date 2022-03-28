@@ -525,6 +525,8 @@ export class CelestialBody{
             if(obj.sessionId === sessionId)
                 return obj;
             const res = obj.findSessionRocket(sessionId);
+            if(res)
+                return res;
         }
     }
 
