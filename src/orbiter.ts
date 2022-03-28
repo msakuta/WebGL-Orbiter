@@ -80,6 +80,7 @@ export function reconnectWebSocket(){
                     settings,
                     body.modelColor);
                 obj.deserialize(body);
+                bodiesControl.setContent(gameState.universe.sun);
             }
             else if(data.type === "message"){
                 chatControl.addMessage(data.payload);
@@ -320,6 +321,7 @@ function init() {
             const data = await res.json();
             console.log(data);
             gameState.loadState(data, settings);
+            bodiesControl.setContent(gameState.universe.sun);
         }
     }
 
