@@ -155,9 +155,10 @@ pub(crate) struct TimeScaleMessage {
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ChatHistoryRequest(pub SessionId);
 
-/// Handler for ws::Message message
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
-    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+type WsResult = Result<ws::Message, ws::ProtocolError>;
+
+impl StreamHandler<WsResult> for SessionWs {
+    fn handle(&mut self, msg: WsResult, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Text(text)) => {
@@ -169,59 +170,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
 
                 match payload {
                     WsMessage::SetRocketState(payload) => {
-                        let mut universe = self.data.universe.write().unwrap();
-
-                        fn find_rocket<'a>(
-                            universe: &'a mut Universe,
-                            name: &str,
-                        ) -> Option<&'a mut CelestialBody> {
-                            universe
-                                .bodies
-                                .iter_mut()
-                                .enumerate()
-                                .find(|(_, body)| body.name == name)
-                                .map(|(_, rocket)| rocket)
+                        if let Err(e) = self.handle_set_rocket_state(payload) {
+                            return ctx.text(&*format!(
+                                "{{\"type\": \"response\", \"payload\": \"fail: {}\"}}",
+                                e.to_string()
+                            ));
                         }
-
-                        let rocket = if let Some(rocket) = find_rocket(&mut universe, &payload.name)
-                        {
-                            rocket
-                        } else {
-                            return ctx.text(
-                                "{\"type\": \"response\", \"payload\": \"could not find rocket\"}",
-                            );
-                        };
-
-                        if Some(self.session_id) != rocket.session_id {
-                            return ctx.text("{\"type\": \"response\", \"payload\": \"fail\"}");
-                        }
-
-                        println!(
-                            "Set rocket state from session: {}",
-                            self.session_id.to_string()
-                        );
-                        let parent_id = payload
-                            .parent
-                            .as_ref()
-                            .and_then(|parent| {
-                                universe
-                                    .bodies
-                                    .iter()
-                                    .enumerate()
-                                    .find(|(_, body)| body.name == *parent)
-                            })
-                            .map(|(i, _)| i);
-
-                        let mut rocket = find_rocket(&mut universe, &payload.name).unwrap();
-                        rocket.parent = parent_id;
-                        rocket.position = payload.position;
-                        rocket.velocity = payload.velocity;
-                        rocket.quaternion = payload.quaternion.into();
-                        rocket.angular_velocity = payload.angular_velocity;
-                        self.addr.do_send(NotifyBodyState {
-                            session_id: Some(self.session_id),
-                            body_state: payload,
-                        });
                     }
                     WsMessage::Message { payload } => {
                         println!("Got message: {:?}", payload);
@@ -244,5 +198,61 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
             _ => (),
         }
+    }
+}
+
+impl SessionWs {
+    fn handle_set_rocket_state(&mut self, payload: SetRocketStateWs) -> anyhow::Result<()> {
+        let mut universe = self.data.universe.write().unwrap();
+
+        fn find_rocket<'a>(
+            universe: &'a mut Universe,
+            name: &str,
+        ) -> anyhow::Result<&'a mut CelestialBody> {
+            universe
+                .bodies
+                .iter_mut()
+                .enumerate()
+                .find(|(_, body)| body.name == name)
+                .map(|(_, rocket)| rocket)
+                .ok_or_else(|| anyhow::anyhow!("could not find rocket"))
+        }
+
+        let rocket = find_rocket(&mut universe, &payload.name)?;
+
+        if Some(self.session_id) != rocket.session_id {
+            return Err(anyhow::anyhow!(
+                "You are not allowed to control a rocket not owned by you"
+            ));
+        }
+
+        println!(
+            "Set rocket state from session: {}",
+            self.session_id.to_string()
+        );
+        let parent_id = payload
+            .parent
+            .as_ref()
+            .and_then(|parent| {
+                universe
+                    .bodies
+                    .iter()
+                    .enumerate()
+                    .find(|(_, body)| body.name == *parent)
+            })
+            .map(|(i, _)| i);
+
+        let mut rocket = find_rocket(&mut universe, &payload.name)?;
+        rocket.parent = parent_id;
+        rocket.position = payload.position;
+        rocket.velocity = payload.velocity;
+        rocket.quaternion = payload.quaternion.into();
+        rocket.angular_velocity = payload.angular_velocity;
+        self.addr.do_send(NotifyBodyState {
+            session_id: Some(self.session_id),
+            body_state: payload,
+        });
+
+        Ok(())
     }
 }
