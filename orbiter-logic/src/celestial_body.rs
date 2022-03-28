@@ -38,7 +38,7 @@ pub struct CelestialBody {
     model_color: String,
     pub children: Vec<CelestialId>,
     pub parent: Option<CelestialId>,
-    pub(crate) session_id: Option<SessionId>,
+    pub session_id: Option<SessionId>,
 
     GM: f64,
     radius: f64,

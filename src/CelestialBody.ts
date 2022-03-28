@@ -8,6 +8,7 @@ import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
 import { GraphicsParams } from './GameState';
 import { websocket } from './orbiter';
+import GameState from './GameState';
 
 export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
@@ -387,7 +388,7 @@ export class CelestialBody{
 
     };
 
-    simulateBody(deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
+    simulateBody(gameState: GameState, deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
         const children = this.children;
         for(let i = 0; i < children.length;){
             const a = children[i];
@@ -395,7 +396,7 @@ export class CelestialBody{
             if(sl !== 0){
                 const angleAcceleration = 1e-0;
                 const accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
-                if(select_obj === a && select_obj.controllable && timescale <= 1){
+                if(select_obj === a && gameState.sessionId === a.sessionId && select_obj.controllable && timescale <= 1){
                     if(buttons.up) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
                     if(buttons.down) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
                     if(buttons.left) select_obj.angularVelocity.add(new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
@@ -481,7 +482,7 @@ export class CelestialBody{
                 if(skip)
                     continue; // Continue but not increment i
             }
-            a.simulateBody(deltaTime, div, timescale, buttons, select_obj);
+            a.simulateBody(gameState, deltaTime, div, timescale, buttons, select_obj);
             i++;
         }
     }

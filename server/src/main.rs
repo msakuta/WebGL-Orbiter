@@ -13,7 +13,7 @@ use crate::{
 use ::actix::prelude::*;
 use ::actix_cors::Cors;
 use ::actix_files::NamedFile;
-use ::actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer, error};
+use ::actix_web::{error, middleware, web, App, HttpRequest, HttpResponse, HttpServer};
 use ::clap::Parser;
 use ::orbiter_logic::{serialize, Universe};
 use std::{
@@ -69,10 +69,14 @@ async fn new_session(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResp
     let (new_session, id) = universe.new_rocket();
 
     let body = &universe.bodies[id];
-    data.srv.do_send(NotifyNewBody{
+    data.srv.do_send(NotifyNewBody {
         session_id: new_session,
-        body: serde_json::to_value(&body).map_err(|e| error::ErrorInternalServerError(e.to_string()))?,
-        body_parent: body.parent.map(|parent| universe.bodies[parent].name.clone()).unwrap_or_else(|| "".to_string()),
+        body: serde_json::to_value(&body)
+            .map_err(|e| error::ErrorInternalServerError(e.to_string()))?,
+        body_parent: body
+            .parent
+            .map(|parent| universe.bodies[parent].name.clone())
+            .unwrap_or_else(|| "".to_string()),
     });
 
     println!("New session id: {:?}", new_session);

@@ -5,7 +5,7 @@ use crate::{
 };
 use ::actix::{prelude::*, Actor, StreamHandler};
 use ::actix_web::{web, HttpRequest, HttpResponse};
-use ::orbiter_logic::{CelestialBody, SessionId, Vector3};
+use ::orbiter_logic::{CelestialBody, SessionId, Universe, Vector3};
 use ::serde::{Deserialize, Serialize};
 use actix_web_actors::ws;
 
@@ -171,6 +171,31 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
                     WsMessage::SetRocketState(payload) => {
                         let mut universe = self.data.universe.write().unwrap();
 
+                        fn find_rocket<'a>(
+                            universe: &'a mut Universe,
+                            name: &str,
+                        ) -> Option<&'a mut CelestialBody> {
+                            universe
+                                .bodies
+                                .iter_mut()
+                                .enumerate()
+                                .find(|(_, body)| body.name == name)
+                                .map(|(_, rocket)| rocket)
+                        }
+
+                        let rocket = if let Some(rocket) = find_rocket(&mut universe, &payload.name)
+                        {
+                            rocket
+                        } else {
+                            return ctx.text(
+                                "{\"type\": \"response\", \"payload\": \"could not find rocket\"}",
+                            );
+                        };
+
+                        if Some(self.session_id) != rocket.session_id {
+                            return ctx.text("{\"type\": \"response\", \"payload\": \"fail\"}");
+                        }
+
                         println!(
                             "Set rocket state from session: {}",
                             self.session_id.to_string()
@@ -186,22 +211,17 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for SessionWs {
                                     .find(|(_, body)| body.name == *parent)
                             })
                             .map(|(i, _)| i);
-                        if let Some((_, rocket)) = universe
-                            .bodies
-                            .iter_mut()
-                            .enumerate()
-                            .find(|(_, body)| body.name == payload.name)
-                        {
-                            rocket.parent = parent_id;
-                            rocket.position = payload.position;
-                            rocket.velocity = payload.velocity;
-                            rocket.quaternion = payload.quaternion.into();
-                            rocket.angular_velocity = payload.angular_velocity;
-                            self.addr.do_send(NotifyBodyState {
-                                session_id: Some(self.session_id),
-                                body_state: payload,
-                            });
-                        }
+
+                        let mut rocket = find_rocket(&mut universe, &payload.name).unwrap();
+                        rocket.parent = parent_id;
+                        rocket.position = payload.position;
+                        rocket.velocity = payload.velocity;
+                        rocket.quaternion = payload.quaternion.into();
+                        rocket.angular_velocity = payload.angular_velocity;
+                        self.addr.do_send(NotifyBodyState {
+                            session_id: Some(self.session_id),
+                            body_state: payload,
+                        });
                     }
                     WsMessage::Message { payload } => {
                         println!("Got message: {:?}", payload);

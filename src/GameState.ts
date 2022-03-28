@@ -111,7 +111,7 @@ export default class GameState{
     }
 
     simulateBody(deltaTime: number, div: number, buttons: RotationButtons){
-        this.universe.simulateBody(deltaTime, div, this.timescale, buttons, this.select_obj);
+        this.universe.simulateBody(this, deltaTime, div, this.timescale, buttons, this.select_obj);
     }
 
     setTimeScale(scale: number){
@@ -151,6 +151,10 @@ export default class GameState{
         }
         if(!this.select_obj || !this.select_obj.controllable){
             this.sendMessage('You need to select a controllable object to set throttle');
+            return false;
+        }
+        if(this.select_obj.sessionId !== this.sessionId){
+            this.sendMessage('You can only control owned rockets');
             return false;
         }
         return true;

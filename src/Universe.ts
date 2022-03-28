@@ -4,7 +4,7 @@ import { CelestialBody, OrbitalElements, AU, AxisAngleQuaternion, AddPlanetParam
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
 import { ModulatedIcosahedronGeometry } from './ModulatedIcosahedronGeometry';
-import { GraphicsParams } from './GameState';
+import GameState, { GraphicsParams } from './GameState';
 
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
@@ -295,7 +295,7 @@ export default class Universe{
         this.light.position.copy(this.sun.model.position);
     }
 
-    simulateBody(deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
-        this.sun.simulateBody(deltaTime, div, timescale, buttons, select_obj);
+    simulateBody(gameState: GameState, deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
+        this.sun.simulateBody(gameState, deltaTime, div, timescale, buttons, select_obj);
     }
 }
