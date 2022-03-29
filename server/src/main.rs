@@ -68,16 +68,18 @@ async fn new_session(data: web::Data<OrbiterData>) -> actix_web::Result<HttpResp
 
     let (new_session, id) = universe.new_rocket();
 
-    let body = &universe.bodies[id];
-    data.srv.do_send(NotifyNewBody {
-        session_id: new_session,
-        body: serde_json::to_value(&body)
-            .map_err(|e| error::ErrorInternalServerError(e.to_string()))?,
-        body_parent: body
-            .parent
-            .map(|parent| universe.bodies[parent].name.clone())
-            .unwrap_or_else(|| "".to_string()),
-    });
+    if let Some(body) = universe.get(id) {
+        data.srv.do_send(NotifyNewBody {
+            session_id: new_session,
+            body: serde_json::to_value(&body)
+                .map_err(|e| error::ErrorInternalServerError(e.to_string()))?,
+            body_parent: body
+                .parent
+                .and_then(|parent| universe.get(parent))
+                .map(|parent| parent.name.clone())
+                .unwrap_or_else(|| "".to_string()),
+        });
+    }
 
     println!("New session id: {:?}", new_session);
 
@@ -206,11 +208,13 @@ async fn main() -> std::io::Result<()> {
 
             let mut last_pushed = data_copy.last_pushed.lock().unwrap();
             if push_period_s < last_pushed.elapsed().as_micros() as f64 * 1e-6 {
-                for body in universe.bodies.iter() {
-                    data_copy.srv.do_send(NotifyBodyState {
-                        session_id: None,
-                        body_state: SetRocketStateWs::from(body, universe.bodies.iter()),
-                    });
+                for i in 0..universe.bodies.len() {
+                    if let Ok((body, chained)) = Universe::split_bodies(&mut universe.bodies, i) {
+                        data_copy.srv.do_send(NotifyBodyState {
+                            session_id: None,
+                            body_state: SetRocketStateWs::from(body, chained),
+                        });
+                    }
                 }
                 *last_pushed = Instant::now();
             }

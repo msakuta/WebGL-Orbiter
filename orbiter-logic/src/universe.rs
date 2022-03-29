@@ -1,6 +1,8 @@
 use crate::{
-    celestial_body::{builder::AddPlanetParams, CelestialBody, CelestialId, OrbitalElements},
-    dyn_iter::{Chained, DynIterMut, MutRef},
+    celestial_body::{
+        builder::AddPlanetParams, iter::CelestialBodyDynIter, CelestialBody, CelestialBodyEntry,
+        CelestialId, OrbitalElements,
+    },
     session::SessionId,
     GMsun, Quaternion, AU,
 };
@@ -11,7 +13,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
 pub struct Universe {
-    pub bodies: Vec<CelestialBody>,
+    pub bodies: Vec<CelestialBodyEntry>,
     pub root: usize,
     pub id_gen: usize,
     sim_time: f64,
@@ -39,9 +41,8 @@ impl Universe {
         let sun = CelestialBody::builder()
             .gm(GMsun)
             .name("sun".to_string())
-            .build(&mut this, OrbitalElements::default());
-        let sun_id = sun.id;
-        this.add_body(sun);
+            .build(OrbitalElements::default());
+        let sun_id = this.add_body(sun);
 
         let rad_per_deg = std::f64::consts::PI / 180.;
 
@@ -117,9 +118,7 @@ impl Universe {
                     rotation_period: ((23. * 60. + 56.) * 60. + 4.10),
                 },
             );
-        let earth_id = earth.id;
-
-        this.add_body(earth);
+        let earth_id = this.add_body(earth);
 
         let mut rocket = CelestialBody::builder()
             .name("rocket".to_string())
@@ -224,12 +223,53 @@ impl Universe {
         this
     }
 
+    pub fn get(&self, id: CelestialId) -> Option<&CelestialBody> {
+        if let Some(item) = self.bodies.get(id.id as usize) {
+            if let Some(body) = item.dynamic.as_ref() {
+                if item.gen == id.gen {
+                    return Some(body);
+                }
+            }
+        }
+        None
+    }
+
+    pub fn iter_bodies(&mut self) -> CelestialBodyDynIter {
+        CelestialBodyDynIter::new_all(&mut self.bodies)
+    }
+
+    pub fn find_by_name(&mut self, name: &str) -> Option<(CelestialId, &mut CelestialBody)> {
+        self.bodies
+            .iter_mut()
+            .enumerate()
+            .filter_map(|(i, entry)| {
+                Some((
+                    CelestialId {
+                        id: i as u32,
+                        gen: entry.gen,
+                    },
+                    entry.dynamic.as_mut()?,
+                ))
+            })
+            .find(|(_, body)| body.name == name)
+    }
+
     pub fn new_rocket(&mut self) -> (SessionId, CelestialId) {
         let earth_id = self
             .bodies
             .iter()
-            .find(|body| body.name == "earth")
-            .map(|body| body.id)
+            .enumerate()
+            .find(|(_, entry)| {
+                entry
+                    .dynamic
+                    .as_ref()
+                    .map(|body| body.name == "earth")
+                    .unwrap_or(false)
+            })
+            .map(|(i, entry)| CelestialId {
+                id: i as u32,
+                gen: entry.gen,
+            })
             .unwrap();
 
         let rad_per_deg = std::f64::consts::PI / 180.;
@@ -265,48 +305,77 @@ impl Universe {
         let session_id = SessionId::new();
         rocket.session_id = Some(session_id);
 
-        let rocket_id = rocket.id;
-
-        self.add_body(rocket);
+        let rocket_id = self.add_body(rocket);
 
         (session_id, rocket_id)
     }
 
-    fn add_body(&mut self, body: CelestialBody) {
-        let body_id = body.id;
-        if let Some(parent) = body.parent {
-            let parent = &mut self.bodies[parent];
-            // println!("Add {} to {}", ret.lock().unwrap().name, parent.name);
-            parent.children.push(body_id);
+    fn add_body(&mut self, body: CelestialBody) -> CelestialId {
+        // First, find an empty slot
+        let id = self
+            .bodies
+            .iter()
+            .enumerate()
+            .find(|(_, s)| s.dynamic.is_none())
+            .map(|(i, slot)| CelestialId {
+                id: i as u32,
+                gen: slot.gen,
+            })
+            .unwrap_or_else(|| CelestialId {
+                id: self.bodies.len() as u32,
+                gen: 0,
+            });
+
+        if id.id < self.bodies.len() as u32 {
+            self.bodies[id.id as usize].dynamic = Some(body);
+
+            println!(
+                "Inserted to an empty slot: {}/{}, id: {:?}",
+                self.bodies.iter().filter(|s| s.dynamic.is_none()).count(),
+                self.bodies.len(),
+                id
+            );
+        } else {
+            self.bodies.push(CelestialBodyEntry {
+                gen: 0,
+                dynamic: Some(body),
+            });
+            println!(
+                "Pushed to the end: {}/{}",
+                self.bodies.iter().filter(|s| s.dynamic.is_none()).count(),
+                self.bodies.len()
+            );
         }
-        self.bodies.push(body);
+        id
+    }
+
+    pub fn split_bodies(
+        bodies: &'_ mut [CelestialBodyEntry],
+        i: usize,
+    ) -> anyhow::Result<(&mut CelestialBody, CelestialBodyDynIter)> {
+        let (body, rest) = CelestialBodyDynIter::new(bodies, i)?;
+        if let Some(ref mut body) = body.dynamic {
+            Ok((body, rest))
+        } else {
+            Err(anyhow::anyhow!("Split fail"))
+        }
     }
 
     pub fn update(&mut self) {
-        fn split_bodies(
-            bodies: &'_ mut [CelestialBody],
-            i: usize,
-        ) -> (
-            &mut CelestialBody,
-            impl DynIterMut<Item = CelestialBody> + '_,
-        ) {
-            let (first, mid) = bodies.split_at_mut(i);
-            let (center, last) = mid.split_first_mut().unwrap();
-            (center, Chained(MutRef(first), MutRef(last)))
-        }
-
         let mut bodies = std::mem::take(&mut self.bodies);
 
         let div = 100;
         for _ in 0..div {
             for i in 0..bodies.len() {
-                let (center, chained) = split_bodies(&mut bodies, i);
-                center.simulate_body(chained, self.time_scale, div as f64);
+                if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
+                    center.simulate_body(chained, self.time_scale, div as f64);
+                }
             }
         }
         for i in 0..bodies.len() {
-            let (center, chained) = split_bodies(&mut bodies, i);
-            center.update(chained);
+            if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
+                center.update(chained);
+            }
         }
         self.bodies = bodies;
         self.time += 1;
@@ -322,6 +391,18 @@ impl Universe {
     }
 }
 
+/// A wrapper struct to serialize a quaternion to THREE.js friendly format.
+struct CelestialBodyEntrySerial(CelestialBodyEntry);
+
+impl Serialize for CelestialBodyEntrySerial {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.dynamic.serialize(serializer)
+    }
+}
+
 impl Serialize for Universe {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -330,7 +411,14 @@ impl Serialize for Universe {
         let mut map = serializer.serialize_map(Some(3))?;
         map.serialize_entry("simTime", &self.sim_time)?;
         map.serialize_entry("startTime", &self.start_time)?;
-        map.serialize_entry("bodies", &self.bodies)?;
+        map.serialize_entry(
+            "bodies",
+            &self
+                .bodies
+                .iter()
+                .map(|entry| &entry.dynamic)
+                .collect::<Vec<_>>(),
+        )?;
         map.serialize_entry("timeScale", &self.time_scale)?;
         map.end()
     }
@@ -350,7 +438,10 @@ impl Universe {
                     .iter()
                     .map(|v| {
                         let cel = CelestialBody::deserialize(v)?;
-                        Ok(cel)
+                        Ok(CelestialBodyEntry {
+                            dynamic: Some(cel),
+                            gen: 0,
+                        })
                     })
                     .collect::<anyhow::Result<Vec<_>>>()?;
                 self.id_gen = self.bodies.len();

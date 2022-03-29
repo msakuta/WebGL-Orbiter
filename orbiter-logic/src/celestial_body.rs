@@ -1,8 +1,9 @@
 pub(crate) mod builder;
+pub(crate) mod iter;
 
-use self::builder::CelestialBodyBuilder;
+use self::{builder::CelestialBodyBuilder, iter::CelestialBodyDynIter};
 use super::{Quaternion, Universe, Vector3};
-use crate::{dyn_iter::DynIterMut, session::SessionId};
+use crate::session::SessionId;
 use anyhow::anyhow;
 use cgmath::{InnerSpace, Rad, Rotation, Rotation3, Zero};
 use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
@@ -23,12 +24,30 @@ pub struct OrbitalElements {
     pub argument_of_perihelion: f64,
 }
 
-pub type CelestialId = usize;
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct CelestialId {
+    pub id: u32,
+    pub gen: u32,
+}
+
+impl CelestialId {
+    fn _new(id: u32) -> Self {
+        Self { id, gen: 0 }
+    }
+}
+
+impl Serialize for CelestialId {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.id.serialize(serializer)
+    }
+}
 
 #[allow(non_snake_case)]
 #[derive(Debug)]
 pub struct CelestialBody {
-    pub id: CelestialId,
     pub name: String,
     pub position: Vector3,
     pub velocity: Vector3,
@@ -39,6 +58,7 @@ pub struct CelestialBody {
     pub children: Vec<CelestialId>,
     pub parent: Option<CelestialId>,
     pub session_id: Option<SessionId>,
+    pub controllable: bool,
 
     GM: f64,
     radius: f64,
@@ -50,7 +70,6 @@ pub struct CelestialBody {
 impl Default for CelestialBody {
     fn default() -> Self {
         Self {
-            id: 0,
             name: "".to_string(),
             position: Vector3::zero(),
             velocity: Vector3::zero(),
@@ -61,6 +80,7 @@ impl Default for CelestialBody {
             children: vec![],
             parent: None,
             session_id: None,
+            controllable: false,
             GM: super::GMsun,
             radius: Rsun,
             orbital_elements: OrbitalElements::default(),
@@ -80,12 +100,12 @@ impl CelestialBody {
 
     fn set_orbiting_velocity<'a>(
         &'a mut self,
-        mut bodies: impl Iterator<Item = &'a CelestialBody>,
+        bodies: CelestialBodyDynIter,
         semimajor_axis: f64,
         rotation: Quaternion,
     ) {
         if let Some(parent) = self.parent {
-            if let Some(parent) = bodies.find(|body| body.id == parent) {
+            if let Some(parent) = bodies.get(parent) {
                 self.velocity = rotation.rotate_vector(
                     Vector3::new(1., 0., 0.)
                         * (parent.GM * (2. / self.position.magnitude() - 1. / semimajor_axis))
@@ -98,11 +118,8 @@ impl CelestialBody {
     /// Update orbital elements from position and velocity.
     /// The whole discussion is found in chapter 4.4 in
     /// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
-    pub(crate) fn update(&mut self, mut bodies: impl DynIterMut<Item = CelestialBody>) {
-        if let Some(parent) = self
-            .parent
-            .and_then(|parent| bodies.dyn_iter_mut().find(|body| body.id == parent))
-        {
+    pub(crate) fn update(&mut self, bodies: CelestialBodyDynIter) {
+        if let Some(parent) = self.parent.and_then(|parent| bodies.get(parent)) {
             // Angular momentum vectors
             let ang = self.velocity.cross(self.position);
             let r = self.position.magnitude();
@@ -158,16 +175,17 @@ impl CelestialBody {
 
     pub(crate) fn simulate_body(
         &self,
-        mut bodies: impl DynIterMut<Item = CelestialBody>,
+        mut bodies: CelestialBodyDynIter,
         delta_time: f64,
         div: f64,
     ) {
         // let children = &self.children;
-        for body in bodies.dyn_iter_mut() {
-            if self.children.iter().find(|id| **id == body.id).is_none() {
+        for id in self.children.iter() {
+            let a = if let Some(a) = bodies.get_mut(*id) {
+                a
+            } else {
                 continue;
-            }
-            let a = body;
+            };
             let sl = a.position.magnitude2();
             // println!(
             //     "Body {} simulating with {}... sl: {}",
@@ -191,6 +209,43 @@ impl CelestialBody {
                     ) * a.quaternion;
                 }
             }
+
+            // Only controllable objects can change orbiting body
+            // if a.controllable {
+            //     if let Some(parent) = a.parent.and_then(|parent| bodies.dyn_iter_mut().find(|body| body.id == parent)) {
+            //         // Check if we are leaving sphere of influence of current parent.
+            //         if parent.parent.is_some() && 0. < parent.soi && parent.soi * 1.01 < a.position.magnitude() {
+            //             a.position += self.position;
+            //             a.velocity += self.velocity;
+            //             self.children.swap_remove(child_index);
+            //             a.parent = self.parent;
+            //             parent.children.push(a.id);
+            //             continue; // Continue but not increment i
+            //         }
+            //         let skip = false;
+            //         // Check if we are entering sphere of influence of another sibling.
+            //         for child_id in &self.children {
+            //             if *child_id == a.id {
+            //                 continue;
+            //             }
+            //             if !child_id.sphereOfInfluence)
+            //                 continue;
+            //             if(aj.position.distanceTo(a.position) < aj.sphereOfInfluence * .99){
+            //                 a.position.sub(aj.position);
+            //                 a.velocity.sub(aj.velocity);
+            //                 const k = children.indexOf(a);
+            //                 if(0 <= k)
+            //                     children.splice(k, 1);
+            //                 a.parent = aj;
+            //                 aj.children.push(a);
+            //                 skip = true;
+            //                 break;
+            //             }
+            //         }
+            //         if(skip)
+            //             continue; // Continue but not increment i
+            //     }
+            // }
             // a.simulate_body(bodies, delta_time, div, timescale);
         }
     }
@@ -219,7 +274,6 @@ impl Serialize for CelestialBody {
         S: Serializer,
     {
         let mut map = serializer.serialize_map(None)?;
-        map.serialize_entry("id", &self.id)?;
         map.serialize_entry("name", &self.name)?;
         map.serialize_entry("position", &self.position)?;
         map.serialize_entry("velocity", &self.velocity)?;
@@ -246,11 +300,6 @@ impl CelestialBody {
             return Err(anyhow!(""));
         };
         let mut ret = CelestialBody::default();
-        let deserialize_usize = |target: &mut usize, key: &str| {
-            if let Some(v) = map.get(key).and_then(|v| v.as_u64()) {
-                *target = v as usize;
-            }
-        };
         let deserialize_f64 =
             |target: &mut f64, map: &serde_json::Map<String, serde_json::Value>, key: &str| {
                 if let Some(v) = map.get(key).and_then(|v| v.as_f64()) {
@@ -281,13 +330,17 @@ impl CelestialBody {
             if let Some(serde_json::Value::Array(arr)) = map.get(key) {
                 *target = arr
                     .iter()
-                    .filter_map(|v| v.as_u64().map(|v| v as usize))
+                    .filter_map(|v| {
+                        v.as_u64().map(|v| CelestialId {
+                            id: v as u32,
+                            gen: 0,
+                        })
+                    })
                     .collect();
             }
             Some(())
         };
 
-        deserialize_usize(&mut ret.id, "id");
         deserialize_str(&mut ret.name, "name");
         deserialize_vector3(&mut ret.position, "position")?;
         deserialize_vector3(&mut ret.velocity, "velocity")?;
@@ -299,7 +352,10 @@ impl CelestialBody {
         ret.parent = map
             .get("parent")
             .and_then(|v| v.as_u64())
-            .map(|v| v as usize);
+            .map(|v| CelestialId {
+                id: v as u32,
+                gen: 0,
+            });
         ret.session_id = map
             .get("sessionId")
             .and_then(|v| v.as_str())
@@ -311,6 +367,12 @@ impl CelestialBody {
         }
         Ok(ret)
     }
+}
+
+#[derive(Debug)]
+pub struct CelestialBodyEntry {
+    pub gen: u32,
+    pub dynamic: Option<CelestialBody>,
 }
 
 #[test]

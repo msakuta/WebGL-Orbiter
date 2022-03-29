@@ -1,9 +1,11 @@
-mod celestial_body;
-mod dyn_iter;
+pub mod celestial_body;
+pub mod dyn_iter;
 mod session;
 mod universe;
 
-pub use crate::celestial_body::{CelestialBody, CelestialId, OrbitalElements};
+pub use crate::celestial_body::{
+    iter::CelestialBodyDynIter, CelestialBody, CelestialId, OrbitalElements,
+};
 pub use crate::session::SessionId;
 pub use crate::universe::{serialize, Universe};
 

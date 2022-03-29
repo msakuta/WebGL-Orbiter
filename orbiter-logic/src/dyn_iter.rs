@@ -1,6 +1,6 @@
 use std::iter;
 
-pub(crate) trait DynIter {
+pub trait DynIter {
     type Item: ?Sized;
     fn dyn_iter(&self) -> Box<dyn Iterator<Item = &Self::Item> + '_>;
     fn as_dyn_iter(&self) -> &dyn DynIter<Item = Self::Item>;
@@ -18,7 +18,7 @@ where
     }
 }
 
-pub(crate) trait DynIterMut: DynIter {
+pub trait DynIterMut: DynIter {
     fn dyn_iter_mut(&mut self) -> Box<dyn Iterator<Item = &mut Self::Item> + '_>;
 }
 impl<T, Item> DynIterMut for T

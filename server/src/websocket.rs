@@ -5,7 +5,7 @@ use crate::{
 };
 use ::actix::{prelude::*, Actor, StreamHandler};
 use ::actix_web::{web, HttpRequest, HttpResponse};
-use ::orbiter_logic::{CelestialBody, SessionId, Universe, Vector3};
+use ::orbiter_logic::{CelestialBody, CelestialBodyDynIter, SessionId, Universe, Vector3};
 use ::serde::{Deserialize, Serialize};
 use actix_web_actors::ws;
 
@@ -100,15 +100,12 @@ pub(crate) struct SetRocketStateWs {
 }
 
 impl SetRocketStateWs {
-    pub(crate) fn from<'a>(
-        body: &'a CelestialBody,
-        mut bodies: impl Iterator<Item = &'a CelestialBody>,
-    ) -> Self {
+    pub(crate) fn from<'a>(body: &'a CelestialBody, bodies: CelestialBodyDynIter) -> Self {
         Self {
             name: body.name.clone(),
             parent: body
                 .parent
-                .and_then(|parent| bodies.nth(parent))
+                .and_then(|parent| bodies.get(parent))
                 .map(|b| b.name.clone()),
             position: body.position,
             velocity: body.velocity,
@@ -212,9 +209,9 @@ impl SessionWs {
             universe
                 .bodies
                 .iter_mut()
-                .enumerate()
-                .find(|(_, body)| body.name == name)
-                .map(|(_, rocket)| rocket)
+                .filter_map(|entry| entry.dynamic.as_mut())
+                .find(|body| body.name == name)
+                .map(|rocket| rocket)
                 .ok_or_else(|| anyhow::anyhow!("could not find rocket"))
         }
 
@@ -233,13 +230,7 @@ impl SessionWs {
         let parent_id = payload
             .parent
             .as_ref()
-            .and_then(|parent| {
-                universe
-                    .bodies
-                    .iter()
-                    .enumerate()
-                    .find(|(_, body)| body.name == *parent)
-            })
+            .and_then(|parent| universe.find_by_name(parent))
             .map(|(i, _)| i);
 
         let mut rocket = find_rocket(&mut universe, &payload.name)?;
