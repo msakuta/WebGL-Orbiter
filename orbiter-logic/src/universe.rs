@@ -20,6 +20,11 @@ pub struct Universe {
     start_time: f64,
     time: usize,
     pub time_scale: f64,
+    /// Whenever a CelestialBody changes its parent, there is a chance that parent's children list
+    /// become inconsistent with the child's parent id. It is especially true with both server and
+    /// client tries to update the parent. This flag indicates that a parent has changed since last
+    /// update and [`update_parent`] should be called.
+    parent_dirty: bool,
 }
 
 impl Universe {
@@ -36,6 +41,7 @@ impl Universe {
             start_time: now_unix,
             time: 0,
             time_scale: 1.,
+            parent_dirty: false,
         };
 
         let sun = CelestialBody::builder()
@@ -52,7 +58,7 @@ impl Universe {
             .orbit_color("#3f7f7f".to_string())
             .gm(22032. / AU / AU / AU)
             .radius(2439.7)
-            .soi(2e5)
+            .soi(2e5 / AU)
             .build_from_orbital_elements(
                 &mut this,
                 OrbitalElements {
@@ -77,7 +83,7 @@ impl Universe {
             .orbit_color("#7f7f3f".to_string())
             .gm(324859. / AU / AU / AU)
             .radius(6051.8)
-            .soi(2e5)
+            .soi(2e5 / AU)
             .build_from_orbital_elements(
                 &mut this,
                 OrbitalElements {
@@ -101,7 +107,7 @@ impl Universe {
             .parent(sun_id)
             .gm(398600. / AU / AU / AU)
             .radius(6534.)
-            .soi(5e5)
+            .soi(5e5 / AU)
             .build_from_orbital_elements(
                 &mut this,
                 OrbitalElements {
@@ -123,6 +129,7 @@ impl Universe {
         let mut rocket = CelestialBody::builder()
             .name("rocket".to_string())
             .parent(earth_id)
+            .controllable(true)
             .gm(100. / AU / AU / AU)
             .radius(0.1)
             .build_from_orbital_elements(
@@ -150,7 +157,7 @@ impl Universe {
             .parent(earth_id)
             .gm(4904.8695 / AU / AU / AU)
             .radius(1737.1)
-            .soi(1e5)
+            .soi(1e5 / AU)
             .build_from_orbital_elements(
                 &mut this,
                 OrbitalElements {
@@ -175,7 +182,7 @@ impl Universe {
             .parent(sun_id)
             .gm(42828. / AU / AU / AU)
             .radius(3389.5)
-            .soi(3e5)
+            .soi(3e5 / AU)
             .build_from_orbital_elements(
                 &mut this,
                 OrbitalElements {
@@ -200,7 +207,7 @@ impl Universe {
             .parent(sun_id)
             .gm(126686534. / AU / AU / AU)
             .radius(69911.)
-            .soi(10e6)
+            .soi(10e6 / AU)
             .build_from_orbital_elements(
                 &mut this,
                 OrbitalElements {
@@ -226,6 +233,17 @@ impl Universe {
     pub fn get(&self, id: CelestialId) -> Option<&CelestialBody> {
         if let Some(item) = self.bodies.get(id.id as usize) {
             if let Some(body) = item.dynamic.as_ref() {
+                if item.gen == id.gen {
+                    return Some(body);
+                }
+            }
+        }
+        None
+    }
+
+    pub fn get_mut(&mut self, id: CelestialId) -> Option<&mut CelestialBody> {
+        if let Some(item) = self.bodies.get_mut(id.id as usize) {
+            if let Some(body) = item.dynamic.as_mut() {
                 if item.gen == id.gen {
                     return Some(body);
                 }
@@ -277,8 +295,9 @@ impl Universe {
         let mut rng = thread_rng();
 
         let mut rocket = CelestialBody::builder()
-            .name(format!("rocket{}", self.id_gen))
+            .name(format!("rocket{}", self.bodies.len()))
             .parent(earth_id)
+            .controllable(true)
             .gm(100. / AU / AU / AU)
             .radius(0.1)
             .build_from_orbital_elements(
@@ -326,6 +345,13 @@ impl Universe {
                 gen: 0,
             });
 
+        if let Some(parent_id) = body.parent {
+            if let Some(parent) = self.get_mut(parent_id) {
+                // println!("Add {} to {}", ret.lock().unwrap().name, parent.name);
+                parent.children.push(id);
+            }
+        }
+
         if id.id < self.bodies.len() as u32 {
             self.bodies[id.id as usize].dynamic = Some(body);
 
@@ -341,11 +367,13 @@ impl Universe {
                 dynamic: Some(body),
             });
             println!(
-                "Pushed to the end: {}/{}",
+                "Pushed to the end({:?}): {}/{}",
+                id,
                 self.bodies.iter().filter(|s| s.dynamic.is_none()).count(),
                 self.bodies.len()
             );
         }
+
         id
     }
 
@@ -361,16 +389,39 @@ impl Universe {
         }
     }
 
+    pub fn split_bodies_id(
+        bodies: &'_ mut [CelestialBodyEntry],
+        i: usize,
+    ) -> anyhow::Result<(&mut CelestialBody, CelestialId, CelestialBodyDynIter)> {
+        let (entry, rest) = CelestialBodyDynIter::new(bodies, i)?;
+        if let Some(ref mut body) = entry.dynamic {
+            let id = CelestialId {
+                id: i as u32,
+                gen: entry.gen,
+            };
+            Ok((body, id, rest))
+        } else {
+            Err(anyhow::anyhow!("Split fail"))
+        }
+    }
+
     pub fn update(&mut self) {
+        self.update_parent();
+
         let mut bodies = std::mem::take(&mut self.bodies);
 
         let div = 100;
         for _ in 0..div {
             for i in 0..bodies.len() {
                 if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
-                    center.simulate_body(chained, self.time_scale, div as f64);
+                    match center.simulate_body(chained, self.time_scale, div as f64) {
+                        Ok(true) => self.parent_dirty = true,
+                        Err(e) => println!("Error in simulate_body: {:?}", e),
+                        _ => (),
+                    }
                 }
             }
+            self.update_parent();
         }
         for i in 0..bodies.len() {
             if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
@@ -378,8 +429,38 @@ impl Universe {
             }
         }
         self.bodies = bodies;
+        self.update_parent();
         self.time += 1;
         self.sim_time += self.time_scale;
+    }
+
+    pub fn update_parent(&mut self) {
+        if !self.parent_dirty {
+            return;
+        }
+
+        for body in self.bodies.iter_mut() {
+            if let Some(body) = body.dynamic.as_mut() {
+                body.children.clear();
+            }
+        }
+
+        for body_idx in 0..self.bodies.len() {
+            if let Ok((body, id, mut rest)) = Self::split_bodies_id(&mut self.bodies, body_idx) {
+                if let Some(parent) = body.parent {
+                    if let Some(parent_body) = rest.get_mut(parent) {
+                        parent_body.children.push(id);
+                    }
+                }
+            }
+        }
+
+        println!("Dirty parent repaired");
+        self.parent_dirty = false;
+    }
+
+    pub fn mark_dirty(&mut self) {
+        self.parent_dirty = true;
     }
 
     pub fn get_time(&self) -> usize {

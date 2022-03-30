@@ -219,13 +219,13 @@ async fn main() -> std::io::Result<()> {
                 *last_pushed = Instant::now();
             }
 
-            println!(
-                "[{:?}] Tick {}, time {}, calc: {:.3}ms",
-                std::thread::current().id(),
-                universe.get_time(),
-                universe.get_sim_time(),
-                start.elapsed().as_micros() as f64 * 1e-3,
-            );
+            // println!(
+            //     "[{:?}] Tick {}, time {}, calc: {:.3}ms",
+            //     std::thread::current().id(),
+            //     universe.get_time(),
+            //     universe.get_sim_time(),
+            //     start.elapsed().as_micros() as f64 * 1e-3,
+            // );
         }
     });
 

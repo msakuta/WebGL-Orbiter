@@ -174,23 +174,21 @@ impl CelestialBody {
     }
 
     pub(crate) fn simulate_body(
-        &self,
+        &mut self,
         mut bodies: CelestialBodyDynIter,
         delta_time: f64,
         div: f64,
-    ) {
+    ) -> anyhow::Result<bool> {
         // let children = &self.children;
-        for id in self.children.iter() {
-            let a = if let Some(a) = bodies.get_mut(*id) {
-                a
+        // println!("Children: {:?}", self.children);
+        let mut parent_dirty = false;
+        for (idx, child_id) in self.children.iter().enumerate() {
+            let (a, mut rest) = if let Ok((Some(a), rest)) = bodies.exclude_id(*child_id) {
+                (a, rest)
             } else {
                 continue;
             };
             let sl = a.position.magnitude2();
-            // println!(
-            //     "Body {} simulating with {}... sl: {}",
-            //     a.name, delta_time, sl
-            // );
             if sl != 0. {
                 let accel = -a.position.normalize() * (delta_time / div * self.GM / sl);
                 let dvelo = accel * 0.5;
@@ -211,43 +209,61 @@ impl CelestialBody {
             }
 
             // Only controllable objects can change orbiting body
-            // if a.controllable {
-            //     if let Some(parent) = a.parent.and_then(|parent| bodies.dyn_iter_mut().find(|body| body.id == parent)) {
-            //         // Check if we are leaving sphere of influence of current parent.
-            //         if parent.parent.is_some() && 0. < parent.soi && parent.soi * 1.01 < a.position.magnitude() {
-            //             a.position += self.position;
-            //             a.velocity += self.velocity;
-            //             self.children.swap_remove(child_index);
-            //             a.parent = self.parent;
-            //             parent.children.push(a.id);
-            //             continue; // Continue but not increment i
-            //         }
-            //         let skip = false;
-            //         // Check if we are entering sphere of influence of another sibling.
-            //         for child_id in &self.children {
-            //             if *child_id == a.id {
-            //                 continue;
-            //             }
-            //             if !child_id.sphereOfInfluence)
-            //                 continue;
-            //             if(aj.position.distanceTo(a.position) < aj.sphereOfInfluence * .99){
-            //                 a.position.sub(aj.position);
-            //                 a.velocity.sub(aj.velocity);
-            //                 const k = children.indexOf(a);
-            //                 if(0 <= k)
-            //                     children.splice(k, 1);
-            //                 a.parent = aj;
-            //                 aj.children.push(a);
-            //                 skip = true;
-            //                 break;
-            //             }
-            //         }
-            //         if(skip)
-            //             continue; // Continue but not increment i
-            //     }
-            // }
+            if a.controllable {
+                // Check if we are leaving sphere of influence of current parent.
+                if let Some(grandparent) = self.parent.and_then(|parent| rest.get_mut(parent)) {
+                    if 0. < self.soi && self.soi * 1.01 < a.position.magnitude() {
+                        println!("Transitioning parent of {:?} from {:?} to {:?}", child_id, a.parent, grandparent.name);
+                        a.position += self.position;
+                        a.velocity += self.velocity;
+                        // remove_child_index.push(idx);
+                        a.parent = self.parent;
+                        // grandparent.children.push(*child_id);
+                        parent_dirty = true;
+                        continue;
+                    }
+                }
+
+                // let mut skip = false;
+                // Check if we are entering sphere of influence of another sibling.
+                for (another_child_idx, another_child_id) in self.children.iter().enumerate() {
+                    if *child_id == *another_child_id {
+                        continue;
+                    }
+                    let another_child = if let Some(child) = rest.get_mut(*another_child_id) {
+                        child
+                    } else {
+                        continue;
+                    };
+                    if another_child.soi == 0. {
+                        continue;
+                    }
+                    if (another_child.position - a.position).magnitude2()
+                        < (another_child.soi * 0.99).powf(2.)
+                    {
+                        println!("Transitioning parent to a sibling! {:?}", a.parent);
+                        a.position -= another_child.position;
+                        a.velocity -= another_child.velocity;
+                        // remove_child_index.push(another_child_idx);
+                        a.parent = Some(*another_child_id);
+                        // another_child.children.push(*child_id);
+                        // skip = true;
+                        parent_dirty = true;
+                        break;
+                    }
+                }
+                // if skip {
+                //     continue; // Continue but not increment i
+                // }
+            }
             // a.simulate_body(bodies, delta_time, div, timescale);
         }
+
+        // for idx in remove_child_index.into_iter().rev() {
+        //     self.children.swap_remove(idx);
+        // }
+
+        Ok(parent_dirty)
     }
 }
 
@@ -285,7 +301,9 @@ impl Serialize for CelestialBody {
         map.serialize_entry("parent", &self.parent)?;
         map.serialize_entry("sessionId", &self.session_id)?;
         map.serialize_entry("radius", &self.radius)?;
+        map.serialize_entry("controllable", &self.controllable)?;
         map.serialize_entry("GM", &self.GM)?;
+        map.serialize_entry("soi", &self.soi)?;
         map.serialize_entry("orbitalElements", &self.orbital_elements)?;
         map.end()
     }
@@ -300,6 +318,12 @@ impl CelestialBody {
             return Err(anyhow!(""));
         };
         let mut ret = CelestialBody::default();
+        let deserialize_bool =
+            |target: &mut bool, map: &serde_json::Map<String, serde_json::Value>, key: &str| {
+                if let Some(v) = map.get(key).and_then(|v| v.as_bool()) {
+                    *target = v;
+                }
+            };
         let deserialize_f64 =
             |target: &mut f64, map: &serde_json::Map<String, serde_json::Value>, key: &str| {
                 if let Some(v) = map.get(key).and_then(|v| v.as_f64()) {
@@ -361,7 +385,9 @@ impl CelestialBody {
             .and_then(|v| v.as_str())
             .map(|v| SessionId::from(v));
         deserialize_f64(&mut ret.radius, map, "radius");
+        deserialize_bool(&mut ret.controllable, map, "controllable");
         deserialize_f64(&mut ret.GM, map, "GM");
+        deserialize_f64(&mut ret.soi, map, "soi");
         if let Some(val) = map.get("orbitalElements") {
             ret.orbital_elements = serde_json::from_value(val.clone())?;
         }

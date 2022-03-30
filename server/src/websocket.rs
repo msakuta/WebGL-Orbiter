@@ -223,10 +223,10 @@ impl SessionWs {
             ));
         }
 
-        println!(
-            "Set rocket state from session: {}",
-            self.session_id.to_string()
-        );
+        // println!(
+        //     "Set rocket state from session: {}",
+        //     self.session_id.to_string()
+        // );
         let parent_id = payload
             .parent
             .as_ref()
@@ -234,6 +234,7 @@ impl SessionWs {
             .map(|(i, _)| i);
 
         let mut rocket = find_rocket(&mut universe, &payload.name)?;
+        let prev_parent_id = rocket.parent;
         rocket.parent = parent_id;
         rocket.position = payload.position;
         rocket.velocity = payload.velocity;
@@ -243,6 +244,10 @@ impl SessionWs {
             session_id: Some(self.session_id),
             body_state: payload,
         });
+
+        if parent_id != prev_parent_id {
+            universe.mark_dirty();
+        }
 
         Ok(())
     }

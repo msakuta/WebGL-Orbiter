@@ -55,7 +55,7 @@ impl CelestialBodyBuilder {
         self
     }
 
-    pub(crate) fn _controllable(&mut self, value: bool) -> &mut Self {
+    pub(crate) fn controllable(&mut self, value: bool) -> &mut Self {
         self.controllable = value;
         self
     }

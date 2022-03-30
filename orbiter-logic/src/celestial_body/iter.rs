@@ -79,6 +79,13 @@ impl<'a> CelestialBodyDynIter<'a> {
         ))
     }
 
+    pub fn len(&self) -> usize {
+        self.0
+            .iter()
+            .map(|slice| slice.slice.len())
+            .fold(0, |acc, cur| acc + cur)
+    }
+
     #[allow(dead_code)]
     pub(crate) fn exclude(&mut self, idx: usize) -> anyhow::Result<&mut CelestialBodyEntry> {
         if let Some((slice_idx, _)) = self
@@ -106,7 +113,7 @@ impl<'a> CelestialBodyDynIter<'a> {
         }
     }
 
-    pub(crate) fn _exclude_id<'b>(
+    pub fn exclude_id<'b>(
         &'b mut self,
         id: CelestialId,
     ) -> anyhow::Result<(Option<&'b mut CelestialBody>, CelestialBodyDynIter<'b>)>
