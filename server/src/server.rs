@@ -1,4 +1,7 @@
-use crate::websocket::{ChatHistoryRequest, ClientMessage, NotifyBodyState, TimeScaleMessage};
+use crate::{
+    humanhash::human_hash,
+    websocket::{ChatHistoryRequest, ClientMessage, NotifyBodyState, TimeScaleMessage},
+};
 use ::actix::prelude::*;
 use ::orbiter_logic::SessionId;
 use ::serde::{Deserialize, Serialize};
@@ -152,6 +155,22 @@ impl Handler<NotifyNewBody> for ChatServer {
     }
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PlayerMessage {
+    pub player: String,
+    pub message: String,
+}
+
+impl From<ClientMessage> for PlayerMessage {
+    fn from(msg: ClientMessage) -> Self {
+        Self {
+            player: human_hash(&msg.session_id.0, 1, "-").unwrap_or_else(|_| "unknown".to_string()),
+            message: msg.message,
+        }
+    }
+}
+
 impl Handler<ClientMessage> for ChatServer {
     type Result = ();
 
@@ -169,7 +188,7 @@ impl Handler<ClientMessage> for ChatServer {
         }
         let payload = Payload {
             type_: "message",
-            payload: msg,
+            payload: PlayerMessage::from(msg),
         };
 
         self.send_message(&serde_json::to_string(&payload).unwrap(), None);
@@ -203,7 +222,11 @@ impl Handler<ChatHistoryRequest> for ChatServer {
             session.do_send(Message(
                 serde_json::to_string(&Payload {
                     type_: "chatHistory",
-                    payload: &self.chat_history,
+                    payload: self
+                        .chat_history
+                        .iter()
+                        .map(|msg| PlayerMessage::from(msg.clone()))
+                        .collect::<Vec<_>>(),
                 })
                 .unwrap(),
             ));

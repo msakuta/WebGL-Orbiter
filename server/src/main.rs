@@ -1,6 +1,7 @@
 mod api {
     pub(crate) mod set_timescale;
 }
+mod humanhash;
 mod quaternion;
 mod server;
 mod websocket;

@@ -8,6 +8,11 @@ interface ClientMessage {
     message: string
 }
 
+interface PlayerMessage {
+    player: string,
+    message: string
+}
+
 const buttonHeight = 32;
 const buttonWidth = 32;
 const panelHeight = 300;
@@ -20,7 +25,7 @@ export class ChatControl {
     protected visible: boolean = false;
     protected valueElement: HTMLDivElement;
     protected title: HTMLDivElement;
-    protected chatHistory: Array<ClientMessage> = [];
+    protected chatHistory: Array<PlayerMessage> = [];
 
     protected showEvent: () => void = () => (void 0);
     protected updateChatHistory: () => void;
@@ -134,7 +139,7 @@ export class ChatControl {
                 elem.style.border = "1px solid #00ff00";
                 const labelElem = document.createElement('div');
                 const msg = this.chatHistory[i];
-                labelElem.innerHTML = `${msg.sessionId}: ${msg.message}`;
+                labelElem.innerHTML = `${msg.player}: ${msg.message}`;
                 labelElem.style.cssText = "width: 100%; margin-right: -32px; display: inline-block; text-align: overflow: auto;";
                 elem.appendChild(labelElem);
                 chatHistoryContainer.insertBefore(elem, chatHistoryContainer.firstChild);
@@ -173,14 +178,14 @@ export class ChatControl {
         }
     }
 
-    addMessage(msg: ClientMessage){
+    addMessage(msg: PlayerMessage){
         if(maxHistory <= this.chatHistory.length)
             this.chatHistory.shift();
         this.chatHistory.push(msg);
         this.updateChatHistory();
     }
 
-    setHistory(msg: Array<ClientMessage>){
+    setHistory(msg: Array<PlayerMessage>){
         if(maxHistory <= this.chatHistory.length)
             this.chatHistory.shift();
         this.chatHistory = msg;
