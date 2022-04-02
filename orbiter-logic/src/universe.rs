@@ -406,9 +406,9 @@ impl Universe {
     }
 
     pub fn update(&mut self) {
-        self.update_parent();
-
         let mut bodies = std::mem::take(&mut self.bodies);
+
+        self.update_parent(&mut bodies);
 
         let div = 100;
         for _ in 0..div {
@@ -421,32 +421,32 @@ impl Universe {
                     }
                 }
             }
-            self.update_parent();
+            self.update_parent(&mut bodies);
         }
         for i in 0..bodies.len() {
             if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
                 center.update(chained);
             }
         }
+        self.update_parent(&mut bodies);
         self.bodies = bodies;
-        self.update_parent();
         self.time += 1;
         self.sim_time += self.time_scale;
     }
 
-    pub fn update_parent(&mut self) {
+    pub fn update_parent(&mut self, bodies: &mut Vec<CelestialBodyEntry>) {
         if !self.parent_dirty {
             return;
         }
 
-        for body in self.bodies.iter_mut() {
+        for body in bodies.iter_mut() {
             if let Some(body) = body.dynamic.as_mut() {
                 body.children.clear();
             }
         }
 
-        for body_idx in 0..self.bodies.len() {
-            if let Ok((body, id, mut rest)) = Self::split_bodies_id(&mut self.bodies, body_idx) {
+        for body_idx in 0..bodies.len() {
+            if let Ok((body, id, mut rest)) = Self::split_bodies_id(bodies, body_idx) {
                 if let Some(parent) = body.parent {
                     if let Some(parent_body) = rest.get_mut(parent) {
                         parent_body.children.push(id);

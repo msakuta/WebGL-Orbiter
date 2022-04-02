@@ -182,7 +182,7 @@ impl CelestialBody {
         // let children = &self.children;
         // println!("Children: {:?}", self.children);
         let mut parent_dirty = false;
-        for (idx, child_id) in self.children.iter().enumerate() {
+        for child_id in self.children.iter() {
             let (a, mut rest) = if let Ok((Some(a), rest)) = bodies.exclude_id(*child_id) {
                 (a, rest)
             } else {
@@ -213,7 +213,10 @@ impl CelestialBody {
                 // Check if we are leaving sphere of influence of current parent.
                 if let Some(grandparent) = self.parent.and_then(|parent| rest.get_mut(parent)) {
                     if 0. < self.soi && self.soi * 1.01 < a.position.magnitude() {
-                        println!("Transitioning parent of {:?} from {:?} to {:?}", child_id, a.parent, grandparent.name);
+                        println!(
+                            "Transitioning parent of {:?} from {:?} to {:?} with {:?}",
+                            child_id, a.parent, grandparent.name, a.position
+                        );
                         a.position += self.position;
                         a.velocity += self.velocity;
                         // remove_child_index.push(idx);
@@ -226,7 +229,7 @@ impl CelestialBody {
 
                 // let mut skip = false;
                 // Check if we are entering sphere of influence of another sibling.
-                for (another_child_idx, another_child_id) in self.children.iter().enumerate() {
+                for another_child_id in self.children.iter() {
                     if *child_id == *another_child_id {
                         continue;
                     }
@@ -244,10 +247,7 @@ impl CelestialBody {
                         println!("Transitioning parent to a sibling! {:?}", a.parent);
                         a.position -= another_child.position;
                         a.velocity -= another_child.velocity;
-                        // remove_child_index.push(another_child_idx);
                         a.parent = Some(*another_child_id);
-                        // another_child.children.push(*child_id);
-                        // skip = true;
                         parent_dirty = true;
                         break;
                     }

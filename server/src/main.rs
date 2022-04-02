@@ -190,7 +190,7 @@ async fn main() -> std::io::Result<()> {
         loop {
             interval.tick().await;
 
-            let start = Instant::now();
+            // let start = Instant::now();
 
             let mut universe = data_copy.universe.write().unwrap();
             universe.update();

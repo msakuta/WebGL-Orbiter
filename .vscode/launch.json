@@ -10,6 +10,19 @@
             "name": "Launch Chrome against localhost",
             "url": "http://localhost:8080",
             "webRoot": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug server",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--package=webgl-orbiter-server"
+                ]
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}/server"
         }
     ]
 }
