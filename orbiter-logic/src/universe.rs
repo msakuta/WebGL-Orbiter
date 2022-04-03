@@ -9,7 +9,6 @@ use crate::{
 use cgmath::{Rad, Rotation3};
 use rand::prelude::*;
 use serde::{ser::SerializeMap, Serialize, Serializer};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
 pub struct Universe {
@@ -28,11 +27,7 @@ pub struct Universe {
 }
 
 impl Universe {
-    pub fn new() -> Self {
-        let now_unix = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs() as f64)
-            .unwrap_or(0.);
+    pub fn new(now_unix: f64) -> Self {
         let mut this = Self {
             bodies: vec![],
             root: 0,
@@ -256,7 +251,23 @@ impl Universe {
         CelestialBodyDynIter::new_all(&mut self.bodies)
     }
 
-    pub fn find_by_name(&mut self, name: &str) -> Option<(CelestialId, &mut CelestialBody)> {
+    pub fn find_by_name(&self, name: &str) -> Option<(CelestialId, &CelestialBody)> {
+        self.bodies
+            .iter()
+            .enumerate()
+            .filter_map(|(i, entry)| {
+                Some((
+                    CelestialId {
+                        id: i as u32,
+                        gen: entry.gen,
+                    },
+                    entry.dynamic.as_ref()?,
+                ))
+            })
+            .find(|(_, body)| body.name == name)
+    }
+
+    pub fn find_by_name_mut(&mut self, name: &str) -> Option<(CelestialId, &mut CelestialBody)> {
         self.bodies
             .iter_mut()
             .enumerate()
@@ -405,24 +416,33 @@ impl Universe {
         }
     }
 
+    pub fn simulate_bodies(&mut self, delta_time: f64, div: usize) {
+        let mut bodies = std::mem::take(&mut self.bodies);
+        for i in 0..bodies.len() {
+            if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
+                match center.simulate_body(chained, delta_time, div as f64) {
+                    Ok(true) => self.parent_dirty = true,
+                    Err(e) => println!("Error in simulate_body: {:?}", e),
+                    _ => (),
+                }
+            }
+        }
+        self.update_parent(&mut bodies);
+        self.bodies = bodies;
+    }
+
     pub fn update(&mut self) {
         let mut bodies = std::mem::take(&mut self.bodies);
 
         self.update_parent(&mut bodies);
+        self.bodies = bodies;
 
         let div = 100;
         for _ in 0..div {
-            for i in 0..bodies.len() {
-                if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
-                    match center.simulate_body(chained, self.time_scale, div as f64) {
-                        Ok(true) => self.parent_dirty = true,
-                        Err(e) => println!("Error in simulate_body: {:?}", e),
-                        _ => (),
-                    }
-                }
-            }
-            self.update_parent(&mut bodies);
+            self.simulate_bodies(self.time_scale, div);
         }
+
+        let mut bodies = std::mem::take(&mut self.bodies);
         for i in 0..bodies.len() {
             if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
                 center.update(chained);
@@ -541,5 +561,5 @@ pub fn serialize(this: &Universe) -> serde_json::Result<String> {
 
 #[test]
 fn test_universe() {
-    let _ = Universe::new();
+    let _ = Universe::new(0.);
 }

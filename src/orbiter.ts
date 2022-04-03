@@ -23,9 +23,12 @@ import backgroundUrl from './images/hipparcoscyl1.jpg';
 // webpack/webpack#6615, but in theory `import { greet } from './pkg';`
 // will work here one day as well!
 const rust = import('../orbiter-wasm/pkg');
+let wasmModule: any = null;
+let wasmState: any = null;
 
 rust.then((module) => {
-    module.greet();
+    // module.greet();
+    wasmModule = module;
 })
 
 
@@ -331,7 +334,11 @@ function init() {
         if(res.status === 200){
             const data = await res.json();
             console.log(data);
-            gameState.loadState(data, settings);
+            wasmState = wasmModule.load_state(data, Date.now(), viewScale);
+            gameState.universe.sun.forEachBody((body) => {
+                wasmState.set_body_model(body.name, body.model);
+            });
+            // gameState.loadState(data, settings);
             bodiesControl.setContent(gameState.universe.sun);
             bodiesControl.highlightBody(gameState.findSessionRocket());
         }
@@ -433,7 +440,17 @@ function render() {
         if(accelerate) throttleControl.increment(deltaTime / div);
         if(decelerate) throttleControl.decrement(deltaTime / div);
 
-        gameState.simulateBody(deltaTime, div, buttons);
+        // gameState.simulateBody(deltaTime, div, buttons);
+    }
+
+    if(wasmState){
+        wasmState.simulate_body(deltaTime, div, JSON.stringify(buttons));
+        wasmState.update_model(gameState.getSelectObj()?.name, (model: THREE.Object3D, position: any) => {
+            if(model){
+                // console.log(`model: ${model.id}`);
+                model.position.copy(position);
+            }
+        });
     }
 
     const select_obj = gameState.getSelectObj();

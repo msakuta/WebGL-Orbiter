@@ -22,6 +22,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{Mutex, RwLock},
     time::Instant,
+    time::{SystemTime, UNIX_EPOCH},
 };
 
 #[derive(Parser, Debug)]
@@ -152,7 +153,12 @@ fn save_file(autosave_file: &Path, serialized: &str) {
 async fn main() -> std::io::Result<()> {
     let args = Args::parse();
 
-    let mut universe = Universe::new();
+    let now_unix = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as f64)
+        .unwrap_or(0.);
+
+    let mut universe = Universe::new(now_unix);
 
     let start = Instant::now();
     if let Ok(data) = fs::read(&args.autosave_file) {

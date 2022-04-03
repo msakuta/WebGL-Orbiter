@@ -65,6 +65,9 @@ pub struct CelestialBody {
 
     orbital_elements: OrbitalElements,
     pub soi: f64,
+
+    #[cfg(feature = "wasm")]
+    pub model: wasm_bindgen::JsValue,
 }
 
 impl Default for CelestialBody {
@@ -85,6 +88,8 @@ impl Default for CelestialBody {
             radius: Rsun,
             orbital_elements: OrbitalElements::default(),
             soi: 0.,
+            #[cfg(feature = "wasm")]
+            model: wasm_bindgen::JsValue::null(),
         }
     }
 }
@@ -112,6 +117,17 @@ impl CelestialBody {
                             .sqrt(),
                 );
             }
+        }
+    }
+
+    pub fn get_world_position(&self, bodies: &[CelestialBodyEntry]) -> Vector3 {
+        if let Some(parent) = self
+            .parent
+            .and_then(|parent| bodies[parent.id as usize].dynamic.as_ref())
+        {
+            parent.get_world_position(bodies) + self.position
+        } else {
+            Vector3::zero()
         }
     }
 

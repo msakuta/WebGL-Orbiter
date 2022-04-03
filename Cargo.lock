@@ -955,18 +955,24 @@ dependencies = [
  "anyhow",
  "cgmath",
  "getrandom",
+ "js-sys",
  "rand",
  "serde",
  "serde_json",
  "smallvec",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
 name = "orbiter-wasm"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "console_error_panic_hook",
+ "js-sys",
  "orbiter-logic",
+ "serde",
  "serde_json",
  "wasm-bindgen",
  "wasm-bindgen-test",

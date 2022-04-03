@@ -13,3 +13,27 @@ getrandom = { version = "0.2.5", features = ["js"] }
 rand = "0.8.5"
 smallvec = "1.8"
 anyhow = "1.0.56"
+
+wasm-bindgen = { version = "0.2.79", optional = true }
+js-sys = { version = "0.3.46", optional = true }
+
+[features]
+wasm = [ "wasm-bindgen", "web-sys" ]
+
+[dependencies.web-sys]
+optional = true
+version = "0.3.56"
+features = [
+  'Document',
+  'Element',
+  'KeyboardEvent',
+  'HtmlImageElement',
+  'HtmlCanvasElement',
+  'WebGlBuffer',
+  'WebGlRenderingContext',
+  'WebGlProgram',
+  'WebGlShader',
+  'WebGlUniformLocation',
+  'WebGlTexture',
+  'Window',
+]

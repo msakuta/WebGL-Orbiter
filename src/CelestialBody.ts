@@ -246,7 +246,7 @@ export class CelestialBody{
             this.vertex.copy(visualPosition(this));
 
         if(this.model){
-            this.model.position.copy(visualPosition(this));
+            // this.model.position.copy(visualPosition(this));
             this.model.scale.set(1,1,1).multiplyScalar(nlipsFactor(this));
             this.model.quaternion.copy(this.quaternion);
         }
@@ -576,6 +576,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     const ret = new CelestialBody(params.parent || null, new THREE.Vector3(0, 1 - orbitalElements.eccentricity, 0)
         .multiplyScalar(orbitalElements.semimajor_axis)
         .applyQuaternion(rotation), group.position, params.color, params.GM, params.name, orbitalElements);
+    group.name = params.name;
     ret.model = group;
     ret.radius = params.radius;
     scene.add( group );
