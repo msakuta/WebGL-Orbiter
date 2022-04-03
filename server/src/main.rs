@@ -6,10 +6,6 @@ mod quaternion;
 mod server;
 mod websocket;
 
-use crate::api::{
-    set_rocket_state::{set_rocket_state, MyWs},
-    set_timescale::set_timescale,
-};
 use crate::{
     api::set_timescale::set_timescale,
     server::{ChatServer, NotifyNewBody},
@@ -21,7 +17,6 @@ use ::actix_files::NamedFile;
 use ::actix_web::{error, middleware, web, App, HttpRequest, HttpResponse, HttpServer};
 use ::clap::Parser;
 use ::orbiter_logic::{serialize, Universe};
-use actix_web_actors::ws;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -151,16 +146,6 @@ fn save_file(autosave_file: &Path, serialized: &str) {
         "Wrote in {:.3}ms",
         start.elapsed().as_micros() as f64 * 1e-3
     );
-}
-
-async fn index(
-    data: web::Data<OrbiterData>,
-    req: HttpRequest,
-    stream: web::Payload,
-) -> Result<HttpResponse, actix_web::Error> {
-    let resp = ws::start(MyWs(data.clone()), &req, stream);
-    println!("websocket received: {:?}", resp);
-    resp
 }
 
 #[actix_web::main]
