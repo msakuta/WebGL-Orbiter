@@ -129,4 +129,8 @@ export class ThrottleControl{
         if(select_obj)
             this.setThrottle(Math.max(0, select_obj.throttle - delta));
     }
+
+    set visible(v: boolean){
+        this.element.style.display = v ? 'block' : 'none';
+    }
 }

@@ -11,8 +11,13 @@ export class ScenarioSelectorControl extends MenuControl{
     protected getSelectObj: () => CelestialBody;
     protected showEvent: () => void;
 
-    constructor(getSelectObj: () => CelestialBody, setThrottle: (throttle: number) => void, resetTime: () => void,
-        sendMessage: (msg: string) => void, showEvent: () => void)
+    constructor(
+        getRocket: () => CelestialBody,
+        setSelectObj: (obj: CelestialBody) => void,
+        setThrottle: (throttle: number) => void,
+        resetTime: () => void,
+        sendMessage: (msg: string) => void,
+        showEvent: () => void)
     {
         const config = {
             buttonTop: 0,
@@ -22,7 +27,7 @@ export class ScenarioSelectorControl extends MenuControl{
         };
         super('Scenarios', menuIconUrl, config);
 
-        this.getSelectObj = getSelectObj;
+        this.getSelectObj = getRocket;
         this.showEvent = showEvent;
 
         this.valueElement.style.border = "5px ridge #ffff7f";
@@ -55,7 +60,7 @@ export class ScenarioSelectorControl extends MenuControl{
                         rotation.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI));
                         return rotation;
                     })();
-                    const select_obj = getSelectObj();
+                    const select_obj = getRocket();
                     const parent = CelestialBody.findBody(scenario.parent);
                     if(!parent)
                         return;
@@ -69,6 +74,7 @@ export class ScenarioSelectorControl extends MenuControl{
                     select_obj.setOrbitingVelocity(scenario.semimajor_axis, rotation);
                     select_obj.totalDeltaV = 0.;
                     select_obj.ignitionCount = 0;
+                    setSelectObj(select_obj);
                     resetTime();
                     sendMessage('Scenario ' + scenario.title + ' Loaded!');
                     this.title.style.display = 'none';

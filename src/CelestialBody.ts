@@ -8,11 +8,13 @@ import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
 import { GraphicsParams } from './GameState';
 import { port, websocket } from './orbiter';
+import GameState from './GameState';
 
 export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 const epsilon = 1e-40; // Doesn't the machine epsilon depend on browsers!??
 const acceleration = 5e-10;
+const statePublishInterval_ms = 100;
 
 function deserializeVector3(json: any){
     return new THREE.Vector3(json.x, json.y, json.z);
@@ -60,7 +62,8 @@ export class CelestialBody{
     hyperbolicMesh?: THREE.Line = null;
     orbit?: THREE.Line = null;
     blastModel?: THREE.Object3D = null;
-    updatingState = false;
+    // updatingState = false;
+    lastUpdateCommand?: number = null;
 
     // Orbital elements
     orbitalElements: OrbitalElements;
@@ -152,10 +155,14 @@ export class CelestialBody{
         return ret;
     }
 
-    deserialize(json: any, bodies: [any]){
+    deserialize(json: any, bodies?: [any]){
         this.name = json.name;
         if(json.parent !== null){
-            this.setParent(CelestialBody.celestialBodies.get(bodies[json.parent].name));
+            if(bodies && json.parent < bodies.length){
+                const parent = CelestialBody.celestialBodies.get(bodies[json.parent].name);
+                if(parent)
+                    this.setParent(parent);
+            }
         }
         this.sessionId = json.sessionId;
         this.position = deserializeVector3(json.position);
@@ -164,6 +171,14 @@ export class CelestialBody{
         this.angularVelocity = deserializeVector3(json.angularVelocity);
         this.totalDeltaV = json.totalDeltaV || 0;
         this.ignitionCount = json.ignitionCount || 0;
+    }
+
+    clientUpdate(json: any){
+        this.setParent(CelestialBody.celestialBodies.get(json.parent));
+        this.position = deserializeVector3(json.position);
+        this.velocity = deserializeVector3(json.velocity);
+        this.quaternion = deserializeQuaternion(json.quaternion);
+        this.angularVelocity = deserializeVector3(json.angularVelocity);
     }
 
     setParent(newParent?: CelestialBody){
@@ -373,7 +388,7 @@ export class CelestialBody{
 
     };
 
-    simulateBody(deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
+    simulateBody(gameState: GameState, deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
         const children = this.children;
         for(let i = 0; i < children.length;){
             const a = children[i];
@@ -381,7 +396,7 @@ export class CelestialBody{
             if(sl !== 0){
                 const angleAcceleration = 1e-0;
                 const accel = a.position.clone().negate().normalize().multiplyScalar(deltaTime / div * a.parent.GM / sl);
-                if(select_obj === a && select_obj.controllable && timescale <= 1){
+                if(select_obj === a && gameState.sessionId === a.sessionId && select_obj.controllable && timescale <= 1){
                     if(buttons.up) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
                     if(buttons.down) select_obj.angularVelocity.add(new THREE.Vector3(0, 0, -1).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
                     if(buttons.left) select_obj.angularVelocity.add(new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).multiplyScalar(angleAcceleration * deltaTime / div));
@@ -396,11 +411,13 @@ export class CelestialBody{
                         const MICRO_ROTATION = 1e-6;
                         if(MICRO_ROTATION < select_obj.angularVelocity.lengthSq()){
                             select_obj.angularVelocity.add(select_obj.angularVelocity.clone().normalize().multiplyScalar(-angleAcceleration * deltaTime / div));
+                            let forceSendCommand = false;
                             if(select_obj.angularVelocity.lengthSq() <= MICRO_ROTATION){
                                 select_obj.angularVelocity.set(0, 0, 0);
+                                forceSendCommand = true;
                             }
                             // We want to send decelerate commands to the server until the rotation stops, otherwise it will rotate forever.
-                            a.sendControlCommand();
+                            a.sendControlCommand(forceSendCommand);
                         }
                         else
                             select_obj.angularVelocity.set(0, 0, 0);
@@ -465,37 +482,37 @@ export class CelestialBody{
                 if(skip)
                     continue; // Continue but not increment i
             }
-            a.simulateBody(deltaTime, div, timescale, buttons, select_obj);
+            a.simulateBody(gameState, deltaTime, div, timescale, buttons, select_obj);
             i++;
         }
     }
 
-    sendControlCommand(){
-        if(!this.sessionId || this.updatingState)
+    sendControlCommand(force = false){
+        if(!this.sessionId && websocket)
             return;
-        this.updatingState = true;
-        (async () => {
-            // await fetch(`http://${location.hostname}:${port}/api/rocket_state`,                    {
-                    // method: 'POST',
-                    // mode: 'cors',
-                    // headers: {
-                    //     "Content-Type": 'application/json',
-                    // },
-                    // body: 
-            if(websocket.readyState === 1){
-                websocket.send(
-                    JSON.stringify({
-                        sessionId: this.sessionId,
-                        parent: this.parent.name,
-                        position: this.position,
-                        velocity: this.velocity,
-                        quaternion: this.quaternion,
-                        angularVelocity: this.angularVelocity,
-                    }),
-                );
-            }
-            this.updatingState = false;
-        })();
+        const now = Date.now();
+        if(!force && this.lastUpdateCommand !== null && now - this.lastUpdateCommand < statePublishInterval_ms){
+            return;
+        }
+        this.lastUpdateCommand = now;
+        if(websocket.readyState === 1){
+            websocket.send(
+                JSON.stringify({
+                    type: "setRocketState",
+                    name: this.name,
+                    parent: this.parent.name,
+                    position: this.position,
+                    velocity: this.velocity,
+                    quaternion: this.quaternion,
+                    angularVelocity: this.angularVelocity,
+                }),
+            );
+        }
+    }
+
+    forEachBody(f: (o: CelestialBody) => void){
+        f(this);
+        this.children.forEach(child => child.forEachBody(f));
     }
 
     static findBody(name: string){
@@ -508,6 +525,17 @@ export class CelestialBody{
             if(obj.sessionId === sessionId)
                 return obj;
             const res = obj.findSessionRocket(sessionId);
+            if(res)
+                return res;
+        }
+    }
+
+    findRocket(): CelestialBody | null {
+        for(let i = 0; i < this.children.length; i++){
+            const obj = this.children[i];
+            if(obj.name === "rocket")
+                return obj;
+            const res = obj.findRocket();
             if(res)
                 return res;
         }

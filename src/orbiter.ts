@@ -11,10 +11,9 @@ import { ThrottleControl } from './ThrottleControl';
 import { navballRadius, RotationControl, RotationButtons } from './RotationControl';
 import { OrbitalElementsControl } from './OrbitalElementsControl';
 import { zerofill, StatsControl } from './StatsControl';
+import { BodiesControl } from './BodiesControl';
 import { MessageControl } from './MessageControl';
-import { ScenarioSelectorControl } from './ScenarioSelectorControl';
-import { SaveControl } from './SaveControl';
-import { LoadControl } from './LoadControl';
+import { ChatControl } from './ChatControl';
 import Overlay from './Overlay';
 import GameState from './GameState';
 
@@ -42,14 +41,13 @@ let throttleControl: ThrottleControl;
 let speedControl: any;
 let orbitalElementsControl: OrbitalElementsControl;
 let statsControl: StatsControl;
+let bodiesControl: BodiesControl;
 let settingsControl: SettingsControl;
 let altitudeControl: any;
 let messageControl: MessageControl;
 let cameraControls: OrbitControls;
 let grids: THREE.Object3D;
-let scenarioSelectorControl: ScenarioSelectorControl;
-let saveControl: SaveControl;
-let loadControl: LoadControl;
+let chatControl: ChatControl;
 
 let windowHalfX = window.innerWidth / 2;
 let windowHalfY = window.innerHeight / 2;
@@ -62,9 +60,51 @@ let buttons = new RotationButtons();
 let accelerate = false;
 let decelerate = false;
 
-export const port = 8088;
+export const port = process.env.SERVER_PORT || 8088;
 
-export const websocket = new WebSocket(`ws://${location.hostname}:${port}/ws/`);
+export let websocket: WebSocket = null;
+
+export function reconnectWebSocket(){
+    if(gameState.sessionId){
+        websocket = new WebSocket(`ws://${location.hostname}:${port}/ws/${gameState.sessionId}`);
+        websocket.addEventListener("message", (event: MessageEvent) => {
+            // console.log(`Event through WebSocket: ${event.data}`);
+            const data = JSON.parse(event.data);
+            if(data.type === "clientUpdate"){
+                const payload = data.payload;
+                const body = CelestialBody.celestialBodies.get(payload.bodyState.name);
+                if(body){
+                    body.clientUpdate(payload.bodyState);
+                }
+            }
+            else if(data.type === "newBody"){
+                const payload = data.payload;
+                const body = payload.body;
+                const parent = CelestialBody.celestialBodies.get(payload.bodyParent);
+                const obj = gameState.universe.addRocket(
+                    body.name,
+                    body.orbitalElements,
+                    parent,
+                    gameState.graphicsParams,
+                    settings,
+                    body.modelColor);
+                obj.deserialize(body);
+                bodiesControl.setContent(gameState.universe.sun);
+                bodiesControl.highlightBody(gameState.findSessionRocket());
+            }
+            else if(data.type === "message"){
+                chatControl.addMessage(data.payload);
+            }
+            else if(data.type === "timeScale"){
+                gameState.timescale = data.payload.timeScale;
+                timescaleControl.setFromServer(data.payload.timeScale);
+            }
+            else if(data.type === "chatHistory"){
+                chatControl.setHistory(data.payload);
+            }
+        });
+    }
+}
 
 function init() {
 
@@ -176,8 +216,9 @@ function init() {
         function(){ return gameState.getSelectObj(); });
     container.appendChild( throttleControl.domElement );
 
-    const rotationControl = new RotationControl(buttons);
+    const rotationControl = new RotationControl(buttons, () => gameState.getSelectObj());
     container.appendChild( rotationControl.domElement );
+
 
     class SpeedControl{
         protected element: HTMLDivElement;
@@ -222,6 +263,16 @@ function init() {
 
     orbitalElementsControl = new OrbitalElementsControl();
     container.appendChild( orbitalElementsControl.domElement );
+
+    bodiesControl = new BodiesControl((selectedObj) => {
+        gameState.select_obj = selectedObj;
+        throttleControl.visible = selectedObj.controllable;
+    });
+    container.appendChild( bodiesControl.domElement );
+
+    bodiesControl.setContent(gameState.universe.sun);
+    bodiesControl.selectBody(gameState.select_obj);
+    bodiesControl.highlightBody(gameState.findSessionRocket());
 
     settingsControl = new SettingsControl(settings);
     statsControl = new StatsControl(settingsControl, function() { return gameState.getSelectObj(); });
@@ -268,36 +319,10 @@ function init() {
     messageControl = new MessageControl();
     container.appendChild( messageControl.domElement );
 
-    scenarioSelectorControl = new ScenarioSelectorControl(
-        function(){ return gameState.getSelectObj(); },
-        function(throttle){ throttleControl.setThrottle(throttle); },
-        function(){ gameState.resetTime(); },
-        function(msg){ messageControl.setText(msg); },
-        function(){
-            [saveControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
-        }
-    );
-    container.appendChild( scenarioSelectorControl.domElement );
-
-    saveControl = new SaveControl(
-        function(){ return gameState.serializeState(); },
-        function(msg){ messageControl.setText(msg); },
-        function(){
-            [scenarioSelectorControl, loadControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
-        }
-    );
-    container.appendChild( saveControl.domElement );
-
     gameState.onStateLoad = () => throttleControl.setThrottle(gameState.select_obj.throttle);
 
-    loadControl = new LoadControl(
-        function(state){ gameState.loadState(state, settings) },
-        function(msg){ messageControl.setText(msg); },
-        function(){
-            [scenarioSelectorControl, saveControl].map(function(control){ control.setVisible(false); }); // Mutually exclusive
-        }
-    );
-    container.appendChild( loadControl.domElement );
+    chatControl = new ChatControl(messageControl.setText);
+    container.appendChild(chatControl.domElement);
 
     async function tryLoadState(){
         const res = await fetch(`http://${location.hostname}:${port}/api/load`, {
@@ -307,6 +332,8 @@ function init() {
             const data = await res.json();
             console.log(data);
             gameState.loadState(data, settings);
+            bodiesControl.setContent(gameState.universe.sun);
+            bodiesControl.highlightBody(gameState.findSessionRocket());
         }
     }
 
@@ -325,7 +352,7 @@ function init() {
 
         let sessionRocket;
         if(gameState.sessionId){
-            sessionRocket = gameState.findSessionRocket(gameState.sessionId);
+            sessionRocket = gameState.findSessionRocket();
             if(sessionRocket)
                 gameState.select_obj = sessionRocket;
         }
@@ -336,6 +363,10 @@ function init() {
             const sessionId = await sessionRes.text();
             gameState.sessionId = sessionId;
             await tryLoadState();
+        }
+
+        if(!websocket){
+            reconnectWebSocket();
         }
 
         // const state = localStorage.getItem('WebGLOrbiterAutoSave');
@@ -353,7 +384,7 @@ function init() {
         //     body: gameSerialized
         // });
     });
-    setInterval(tryLoadState, 10000);
+    // setInterval(tryLoadState, 10000);
 
     gameState.startTicking();
 }
@@ -377,6 +408,9 @@ function animate() {
     render();
     stats.update();
 
+    if(!websocket || websocket.readyState === 3){
+        reconnectWebSocket();
+    }
 }
 
 function render() {
@@ -437,6 +471,9 @@ function render() {
         camera.quaternion.set(1,0,0,0);
         overlay.render(renderer);
     }
+
+    const orbitalElementsBottom = orbitalElementsControl.getBottom();
+    bodiesControl.domElement.style.top = `${orbitalElementsBottom + 4}px`;
 
     // Restore the original state because cameraControls expect these variables unchanged
     camera.quaternion.copy(oldQuaternion);

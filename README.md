@@ -203,6 +203,20 @@ If you're not familiar with orbital mechanics, [Wikipedia](https://en.wikipedia.
 * head - Whether the vehicle is heading towards apoapsis. This is not really an orbital element, mainly used for debugging.
 
 
+### Celestial Bodies
+
+Below the Orbital Elements control is Celestial Bodies button.
+
+![](src/images/bodiesIcon.png)
+
+If you click on it,  a little table shows up like below.
+
+![](screenshots/celestialBodies.jpg)
+
+Currently focused celestial body is highlighted.
+Clicking on a name of a body will make the focus move to that body.
+
+
 ### Statistics
 
 On the 4th from right top corner is an icon for statistics.

@@ -3,10 +3,9 @@ import { CelestialBody, addPlanet, OrbitalElements, AddPlanetParams } from './Ce
 import { Settings } from './SettingsControl';
 import Universe from './Universe';
 import { RotationButtons } from './RotationControl';
-import { port } from './orbiter';
+import { port, websocket } from './orbiter';
 import rocketModelUrl from './rocket.obj';
 
-const selectedOrbitMaterial = new THREE.LineBasicMaterial({color: 0xff7fff});
 
 export interface GraphicsParams {
     scene: THREE.Scene;
@@ -36,7 +35,6 @@ export default class GameState{
 
         this.universe = new Universe(graphicsParams, settings);
         this.select_obj = this.universe.rocket;
-        window.addEventListener( 'keydown', (event: KeyboardEvent) => this.onKeyDown(event), false );
     }
 
     resetTime(){
@@ -86,8 +84,8 @@ export default class GameState{
             this.onStateLoad();
     }
 
-    findSessionRocket(sessionId: string){
-        return this.universe.sun.findSessionRocket(sessionId);
+    findSessionRocket(){
+        return this.universe.sun.findSessionRocket(this.sessionId);
     }
 
     startTicking(){
@@ -113,7 +111,7 @@ export default class GameState{
     }
 
     simulateBody(deltaTime: number, div: number, buttons: RotationButtons){
-        this.universe.simulateBody(deltaTime, div, this.timescale, buttons, this.select_obj);
+        this.universe.simulateBody(this, deltaTime, div, this.timescale, buttons, this.select_obj);
     }
 
     setTimeScale(scale: number){
@@ -122,17 +120,27 @@ export default class GameState{
             return false;
         }
         this.timescale = scale;
-        fetch(`http://${location.hostname}:${port}/api/time_scale`, {
-            method: 'POST',
-            mode: 'cors',
-            headers: {
-                "Content-Type": 'application/json',
-                // "Access-Control-Allow-Origin": "*",
-                // "Access-Control-Allow-Methods": "OPTIONS, POST, GET",
-                // "Access-Control-Max-Age": "2592000",
-            },
-            body: JSON.stringify({time_scale: scale}),
-        });
+        if(websocket && websocket.readyState === 1){
+            websocket.send(JSON.stringify({
+                type: "timeScale",
+                payload: {
+                    timeScale: this.timescale,
+                }
+            }));
+        }
+        else{
+            fetch(`http://${location.hostname}:${port}/api/time_scale`, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    "Content-Type": 'application/json',
+                    // "Access-Control-Allow-Origin": "*",
+                    // "Access-Control-Allow-Methods": "OPTIONS, POST, GET",
+                    // "Access-Control-Max-Age": "2592000",
+                },
+                body: JSON.stringify({time_scale: scale}),
+            });
+        }
         return true;
     }
 
@@ -145,49 +153,10 @@ export default class GameState{
             this.sendMessage('You need to select a controllable object to set throttle');
             return false;
         }
-        return true;
-    }
-
-    onKeyDown(event: KeyboardEvent){
-        const char = String.fromCharCode(event.which || event.keyCode).toLowerCase();
-        switch ( char ) {
-
-            case 'i':
-                if(this.select_obj === null)
-                    this.select_obj = this.universe.sun.getChildren()[0];
-                else{
-                    // Some objects do not have an orbit
-                    if(this.select_obj.orbit)
-                        this.select_obj.orbit.material = this.select_obj.orbitMaterial;
-                    const objs = this.select_obj.getChildren();
-                    if(0 < objs.length){
-                        this.select_obj = objs[0];
-                    }
-                    else{
-                        let selected = false;
-                        let prev = this.select_obj;
-                        let parent;
-                        for(parent = this.select_obj.getParent(); parent; parent = parent.getParent()){
-                            const objs = parent.getChildren();
-                            for(let i = 0; i < objs.length; i++){
-                                const o = objs[i];
-                                if(o === prev && i + 1 < objs.length){
-                                    this.select_obj = objs[i+1];
-                                    selected = true;
-                                    break;
-                                }
-                            }
-                            if(selected)
-                                break;
-                            prev = parent;
-                        }
-                        if(!parent)
-                            this.select_obj = this.universe.sun;
-                    }
-                }
-                if(this.select_obj.orbit)
-                    this.select_obj.orbit.material = selectedOrbitMaterial;
-                break;
+        if(this.select_obj.sessionId !== this.sessionId){
+            this.sendMessage('You can only control owned rockets');
+            return false;
         }
+        return true;
     }
 }

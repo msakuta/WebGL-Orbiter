@@ -1,4 +1,7 @@
-use super::{CelestialBody, CelestialId, OrbitalElements, Quaternion, Universe, Vector3};
+use super::{
+    iter::CelestialBodyDynIter, CelestialBody, CelestialId, OrbitalElements, Quaternion, Universe,
+    Vector3,
+};
 use crate::session::SessionId;
 use cgmath::{Rad, Rotation, Rotation3, Zero};
 use rand::Rng;
@@ -11,6 +14,7 @@ pub(crate) struct CelestialBodyBuilder {
     position: Option<Vector3>,
     velocity: Option<Vector3>,
     orbit_color: Option<String>,
+    controllable: bool,
     gm: Option<f64>,
     radius: Option<f64>,
     soi: Option<f64>,
@@ -51,6 +55,11 @@ impl CelestialBodyBuilder {
         self
     }
 
+    pub(crate) fn controllable(&mut self, value: bool) -> &mut Self {
+        self.controllable = value;
+        self
+    }
+
     pub(crate) fn gm(&mut self, gm: f64) -> &mut Self {
         self.gm = Some(gm);
         self
@@ -66,14 +75,7 @@ impl CelestialBodyBuilder {
         self
     }
 
-    pub(crate) fn build(
-        &mut self,
-        universe: &mut Universe,
-        orbital_elements: OrbitalElements,
-    ) -> CelestialBody {
-        let id = universe.id_gen;
-        universe.id_gen += 1;
-
+    pub(crate) fn build(&mut self, orbital_elements: OrbitalElements) -> CelestialBody {
         const COLOR_PALETTE: [&'static str; 17] = [
             "1 1 1",
             "1 0.75 0.75",
@@ -95,7 +97,6 @@ impl CelestialBodyBuilder {
         ];
 
         CelestialBody {
-            id,
             name: self.name.take().unwrap(),
             position: self.position.unwrap_or_else(Vector3::zero),
             velocity: self.velocity.unwrap_or_else(Vector3::zero),
@@ -107,6 +108,7 @@ impl CelestialBodyBuilder {
             children: vec![],
             parent: self.parent,
             session_id: self.session_id,
+            controllable: self.controllable,
             GM: self.gm.unwrap(),
             orbital_elements,
             radius: self.radius.unwrap_or(1. / crate::AU),
@@ -148,12 +150,12 @@ impl CelestialBodyBuilder {
         let mut ret = self
             .position(rotation * axis)
             .orbit_color("#fff".to_string())
-            .build(universe, orbital_elements);
+            .build(orbital_elements);
 
         // Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
         // https://en.wikipedia.org/wiki/Orbital_speed
         ret.set_orbiting_velocity(
-            universe.bodies.iter(),
+            CelestialBodyDynIter::new_all(&mut universe.bodies),
             ret.orbital_elements.semimajor_axis,
             rotation,
         );

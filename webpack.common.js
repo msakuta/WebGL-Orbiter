@@ -2,6 +2,7 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const WasmPackPlugin = require("@wasm-tool/wasm-pack-plugin");
+const Dotenv = require('dotenv-webpack');
 
 module.exports = {
   entry: './src/index.ts',
@@ -13,6 +14,7 @@ module.exports = {
       crateDirectory: path.resolve(__dirname, "orbiter-wasm")
     }),
     new CleanWebpackPlugin(),
+    new Dotenv(),
   ],
   module: {
     rules: [
