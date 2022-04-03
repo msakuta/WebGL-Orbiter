@@ -69,6 +69,7 @@ export default class Universe{
         const sunMesh = new THREE.Mesh( sunGeometry, material );
         sunMesh.scale.setScalar(viewScale * Rsun / AU);
         group.add( sunMesh );
+        group.name = "sun";
 
         scene.add(group);
 
@@ -233,13 +234,15 @@ export default class Universe{
             position.applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
             position.multiplyScalar(2.5);
-            const asteroid = new CelestialBody(this.sun, position, undefined, undefined, undefined, "asteroid" + i);
+            const asteroidName = `asteroid${i}`;
+            const asteroid = new CelestialBody(this.sun, position, undefined, undefined, undefined, asteroidName);
             asteroid.velocity = new THREE.Vector3((Math.random() - 0.5) * 0.3 - 1, (Math.random() - 0.5) * 0.3, (Math.random() - 0.5) * 0.3)
                 .multiplyScalar(Math.sqrt(GMsun / position.length())).applyQuaternion(AxisAngleQuaternion(0, 0, 1, angle));
 
             asteroid.radius = Math.random() * 1 + 0.1;
             // We need nested Object3D for NLIPS
             asteroid.model = new THREE.Object3D();
+            asteroid.model.name = asteroidName;
             // The inner Mesh object has scale determined by radius
             const shape = new THREE.Mesh( asteroidGeometry, asteroidMaterial );
             asteroid.model.add(shape);

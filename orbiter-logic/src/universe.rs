@@ -4,9 +4,9 @@ use crate::{
         CelestialId, OrbitalElements,
     },
     session::SessionId,
-    GMsun, Quaternion, AU,
+    GMsun, Quaternion, Vector3, AU,
 };
-use cgmath::{Rad, Rotation3};
+use cgmath::{InnerSpace, Rad, Rotation, Rotation3};
 use rand::prelude::*;
 use serde::{ser::SerializeMap, Serialize, Serializer};
 
@@ -221,6 +221,36 @@ impl Universe {
             );
 
         this.add_body(jupiter);
+
+        // Randomly generate asteroids
+        for i in 0..3 {
+            let angle: Rad<f64> = Rad(random::<f64>() * std::f64::consts::PI * 2.);
+            let position = Quaternion::from_angle_z(angle).rotate_vector(Vector3::new(
+                0.1 * (random::<f64>() - 0.5),
+                0.1 * (random::<f64>() - 0.5) + 1.,
+                0.1 * (random::<f64>() - 0.5),
+            )) * 2.5;
+
+            let velocity = Quaternion::from_angle_z(angle).rotate_vector(
+                Vector3::new(
+                    (random::<f64>() - 0.5) * 0.3 - 1.,
+                    (random::<f64>() - 0.5) * 0.3,
+                    (random::<f64>() - 0.5) * 0.3,
+                ) * (GMsun / position.magnitude()).sqrt(),
+            );
+
+            let asteroid_name = format!("asteroid{}", i);
+            let asteroid = CelestialBody::builder()
+                .name(asteroid_name.clone())
+                .parent(sun_id)
+                .gm(1e4 / AU / AU / AU)
+                .position(position)
+                ._velocity(velocity)
+                .build(OrbitalElements::default());
+
+            println!("Adding {}", asteroid_name);
+            this.add_body(asteroid);
+        }
 
         this
     }

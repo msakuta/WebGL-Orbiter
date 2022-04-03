@@ -447,7 +447,7 @@ function render() {
         wasmState.simulate_body(deltaTime, div, JSON.stringify(buttons));
         wasmState.update_model(gameState.getSelectObj()?.name, (model: THREE.Object3D, position: any) => {
             if(model){
-                // console.log(`model: ${model.id}`);
+                // console.log(`model: ${model.name}`);
                 model.position.copy(position);
             }
         });
