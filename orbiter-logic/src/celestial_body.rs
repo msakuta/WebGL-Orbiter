@@ -131,6 +131,39 @@ impl CelestialBody {
         }
     }
 
+    pub fn visual_position(
+        &self,
+        bodies: &[CelestialBodyEntry],
+        select_obj: Option<&CelestialBody>,
+        view_scale: f64,
+    ) -> Vector3 {
+        let mut position = self.get_world_position(bodies);
+        if let Some(select_obj) = select_obj {
+            position -= select_obj.get_world_position(bodies);
+        }
+        position *= view_scale;
+        position
+    }
+
+    /// NLIPS: Non-Linear Inverse Perspective Scrolling
+    /// Idea originally found in a game Homeworld that enable
+    /// distant small objects to appear on screen in recognizable size
+    /// but still renders in real scale when zoomed up.
+    pub fn nlips_factor(
+        &self,
+        bodies: &[CelestialBodyEntry],
+        select_obj: Option<&CelestialBody>,
+        view_scale: f64,
+        camera_position: &Vector3,
+    ) -> f64 {
+        const NLIPS_FACTOR: f64 = 1e6;
+        let d = (self.visual_position(bodies, select_obj, view_scale) - camera_position)
+            .magnitude()
+            / view_scale;
+        let f = d / self.radius * NLIPS_FACTOR + 1.;
+        f
+    }
+
     /// Update orbital elements from position and velocity.
     /// The whole discussion is found in chapter 4.4 in
     /// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS

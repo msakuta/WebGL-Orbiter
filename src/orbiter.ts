@@ -445,10 +445,12 @@ function render() {
 
     if(wasmState){
         wasmState.simulate_body(deltaTime, div, JSON.stringify(buttons));
-        wasmState.update_model(gameState.getSelectObj()?.name, (model: THREE.Object3D, position: any, quaternion: any) => {
+        wasmState.set_camera(JSON.stringify(camera.position));
+        wasmState.update_model(gameState.getSelectObj()?.name, (model: THREE.Object3D, position: any, scale: number, quaternion: any) => {
             if(model){
                 // console.log(`model: ${model.name}`);
                 model.position.copy(position);
+                model.scale.set(scale, scale, scale);
                 model.quaternion.copy(quaternion);
             }
         });

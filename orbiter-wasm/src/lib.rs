@@ -2,8 +2,11 @@ mod utils;
 
 use wasm_bindgen::prelude::*;
 
+use ::cgmath::Zero;
 use ::js_sys::{Array, Function, Object, Reflect};
-use ::orbiter_logic::{quaternion::QuaternionDeserial, Universe};
+use ::orbiter_logic::{
+    quaternion::QuaternionDeserial, CelestialBody, CelestialId, Universe, Vector3,
+};
 use ::serde::Deserialize;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -39,6 +42,8 @@ pub fn greet() {
 pub struct WasmState {
     universe: Universe,
     view_scale: f64,
+    camera: Vector3,
+    select_obj: Option<CelestialId>,
 }
 
 #[wasm_bindgen]
@@ -61,6 +66,8 @@ pub fn load_state(json: JsValue, now_unix: f64, view_scale: f64) -> WasmState {
     WasmState {
         universe,
         view_scale,
+        camera: Vector3::zero(),
+        select_obj: None,
     }
 }
 
@@ -105,6 +112,17 @@ impl WasmState {
         Ok(())
     }
 
+    pub fn set_camera(&mut self, camera: &str) -> Result<(), JsValue> {
+        self.camera =
+            serde_json::from_str(camera).map_err(|e| JsValue::from_str(&e.to_string()))?;
+        Ok(())
+    }
+
+    pub fn set_select_obj(&mut self, select_obj: &str) -> Result<(), JsValue> {
+        self.select_obj = self.universe.find_by_name(select_obj).map(|(id, _)| id);
+        Ok(())
+    }
+
     pub fn update_model(&self, select_obj: &str, setter: &Function) -> Result<(), JsValue> {
         let select_obj = self.universe.find_by_name(select_obj);
 
@@ -112,26 +130,36 @@ impl WasmState {
 
         // console_log!("select_obj: {:?}", center);
 
-        for body in self
-            .universe
-            .bodies
-            .iter()
-            .filter_map(|body| body.dynamic.as_ref())
-        {
+        let build_args = |body: &CelestialBody| -> anyhow::Result<Array> {
             let mut position = body.get_world_position(&self.universe.bodies);
             if let Some(center) = center {
                 position -= center;
             }
             position *= self.view_scale;
 
-            let args = Array::of3(
+            Ok(Array::of4(
                 &body.model,
-                &JsValue::from_serde(&position).map_err(|e| JsValue::from_str(&e.to_string()))?,
-                &JsValue::from_serde(&QuaternionDeserial::from(body.quaternion))
-                    .map_err(|e| JsValue::from_str(&e.to_string()))?,
-            );
+                &JsValue::from_serde(&position)?,
+                &JsValue::from_f64(body.nlips_factor(
+                    &self.universe.bodies,
+                    select_obj.map(|(_, body)| body),
+                    self.view_scale,
+                    &self.camera,
+                )),
+                &JsValue::from_serde(&QuaternionDeserial::from(body.quaternion))?,
+            ))
+        };
 
-            setter.apply(&JsValue::undefined(), &args)?;
+        for body in self
+            .universe
+            .bodies
+            .iter()
+            .filter_map(|body| body.dynamic.as_ref())
+        {
+            setter.apply(
+                &JsValue::undefined(),
+                &build_args(body).map_err(|e| JsValue::from_str(&e.to_string()))?,
+            )?;
         }
         Ok(())
     }

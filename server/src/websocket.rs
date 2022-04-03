@@ -1,11 +1,12 @@
 use crate::{
-    quaternion::QuaternionSerial,
     server::{Connect, Message},
     ChatServer, OrbiterData,
 };
 use ::actix::{prelude::*, Actor, StreamHandler};
 use ::actix_web::{web, HttpRequest, HttpResponse};
-use ::orbiter_logic::{CelestialBody, CelestialBodyDynIter, SessionId, Universe, Vector3};
+use ::orbiter_logic::{
+    quaternion::QuaternionSerial, CelestialBody, CelestialBodyDynIter, SessionId, Universe, Vector3,
+};
 use ::serde::{Deserialize, Serialize};
 use actix_web_actors::ws;
 
