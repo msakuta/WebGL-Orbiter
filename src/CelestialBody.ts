@@ -248,7 +248,7 @@ export class CelestialBody{
         if(this.model){
             // this.model.position.copy(visualPosition(this));
             this.model.scale.set(1,1,1).multiplyScalar(nlipsFactor(this));
-            this.model.quaternion.copy(this.quaternion);
+            // this.model.quaternion.copy(this.quaternion);
         }
 
         let headingApoapsis = 0;

@@ -1,5 +1,6 @@
 pub mod celestial_body;
 pub mod dyn_iter;
+pub mod quaternion;
 mod session;
 mod universe;
 

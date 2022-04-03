@@ -2,8 +2,8 @@ mod utils;
 
 use wasm_bindgen::prelude::*;
 
-use ::js_sys::{Function, Object, Reflect};
-use ::orbiter_logic::Universe;
+use ::js_sys::{Array, Function, Object, Reflect};
+use ::orbiter_logic::{quaternion::QuaternionDeserial, Universe};
 use ::serde::Deserialize;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -98,7 +98,10 @@ impl WasmState {
     ) -> Result<(), JsValue> {
         let buttons: RotationButtons =
             serde_json::from_str(buttons).map_err(|e| JsValue::from_str(&e.to_string()))?;
-        self.universe.simulate_bodies(delta_time, div);
+        // console_log!("simulate_body: {}", delta_time);
+        for _ in 0..div {
+            self.universe.simulate_bodies(delta_time, div);
+        }
         Ok(())
     }
 
@@ -121,11 +124,14 @@ impl WasmState {
             }
             position *= self.view_scale;
 
-            setter.call2(
-                &JsValue::undefined(),
+            let args = Array::of3(
                 &body.model,
                 &JsValue::from_serde(&position).map_err(|e| JsValue::from_str(&e.to_string()))?,
-            )?;
+                &JsValue::from_serde(&QuaternionDeserial::from(body.quaternion))
+                    .map_err(|e| JsValue::from_str(&e.to_string()))?,
+            );
+
+            setter.apply(&JsValue::undefined(), &args)?;
         }
         Ok(())
     }
