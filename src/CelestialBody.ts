@@ -30,6 +30,12 @@ export function AxisAngleQuaternion(x: number, y: number, z: number, angle: numb
 	return q;
 }
 
+export interface Vector3Serial {
+    x: number;
+    y: number;
+    z: number;
+}
+
 export interface OrbitalElements {
     semimajor_axis: number;
     ascending_node: number;
@@ -38,6 +44,9 @@ export interface OrbitalElements {
     epoch?: number;
     mean_anomaly?: number;
     argument_of_perihelion: number;
+    angular_momentum?: Vector3Serial;
+    heading_apoapsis?: boolean;
+    orbit_position?: Vector3Serial;
 }
 
 export class CelestialBody{
@@ -197,7 +206,7 @@ export class CelestialBody{
     // https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
     update(center_select: boolean, viewScale: number, nlips_enable: boolean,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
-        units_km: boolean, updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
+        units_km: boolean, updateOrbitalElements: (o: CelestialBody, headingApoapsis: boolean) => void,
         scene: THREE.Scene, select_obj?: CelestialBody)
     {
         let scope = this;
@@ -251,41 +260,42 @@ export class CelestialBody{
             // this.model.quaternion.copy(this.quaternion);
         }
 
-        let headingApoapsis = 0;
+        let headingApoapsis = false;
 
         if(this.parent){
             // Angular momentum vectors
-            const ang = this.velocity.clone().cross(this.position);
-            const r = this.position.length();
-            const v = this.velocity.length();
-            // Node vector
-            const N = (new THREE.Vector3(0, 0, 1)).cross(ang);
-            // Eccentricity vector
-            e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velocity.clone().multiplyScalar(this.position.dot(this.velocity) / this.parent.GM));
-            orbitalElements.eccentricity = e.length();
-            orbitalElements.inclination = Math.acos(-ang.z / ang.length());
-            // Avoid zero division
-            if(N.lengthSq() <= epsilon)
-                orbitalElements.ascending_node = 0;
-            else{
-                orbitalElements.ascending_node = Math.acos(N.x / N.length());
-                if(N.y < 0) orbitalElements.ascending_node = 2 * Math.PI - orbitalElements.ascending_node;
-            }
-            orbitalElements.semimajor_axis = 1 / (2 / r - v * v / this.parent.GM);
+            // const ang = this.velocity.clone().cross(this.position);
+            // const r = this.position.length();
+            // const v = this.velocity.length();
+            // // Node vector
+            // const N = (new THREE.Vector3(0, 0, 1)).cross(ang);
+            // // Eccentricity vector
+            // e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velocity.clone().multiplyScalar(this.position.dot(this.velocity) / this.parent.GM));
+            // orbitalElements.eccentricity = e.length();
+            // orbitalElements.inclination = Math.acos(-ang.z / ang.length());
+            // // Avoid zero division
+            // if(N.lengthSq() <= epsilon)
+            //     orbitalElements.ascending_node = 0;
+            // else{
+            //     orbitalElements.ascending_node = Math.acos(N.x / N.length());
+            //     if(N.y < 0) orbitalElements.ascending_node = 2 * Math.PI - orbitalElements.ascending_node;
+            // }
+            // orbitalElements.semimajor_axis = 1 / (2 / r - v * v / this.parent.GM);
 
             // Rotation to perifocal frame
             const planeRot = AxisAngleQuaternion(0, 0, 1, orbitalElements.ascending_node - Math.PI / 2).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - orbitalElements.inclination));
 
-            headingApoapsis = -this.position.dot(this.velocity)/Math.abs(this.position.dot(this.velocity));
+            // headingApoapsis = -this.position.dot(this.velocity)/Math.abs(this.position.dot(this.velocity));
+            headingApoapsis = orbitalElements.heading_apoapsis || false;
 
             // Avoid zero division and still get the correct answer when N == 0.
             // This is necessary to draw orbit with zero inclination and nonzero eccentricity.
-            if(N.lengthSq() <= epsilon || e.lengthSq() <= epsilon)
-                orbitalElements.argument_of_perihelion = Math.atan2(ang.z < 0 ? -e.y : e.y, e.x);
-            else{
-                orbitalElements.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
-                if(e.z < 0) orbitalElements.argument_of_perihelion = 2 * Math.PI - orbitalElements.argument_of_perihelion;
-            }
+            // if(N.lengthSq() <= epsilon || e.lengthSq() <= epsilon)
+            //     orbitalElements.argument_of_perihelion = Math.atan2(ang.z < 0 ? -e.y : e.y, e.x);
+            // else{
+            //     orbitalElements.argument_of_perihelion = Math.acos(N.dot(e) / N.length() / e.length());
+            //     if(e.z < 0) orbitalElements.argument_of_perihelion = 2 * Math.PI - orbitalElements.argument_of_perihelion;
+            // }
 
             // Total rotation of the orbit
             const rotation = planeRot.clone().multiply(AxisAngleQuaternion(0, 0, 1, orbitalElements.argument_of_perihelion));
@@ -300,7 +310,7 @@ export class CelestialBody{
             // If eccentricity is over 1, the trajectory is a hyperbola.
             // It could be parabola in case of eccentricity == 1, but we ignore
             // this impractical case for now.
-            if(1 < orbitalElements.eccentricity){
+            if(1 < orbitalElements.eccentricity && orbitalElements.angular_momentum){
                 // Allocate the hyperbolic shape and mesh only if necessary,
                 // since most of celestial bodies are all on permanent elliptical orbit.
                 
@@ -312,7 +322,7 @@ export class CelestialBody{
                 // Calculate the vertices every frame since the hyperbola changes shape
                 // depending on orbital elements.
                 const thetaInf = Math.acos(-1 / orbitalElements.eccentricity);
-                const h2 = ang.lengthSq();
+                const h2 = deserializeVector3(orbitalElements.angular_momentum).lengthSq();
                 for(let i = -19; i < 20; i++){
                     // Transform by square root to make far side of the hyperbola less "polygonic"
                     const isign = i < 0 ? -1 : 1;
@@ -351,13 +361,14 @@ export class CelestialBody{
             }
 
             // Apply transformation to orbit mesh
-            if(this.orbit){
+            if(this.orbit && orbitalElements.orbit_position){
                 this.orbit.quaternion.copy(rotation);
                 this.orbit.scale.x = orbitalElements.semimajor_axis * viewScale * Math.sqrt(1. - orbitalElements.eccentricity * orbitalElements.eccentricity);
                 this.orbit.scale.y = orbitalElements.semimajor_axis * viewScale;
-                this.orbit.position.copy(new THREE.Vector3(0, -orbitalElements.semimajor_axis * orbitalElements.eccentricity, 0).applyQuaternion(rotation).add(this.parent.getWorldPosition()));
-                if(select_obj && center_select)
-                    this.orbit.position.sub(select_obj.getWorldPosition());
+                // this.orbit.position.copy(new THREE.Vector3(0, -orbitalElements.semimajor_axis * orbitalElements.eccentricity, 0).applyQuaternion(rotation).add(this.parent.getWorldPosition()));
+                this.orbit.position.copy(deserializeVector3(orbitalElements.orbit_position));
+                // if(select_obj && center_select)
+                //     this.orbit.position.sub(select_obj.getWorldPosition());
                 this.orbit.position.multiplyScalar(viewScale);
             }
 

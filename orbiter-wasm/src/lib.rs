@@ -5,7 +5,8 @@ use wasm_bindgen::prelude::*;
 use ::cgmath::Zero;
 use ::js_sys::{Array, Function, Object, Reflect};
 use ::orbiter_logic::{
-    quaternion::QuaternionDeserial, CelestialBody, CelestialId, Universe, Vector3,
+    quaternion::QuaternionDeserial, CelestialBody, CelestialBodyImDynIter, CelestialId, Universe,
+    Vector3,
 };
 use ::serde::Deserialize;
 
@@ -46,6 +47,26 @@ pub struct WasmState {
     select_obj: Option<CelestialId>,
 }
 
+fn print_bodies(universe: &Universe) {
+    let bodies = CelestialBodyImDynIter::new_all(&universe.bodies);
+
+    for body in universe
+        .bodies
+        .iter()
+        .filter_map(|body| body.dynamic.as_ref())
+    {
+        console_log!(
+            "Celbody[{}]: parent: {:?}, world_pos: {:?}",
+            body.name,
+            body.parent
+                .and_then(|parent| bodies.get(parent))
+                .map(|body| &body.name as &str)
+                .unwrap_or_else(|| "<Null>"),
+            body.get_world_position(&bodies)
+        );
+    }
+}
+
 #[wasm_bindgen]
 pub fn load_state(json: JsValue, now_unix: f64, view_scale: f64) -> WasmState {
     utils::set_panic_hook();
@@ -62,6 +83,8 @@ pub fn load_state(json: JsValue, now_unix: f64, view_scale: f64) -> WasmState {
     {
         console_log!("Celbody: {:#?}", body);
     }
+
+    print_bodies(&universe);
 
     WasmState {
         universe,
@@ -83,17 +106,17 @@ struct RotationButtons {
 
 #[wasm_bindgen]
 impl WasmState {
-    pub fn set_body_model(&mut self, name: &str, model: Object) {
+    pub fn set_body_model(&mut self, name: &str, model: Object, js_body: JsValue) {
         if let Some((_, body)) = self.universe.find_by_name_mut(name) {
-            console_log!(
-                "Setting model {} to {}!",
+            let get_model_id = |model: &Object| {
                 Reflect::get(&model, &JsValue::from("id"))
                     .ok()
                     .and_then(|o| o.as_f64())
-                    .unwrap_or(0.),
-                name
-            );
+                    .unwrap_or(0.)
+            };
+            console_log!("Setting model {} to {}!", get_model_id(&model), name);
             body.model = JsValue::from(model);
+            body.js_body = js_body;
         }
     }
 
@@ -109,6 +132,7 @@ impl WasmState {
         for _ in 0..div {
             self.universe.simulate_bodies(delta_time, div);
         }
+        self.universe.update_orbital_elements(self.select_obj);
         Ok(())
     }
 
@@ -119,35 +143,53 @@ impl WasmState {
     }
 
     pub fn set_select_obj(&mut self, select_obj: &str) -> Result<(), JsValue> {
-        self.select_obj = self.universe.find_by_name(select_obj).map(|(id, _)| id);
+        let next = self.universe.find_by_name(select_obj).map(|(id, _)| id);
+
+        if next != self.select_obj {
+            print_bodies(&self.universe);
+        }
+
+        self.select_obj = next;
+
         Ok(())
     }
 
     pub fn update_model(&self, select_obj: &str, setter: &Function) -> Result<(), JsValue> {
-        let select_obj = self.universe.find_by_name(select_obj);
+        // let select_obj = self.universe.find_by_name(select_obj);
+        let select_obj = self.select_obj.and_then(|id| self.universe.get(id));
 
-        let center = select_obj.map(|(_, obj)| obj.get_world_position(&self.universe.bodies));
+        let body_iter = CelestialBodyImDynIter::new_all(&self.universe.bodies);
+        let center = select_obj.map(|obj| obj.get_world_position(&body_iter));
 
         // console_log!("select_obj: {:?}", center);
 
         let build_args = |body: &CelestialBody| -> anyhow::Result<Array> {
-            let mut position = body.get_world_position(&self.universe.bodies);
+            let mut position = body.get_world_position(&body_iter);
             if let Some(center) = center {
                 position -= center;
             }
-            position *= self.view_scale;
+            // position *= self.view_scale;
 
-            Ok(Array::of4(
-                &body.model,
-                &JsValue::from_serde(&position)?,
-                &JsValue::from_f64(body.nlips_factor(
-                    &self.universe.bodies,
-                    select_obj.map(|(_, body)| body),
-                    self.view_scale,
-                    &self.camera,
-                )),
-                &JsValue::from_serde(&QuaternionDeserial::from(body.quaternion))?,
-            ))
+            let arr = Array::new();
+
+            arr.push(&body.model);
+            arr.push(&JsValue::from_str(&serde_json::to_string(&position)?));
+            arr.push(&JsValue::from_f64(body.nlips_factor(
+                &body_iter,
+                select_obj,
+                self.view_scale,
+                &self.camera,
+            )));
+            arr.push(&JsValue::from_str(&serde_json::to_string(
+                &QuaternionDeserial::from(body.quaternion),
+            )?));
+            arr.push(&body.js_body);
+            let elems = body.get_orbital_elements();
+            // if body.name == "venus" {
+            //     console_log!("velo: {:?} pos: {:?} ang: {:?} incl: {:?}", body.velocity, body.position, elems.angular_momentum, elems.inclination);
+            // }
+            arr.push(&JsValue::from_str(&serde_json::to_string(elems)?));
+            Ok(arr)
         };
 
         for body in self

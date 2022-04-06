@@ -199,7 +199,7 @@ async fn main() -> std::io::Result<()> {
             // let start = Instant::now();
 
             let mut universe = data_copy.universe.write().unwrap();
-            universe.update();
+            universe.update(None);
 
             let mut last_saved = data_copy.last_saved.lock().unwrap();
             if autosave_period_s < last_saved.elapsed().as_micros() as f64 * 1e-6 {

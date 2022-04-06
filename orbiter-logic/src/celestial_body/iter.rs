@@ -27,6 +27,12 @@ impl<'a> CelestialBodySlice<'a> {
     }
 }
 
+#[derive(Default)]
+pub(crate) struct CelestialBodyImSlice<'a> {
+    start: usize,
+    slice: &'a [CelestialBodyEntry],
+}
+
 /// A structure that allow random access to structure array with possible gaps.
 ///
 /// It uses a SmallVec of slices, which will put the slices inline into the struct and avoid heap allocation
@@ -47,6 +53,7 @@ impl<'a> CelestialBodySlice<'a> {
 /// It can access internal object in O(n) where n is the number of slices, not the number of objects.
 /// It is convenient when you want to have mutable reference to two elements in the array at the same time.
 pub struct CelestialBodyDynIter<'a>(SmallVec<[CelestialBodySlice<'a>; 2]>);
+pub struct CelestialBodyImDynIter<'a>(SmallVec<[CelestialBodyImSlice<'a>; 2]>);
 
 impl<'a> CelestialBodyDynIter<'a> {
     pub fn new_all(source: &'a mut [CelestialBodyEntry]) -> Self {
@@ -240,6 +247,46 @@ impl<'a> CelestialBodyDynIter<'a> {
                     },
                     val.dynamic.as_ref()?,
                 ))
+            })
+    }
+}
+
+impl<'a> CelestialBodyImDynIter<'a> {
+    pub fn new_all(source: &'a [CelestialBodyEntry]) -> Self {
+        Self(smallvec![CelestialBodyImSlice {
+            start: 0,
+            slice: source,
+        }])
+    }
+}
+
+impl<'a> From<CelestialBodyDynIter<'a>> for CelestialBodyImDynIter<'a> {
+    fn from(source: CelestialBodyDynIter<'a>) -> Self {
+        Self(
+            source
+                .0
+                .into_iter()
+                .map(|slice| CelestialBodyImSlice {
+                    start: slice.start,
+                    slice: slice.slice,
+                })
+                .collect(),
+        )
+    }
+}
+
+impl<'a> CelestialBodyImDynIter<'a> {
+    pub fn get(&self, id: CelestialId) -> Option<&CelestialBody> {
+        let idx = id.id as usize;
+        self.0
+            .iter()
+            .find(|slice| slice.start <= idx && idx < slice.start + slice.slice.len())
+            .and_then(|slice| {
+                slice
+                    .slice
+                    .get(idx - slice.start)
+                    .filter(|s| s.gen == id.gen)
+                    .and_then(|s| s.dynamic.as_ref())
             })
     }
 }

@@ -1,7 +1,12 @@
 pub(crate) mod builder;
 pub(crate) mod iter;
+pub mod orbital_elements;
 
-use self::{builder::CelestialBodyBuilder, iter::CelestialBodyDynIter};
+pub use self::orbital_elements::{OrbitalElements, OrbitalElementsInput};
+use self::{
+    builder::CelestialBodyBuilder,
+    iter::{CelestialBodyDynIter, CelestialBodyImDynIter},
+};
 use super::{Quaternion, Universe, Vector3};
 use crate::session::SessionId;
 use anyhow::anyhow;
@@ -12,17 +17,6 @@ use serde::{ser::SerializeMap, Deserialize, Serialize, Serializer};
 const Rsun: f64 = 695800.;
 const EPSILON: f64 = 1e-40; // Doesn't the machine epsilon depend on browsers!??
                             // const acceleration: f64 = 5e-10;
-
-#[derive(Deserialize, Serialize, Default, Debug)]
-pub struct OrbitalElements {
-    pub semimajor_axis: f64,
-    pub ascending_node: f64,
-    pub inclination: f64,
-    pub eccentricity: f64,
-    pub epoch: f64,
-    pub mean_anomaly: f64,
-    pub argument_of_perihelion: f64,
-}
 
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CelestialId {
@@ -68,6 +62,9 @@ pub struct CelestialBody {
 
     #[cfg(feature = "wasm")]
     pub model: wasm_bindgen::JsValue,
+
+    #[cfg(feature = "wasm")]
+    pub js_body: wasm_bindgen::JsValue,
 }
 
 impl Default for CelestialBody {
@@ -90,6 +87,8 @@ impl Default for CelestialBody {
             soi: 0.,
             #[cfg(feature = "wasm")]
             model: wasm_bindgen::JsValue::null(),
+            #[cfg(feature = "wasm")]
+            js_body: wasm_bindgen::JsValue::null(),
         }
     }
 }
@@ -101,6 +100,10 @@ impl CelestialBody {
 
     pub fn get_session_id(&self) -> Option<SessionId> {
         self.session_id
+    }
+
+    pub fn get_orbital_elements(&self) -> &OrbitalElements {
+        &self.orbital_elements
     }
 
     fn set_orbiting_velocity<'a>(
@@ -120,12 +123,13 @@ impl CelestialBody {
         }
     }
 
-    pub fn get_world_position(&self, bodies: &[CelestialBodyEntry]) -> Vector3 {
-        if let Some(parent) = self
-            .parent
-            .and_then(|parent| bodies[parent.id as usize].dynamic.as_ref())
-        {
-            parent.get_world_position(bodies) + self.position
+    pub fn get_world_position(&self, bodies: &CelestialBodyImDynIter) -> Vector3 {
+        if let Some(parent) = self.parent.and_then(|parent| bodies.get(parent)) {
+            if parent as *const _ == self as *const _ {
+                Vector3::zero()
+            } else {
+                parent.get_world_position(bodies) + self.position
+            }
         } else {
             Vector3::zero()
         }
@@ -133,7 +137,7 @@ impl CelestialBody {
 
     pub fn visual_position(
         &self,
-        bodies: &[CelestialBodyEntry],
+        bodies: &CelestialBodyImDynIter,
         select_obj: Option<&CelestialBody>,
         view_scale: f64,
     ) -> Vector3 {
@@ -151,7 +155,7 @@ impl CelestialBody {
     /// but still renders in real scale when zoomed up.
     pub fn nlips_factor(
         &self,
-        bodies: &[CelestialBodyEntry],
+        bodies: &CelestialBodyImDynIter,
         select_obj: Option<&CelestialBody>,
         view_scale: f64,
         camera_position: &Vector3,
@@ -167,59 +171,96 @@ impl CelestialBody {
     /// Update orbital elements from position and velocity.
     /// The whole discussion is found in chapter 4.4 in
     /// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
-    pub(crate) fn update(&mut self, bodies: CelestialBodyDynIter) {
-        if let Some(parent) = self.parent.and_then(|parent| bodies.get(parent)) {
-            // Angular momentum vectors
-            let ang = self.velocity.cross(self.position);
-            let r = self.position.magnitude();
-            let v = self.velocity.magnitude();
-            // Node vector
-            let n = Vector3::new(0., 0., 1.).cross(ang);
-            // Eccentricity vector
-            let e = self.position.clone() * (1. / parent.GM * (v * v - parent.GM / r))
-                - self.velocity * (self.position.dot(self.velocity) / parent.GM);
-            self.orbital_elements.eccentricity = e.magnitude();
-            self.orbital_elements.inclination = (-ang.z / ang.magnitude()).acos();
-            // Avoid zero division
-            if n.magnitude2() <= EPSILON {
-                self.orbital_elements.ascending_node = 0.;
-            } else {
-                self.orbital_elements.ascending_node = (n.x / n.magnitude()).acos();
-                if n.y < 0. {
-                    self.orbital_elements.ascending_node =
-                        2. * std::f64::consts::PI - self.orbital_elements.ascending_node;
-                }
-            }
-            self.orbital_elements.semimajor_axis = 1. / (2. / r - v * v / parent.GM);
+    pub(crate) fn update(
+        &mut self,
+        mut bodies: CelestialBodyDynIter,
+        select_obj: Option<CelestialId>,
+    ) {
+        let (parent, rest) = if let Some((Some(parent), rest)) = self
+            .parent
+            .and_then(|parent| bodies.exclude_id(parent).ok())
+        {
+            (parent, rest)
+        } else {
+            return;
+        };
 
-            // Rotation to perifocal frame
-            // let ascending_node_rot = <Quaternion as Rotation3>::from_axis_angle(
-            //     Vector3::new(0., 0., 1.),
-            //     Rad(self.orbital_elements.ascending_node - std::f64::consts::PI / 2.),
-            // );
-            // let inclination_rot = Quaternion::from_axis_angle(
-            //     Vector3::new(0., 1., 0.),
-            //     Rad(std::f64::consts::PI - self.orbital_elements.inclination),
-            // );
-            // let plane_rot = ascending_node_rot * inclination_rot;
-
-            // let heading_apoapsis =
-            //     -self.position.dot(self.velocity) / (self.position.dot(self.velocity)).abs();
-
-            // Avoid zero division and still get the correct answer when N == 0.
-            // This is necessary to draw orbit with zero inclination and nonzero eccentricity.
-            if n.magnitude2() <= EPSILON || e.magnitude2() <= EPSILON {
-                self.orbital_elements.argument_of_perihelion =
-                    (if ang.z < 0. { -e.y } else { e.y }).atan2(e.x);
-            } else {
-                self.orbital_elements.argument_of_perihelion =
-                    (n.dot(e) / n.magnitude() / e.magnitude()).acos();
-                if e.z < 0. {
-                    self.orbital_elements.argument_of_perihelion =
-                        2. * std::f64::consts::PI - self.orbital_elements.argument_of_perihelion;
-                }
+        // Angular momentum vectors
+        let ang = self.velocity.cross(self.position);
+        self.orbital_elements.angular_momentum = ang;
+        let r = self.position.magnitude();
+        let v = self.velocity.magnitude();
+        // Node vector
+        let n = Vector3::new(0., 0., 1.).cross(ang);
+        // Eccentricity vector
+        let e = self.position.clone() * (1. / parent.GM * (v * v - parent.GM / r))
+            - self.velocity * (self.position.dot(self.velocity) / parent.GM);
+        self.orbital_elements.eccentricity = e.magnitude();
+        self.orbital_elements.inclination = (-ang.z / ang.magnitude()).acos();
+        // Avoid zero division
+        if n.magnitude2() <= EPSILON {
+            self.orbital_elements.ascending_node = 0.;
+        } else {
+            self.orbital_elements.ascending_node = (n.x / n.magnitude()).acos();
+            if n.y < 0. {
+                self.orbital_elements.ascending_node =
+                    2. * std::f64::consts::PI - self.orbital_elements.ascending_node;
             }
         }
+        self.orbital_elements.semimajor_axis = 1. / (2. / r - v * v / parent.GM);
+
+        // Rotation to perifocal frame
+        // let ascending_node_rot = <Quaternion as Rotation3>::from_axis_angle(
+        //     Vector3::new(0., 0., 1.),
+        //     Rad(self.orbital_elements.ascending_node - std::f64::consts::PI / 2.),
+        // );
+        // let inclination_rot = Quaternion::from_axis_angle(
+        //     Vector3::new(0., 1., 0.),
+        //     Rad(std::f64::consts::PI - self.orbital_elements.inclination),
+        // );
+        // let plane_rot = ascending_node_rot * inclination_rot;
+
+        // Rotation to perifocal frame
+        let plane_rot = Quaternion::from_angle_z(Rad(
+            self.orbital_elements.ascending_node - std::f64::consts::PI / 2.
+        )) * Quaternion::from_angle_y(Rad(
+            std::f64::consts::PI - self.orbital_elements.inclination
+        ));
+
+        self.orbital_elements.heading_apoapsis =
+            self.position.dot(self.velocity).is_sign_positive();
+
+        // Total rotation of the orbit
+        let rotation =
+            plane_rot * Quaternion::from_angle_z(Rad(self.orbital_elements.argument_of_perihelion));
+
+        // Avoid zero division and still get the correct answer when N == 0.
+        // This is necessary to draw orbit with zero inclination and nonzero eccentricity.
+        if n.magnitude2() <= EPSILON || e.magnitude2() <= EPSILON {
+            self.orbital_elements.argument_of_perihelion =
+                (if ang.z < 0. { -e.y } else { e.y }).atan2(e.x);
+        } else {
+            self.orbital_elements.argument_of_perihelion =
+                (n.dot(e) / n.magnitude() / e.magnitude()).acos();
+            if e.z < 0. {
+                self.orbital_elements.argument_of_perihelion =
+                    2. * std::f64::consts::PI - self.orbital_elements.argument_of_perihelion;
+            }
+        }
+
+        let rest = CelestialBodyImDynIter::from(rest);
+
+        let select_pos = select_obj
+            .and_then(|select_obj| rest.get(select_obj))
+            .map(|obj| obj.get_world_position(&rest))
+            .unwrap_or_else(Vector3::zero);
+
+        self.orbital_elements.orbit_position = rotation.rotate_vector(Vector3::new(
+            0.,
+            -self.orbital_elements.semimajor_axis * self.orbital_elements.eccentricity,
+            0.,
+        )) + parent.get_world_position(&rest)
+            - select_pos;
     }
 
     pub(crate) fn simulate_body(

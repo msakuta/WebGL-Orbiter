@@ -1,6 +1,6 @@
 use super::{
-    iter::CelestialBodyDynIter, CelestialBody, CelestialId, OrbitalElements, Quaternion, Universe,
-    Vector3,
+    iter::CelestialBodyDynIter, CelestialBody, CelestialId, OrbitalElementsInput, Quaternion,
+    Universe, Vector3,
 };
 use crate::session::SessionId;
 use cgmath::{Rad, Rotation, Rotation3, Zero};
@@ -75,7 +75,7 @@ impl CelestialBodyBuilder {
         self
     }
 
-    pub(crate) fn build(&mut self, orbital_elements: OrbitalElements) -> CelestialBody {
+    pub(crate) fn build(&mut self, orbital_elements: OrbitalElementsInput) -> CelestialBody {
         const COLOR_PALETTE: [&'static str; 17] = [
             "1 1 1",
             "1 0.75 0.75",
@@ -110,11 +110,13 @@ impl CelestialBodyBuilder {
             session_id: self.session_id,
             controllable: self.controllable,
             GM: self.gm.unwrap(),
-            orbital_elements,
+            orbital_elements: orbital_elements.into(),
             radius: self.radius.unwrap_or(1. / crate::AU),
             soi: self.soi.unwrap_or(0.),
             #[cfg(feature = "wasm")]
             model: wasm_bindgen::JsValue::null(),
+            #[cfg(feature = "wasm")]
+            js_body: wasm_bindgen::JsValue::null(),
         }
     }
 }
@@ -137,7 +139,7 @@ impl CelestialBodyBuilder {
     pub(crate) fn build_from_orbital_elements(
         &mut self,
         universe: &mut Universe,
-        orbital_elements: OrbitalElements,
+        orbital_elements: OrbitalElementsInput,
         params: AddPlanetParams,
     ) -> CelestialBody {
         let rotation =

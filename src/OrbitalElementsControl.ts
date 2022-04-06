@@ -66,7 +66,7 @@ export class OrbitalElementsControl{
         };
     }
 
-    setText(body: CelestialBody, headingApoapsis: number, units_km: boolean){
+    setText(body: CelestialBody, headingApoapsis: boolean, units_km: boolean){
         // Convert length of unit au into a fixed-length string considering user unit selection.
         // Also appends unit string for clarity.
         function unitConvLength(au: number){
@@ -86,7 +86,7 @@ export class OrbitalElementsControl{
             + ' <tr><td>w</td><td>' + (o.argument_of_perihelion / Math.PI).toFixed(10) + '</td></tr>'
             + ' <tr><td>Periapsis</td><td>' + unitConvLength(o.semimajor_axis * (1 - o.eccentricity)) + '</td></tr>'
             + ' <tr><td>Apoapsis</td><td>' + unitConvLength(o.semimajor_axis * (1 + o.eccentricity)) + '</td></tr>'
-            + ' <tr><td>head</td><td>' + headingApoapsis.toFixed(5) + '</td></tr>'
+            + ' <tr><td>head</td><td>' + (headingApoapsis ? '1' : '-1') + '</td></tr>'
     //							+ ' omega=' + this.angularVelocity.x.toFixed(10) + ',' + '<br>' + this.angularVelocity.y.toFixed(10) + ',' + '<br>' + this.angularVelocity.z.toFixed(10)
             +'</table>';
     }

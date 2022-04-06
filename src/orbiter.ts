@@ -336,7 +336,7 @@ function init() {
             console.log(data);
             wasmState = wasmModule.load_state(data, Date.now(), viewScale);
             gameState.universe.sun.forEachBody((body) => {
-                wasmState.set_body_model(body.name, body.model);
+                wasmState.set_body_model(body.name, body.model, body);
             });
             // gameState.loadState(data, settings);
             bodiesControl.setContent(gameState.universe.sun);
@@ -446,12 +446,24 @@ function render() {
     if(wasmState){
         wasmState.simulate_body(deltaTime, div, JSON.stringify(buttons));
         wasmState.set_camera(JSON.stringify(camera.position));
-        wasmState.update_model(gameState.getSelectObj()?.name, (model: THREE.Object3D, position: any, scale: number, quaternion: any) => {
+        wasmState.set_select_obj(gameState.getSelectObj()?.name);
+        wasmState.update_model(gameState.getSelectObj()?.name, (
+            model: THREE.Object3D,
+            position: string,
+            scale: number,
+            quaternion: string,
+            body: CelestialBody,
+            orbitalElements: string,
+        ) => {
             if(model){
                 // console.log(`model: ${model.name}`);
-                model.position.copy(position);
+                model.position.copy(JSON.parse(position));
+                model.position.multiplyScalar(viewScale);
                 model.scale.set(scale, scale, scale);
-                model.quaternion.copy(quaternion);
+                model.quaternion.copy(JSON.parse(quaternion));
+                body.position.copy(JSON.parse(position));
+                body.quaternion.copy(JSON.parse(quaternion));
+                body.orbitalElements = JSON.parse(orbitalElements);
             }
         });
     }

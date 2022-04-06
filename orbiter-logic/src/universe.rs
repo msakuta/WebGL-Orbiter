@@ -1,7 +1,7 @@
 use crate::{
     celestial_body::{
         builder::AddPlanetParams, iter::CelestialBodyDynIter, CelestialBody, CelestialBodyEntry,
-        CelestialId, OrbitalElements,
+        CelestialId, OrbitalElementsInput,
     },
     session::SessionId,
     GMsun, Quaternion, Vector3, AU,
@@ -42,7 +42,7 @@ impl Universe {
         let sun = CelestialBody::builder()
             .gm(GMsun)
             .name("sun".to_string())
-            .build(OrbitalElements::default());
+            .build(OrbitalElementsInput::default());
         let sun_id = this.add_body(sun);
 
         let rad_per_deg = std::f64::consts::PI / 180.;
@@ -56,14 +56,13 @@ impl Universe {
             .soi(2e5 / AU)
             .build_from_orbital_elements(
                 &mut this,
-                OrbitalElements {
+                OrbitalElementsInput {
                     semimajor_axis: 0.387098,
                     eccentricity: 0.205630,
                     inclination: 7.005 * rad_per_deg,
                     ascending_node: 48.331 * rad_per_deg,
                     argument_of_perihelion: 29.124 * rad_per_deg,
                     epoch: 0.,
-                    mean_anomaly: 0.,
                 },
                 AddPlanetParams {
                     axial_tilt: 2.04 * rad_per_deg,
@@ -81,14 +80,13 @@ impl Universe {
             .soi(2e5 / AU)
             .build_from_orbital_elements(
                 &mut this,
-                OrbitalElements {
+                OrbitalElementsInput {
                     semimajor_axis: 0.723332,
                     eccentricity: 0.00677323,
                     inclination: 3.39458 * rad_per_deg,
                     ascending_node: 76.678 * rad_per_deg,
                     argument_of_perihelion: 55.186 * rad_per_deg,
                     epoch: 0.,
-                    mean_anomaly: 0.,
                 },
                 AddPlanetParams {
                     axial_tilt: 2.64 * rad_per_deg,
@@ -105,14 +103,13 @@ impl Universe {
             .soi(5e5 / AU)
             .build_from_orbital_elements(
                 &mut this,
-                OrbitalElements {
+                OrbitalElementsInput {
                     semimajor_axis: 1.,
                     eccentricity: 0.0167086,
                     inclination: 0.,
                     ascending_node: -11.26064 * rad_per_deg,
                     argument_of_perihelion: 114.20783 * rad_per_deg,
                     epoch: 0.,
-                    mean_anomaly: 0.,
                 },
                 AddPlanetParams {
                     axial_tilt: 23.4392811 * rad_per_deg,
@@ -129,14 +126,13 @@ impl Universe {
             .radius(0.1)
             .build_from_orbital_elements(
                 &mut this,
-                OrbitalElements {
+                OrbitalElementsInput {
                     semimajor_axis: 10000. / AU,
                     eccentricity: 0.,
                     inclination: 0.,
                     ascending_node: 0.,
                     argument_of_perihelion: 0.,
                     epoch: 0.,
-                    mean_anomaly: 0.,
                 },
                 AddPlanetParams::default(),
             );
@@ -155,14 +151,13 @@ impl Universe {
             .soi(1e5 / AU)
             .build_from_orbital_elements(
                 &mut this,
-                OrbitalElements {
+                OrbitalElementsInput {
                     semimajor_axis: 384399. / AU,
                     eccentricity: 0.048775,
                     inclination: -11.26064 * rad_per_deg,
                     ascending_node: 100.492 * rad_per_deg,
                     argument_of_perihelion: 114.20783 * rad_per_deg, //275.066 * rad_per_deg,
                     epoch: 0.,
-                    mean_anomaly: 0.,
                 },
                 AddPlanetParams {
                     axial_tilt: 1.5424 * rad_per_deg,
@@ -180,14 +175,13 @@ impl Universe {
             .soi(3e5 / AU)
             .build_from_orbital_elements(
                 &mut this,
-                OrbitalElements {
+                OrbitalElementsInput {
                     semimajor_axis: 1.523679,
                     eccentricity: 0.0935,
                     inclination: 1.850 * rad_per_deg,
                     ascending_node: 49.562 * rad_per_deg,
                     argument_of_perihelion: 286.537 * rad_per_deg,
                     epoch: 0.,
-                    mean_anomaly: 0.,
                 },
                 AddPlanetParams {
                     axial_tilt: 25.19 * rad_per_deg,
@@ -205,14 +199,13 @@ impl Universe {
             .soi(10e6 / AU)
             .build_from_orbital_elements(
                 &mut this,
-                OrbitalElements {
+                OrbitalElementsInput {
                     semimajor_axis: 5.204267,
                     eccentricity: 0.048775,
                     inclination: 1.305 * rad_per_deg,
                     ascending_node: 100.492 * rad_per_deg,
                     argument_of_perihelion: 275.066 * rad_per_deg,
                     epoch: 0.,
-                    mean_anomaly: 0.,
                 },
                 AddPlanetParams {
                     axial_tilt: 3.13 * rad_per_deg,
@@ -246,7 +239,7 @@ impl Universe {
                 .gm(1e4 / AU / AU / AU)
                 .position(position)
                 ._velocity(velocity)
-                .build(OrbitalElements::default());
+                .build(OrbitalElementsInput::default());
 
             println!("Adding {}", asteroid_name);
             this.add_body(asteroid);
@@ -343,14 +336,13 @@ impl Universe {
             .radius(0.1)
             .build_from_orbital_elements(
                 self,
-                OrbitalElements {
+                OrbitalElementsInput {
                     semimajor_axis: rng.gen_range(10000.0..20000.) / AU,
                     eccentricity: rng.gen_range(0.0..0.5),
                     inclination: rng.gen_range(0.0..30. * rad_per_deg),
                     ascending_node: rng.gen_range(0.0..360. * rad_per_deg),
                     argument_of_perihelion: rng.gen_range(0.0..360. * rad_per_deg),
                     epoch: 0.,
-                    mean_anomaly: 0.,
                 },
                 AddPlanetParams {
                     axial_tilt: 0.,
@@ -461,7 +453,18 @@ impl Universe {
         self.bodies = bodies;
     }
 
-    pub fn update(&mut self) {
+    pub fn update_orbital_elements(&mut self, select_obj: Option<CelestialId>) {
+        let mut bodies = std::mem::take(&mut self.bodies);
+        for i in 0..bodies.len() {
+            if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
+                center.update(chained, select_obj);
+            }
+        }
+        self.update_parent(&mut bodies);
+        self.bodies = bodies;
+    }
+
+    pub fn update(&mut self, select_obj: Option<CelestialId>) {
         let mut bodies = std::mem::take(&mut self.bodies);
 
         self.update_parent(&mut bodies);
@@ -472,14 +475,8 @@ impl Universe {
             self.simulate_bodies(self.time_scale, div);
         }
 
-        let mut bodies = std::mem::take(&mut self.bodies);
-        for i in 0..bodies.len() {
-            if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
-                center.update(chained);
-            }
-        }
-        self.update_parent(&mut bodies);
-        self.bodies = bodies;
+        self.update_orbital_elements(select_obj);
+
         self.time += 1;
         self.sim_time += self.time_scale;
     }

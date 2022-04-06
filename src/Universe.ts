@@ -285,7 +285,7 @@ export default class Universe{
 
     update(center_select: boolean, viewScale: number, nlips_enable: boolean,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
-        units_km: boolean, updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
+        units_km: boolean, updateOrbitalElements: (o: CelestialBody, headingApoapsis: boolean) => void,
         scene: THREE.Scene, select_obj?: CelestialBody)
     {
         this.sun.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfY,
