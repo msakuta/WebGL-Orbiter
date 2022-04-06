@@ -47,7 +47,7 @@ pub struct WasmState {
     select_obj: Option<CelestialId>,
 }
 
-fn print_bodies(universe: &Universe) {
+fn _print_bodies(universe: &Universe) {
     let bodies = CelestialBodyImDynIter::new_all(&universe.bodies);
 
     for body in universe
@@ -84,7 +84,7 @@ pub fn load_state(json: JsValue, now_unix: f64, view_scale: f64) -> WasmState {
         console_log!("Celbody: {:#?}", body);
     }
 
-    print_bodies(&universe);
+    // print_bodies(&universe);
 
     WasmState {
         universe,
@@ -145,9 +145,9 @@ impl WasmState {
     pub fn set_select_obj(&mut self, select_obj: &str) -> Result<(), JsValue> {
         let next = self.universe.find_by_name(select_obj).map(|(id, _)| id);
 
-        if next != self.select_obj {
-            print_bodies(&self.universe);
-        }
+        // if next != self.select_obj {
+        //     print_bodies(&self.universe);
+        // }
 
         self.select_obj = next;
 

@@ -1,12 +1,13 @@
 use crate::{
     celestial_body::{
-        builder::AddPlanetParams, iter::CelestialBodyDynIter, CelestialBody, CelestialBodyEntry,
-        CelestialId, OrbitalElementsInput,
+        builder::AddPlanetParams,
+        iter::{CelestialBodyDynIter, CelestialBodyImDynIter},
+        CelestialBody, CelestialBodyEntry, CelestialId, OrbitalElementsInput,
     },
     session::SessionId,
     GMsun, Quaternion, Vector3, AU,
 };
-use cgmath::{InnerSpace, Rad, Rotation, Rotation3};
+use cgmath::{InnerSpace, Rad, Rotation, Rotation3, Zero};
 use rand::prelude::*;
 use serde::{ser::SerializeMap, Serialize, Serializer};
 
@@ -454,10 +455,15 @@ impl Universe {
     }
 
     pub fn update_orbital_elements(&mut self, select_obj: Option<CelestialId>) {
+        let select_pos = select_obj
+            .and_then(|select_obj| self.get(select_obj))
+            .map(|obj| obj.get_world_position(&CelestialBodyImDynIter::new_all(&self.bodies)))
+            .unwrap_or_else(Vector3::zero);
+
         let mut bodies = std::mem::take(&mut self.bodies);
         for i in 0..bodies.len() {
             if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
-                center.update(chained, select_obj);
+                center.update(chained, select_pos);
             }
         }
         self.update_parent(&mut bodies);

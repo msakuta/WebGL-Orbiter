@@ -171,11 +171,7 @@ impl CelestialBody {
     /// Update orbital elements from position and velocity.
     /// The whole discussion is found in chapter 4.4 in
     /// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
-    pub(crate) fn update(
-        &mut self,
-        mut bodies: CelestialBodyDynIter,
-        select_obj: Option<CelestialId>,
-    ) {
+    pub(crate) fn update(&mut self, mut bodies: CelestialBodyDynIter, select_pos: Vector3) {
         let (parent, rest) = if let Some((Some(parent), rest)) = self
             .parent
             .and_then(|parent| bodies.exclude_id(parent).ok())
@@ -249,11 +245,6 @@ impl CelestialBody {
         }
 
         let rest = CelestialBodyImDynIter::from(rest);
-
-        let select_pos = select_obj
-            .and_then(|select_obj| rest.get(select_obj))
-            .map(|obj| obj.get_world_position(&rest))
-            .unwrap_or_else(Vector3::zero);
 
         self.orbital_elements.orbit_position = rotation.rotate_vector(Vector3::new(
             0.,
