@@ -66,7 +66,7 @@ class RingUVGeometry extends THREE.BufferGeometry {
 
 				// uv
 
-				uv.x = j / phiSegments;
+				uv.x = 1 - j / phiSegments;
 				uv.y = i / thetaSegments;
 
 				uvs.push( uv.x, uv.y );

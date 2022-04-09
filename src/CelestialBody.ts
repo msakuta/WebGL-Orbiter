@@ -544,10 +544,11 @@ export function addPlanet(orbitalElements: OrbitalElements,
             if(params.ring && ringTexture){
                 const ringMaterial = new THREE.MeshPhongMaterial( {
                     map: ringTexture, alphaMap: ringAlphaTexture,
-                    color: 0xffffff, flatShading: false, transparent: true
+                    color: "rgb(255, 255, 255)", flatShading: false, transparent: true,
+                    emissive: "rgb(255, 255, 255)", emissiveIntensity: 0.15,
                 } );
                 const factor = viewScale / AU;
-                const ringGeometry = new RingUVGeometry(params.ring.innerRadius * factor, params.ring.outerRadius * factor, 32);
+                const ringGeometry = new RingUVGeometry(params.ring.innerRadius * factor, params.ring.outerRadius * factor, 64);
                 const ringMesh = new THREE.Mesh( ringGeometry, ringMaterial );
                 group.add(ringMesh);
                 const ringGeometryRev = new THREE.Mesh( ringGeometry, ringMaterial );
