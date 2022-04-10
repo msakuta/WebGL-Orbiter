@@ -216,6 +216,30 @@ impl Universe {
 
         this.add_body(jupiter);
 
+        let saturn = CelestialBody::builder()
+            .name("saturn".to_string())
+            .parent(sun_id)
+            .gm(3.79315347480608e+6 / AU / AU / AU)
+            .radius(60268.)
+            .soi(10e6 / AU)
+            .build_from_orbital_elements(
+                &mut this,
+                OrbitalElementsInput {
+                    semimajor_axis: 10.1238,
+                    eccentricity: 0.0565,
+                    inclination: 2.485 * rad_per_deg,
+                    ascending_node: 113.665 * rad_per_deg,
+                    argument_of_perihelion: 339.392 * rad_per_deg,
+                    epoch: 0.,
+                },
+                AddPlanetParams {
+                    axial_tilt: 26.73 * rad_per_deg,
+                    rotation_period: 9.925 * 60. * 60.,
+                },
+            );
+
+        this.add_body(saturn);
+
         // Randomly generate asteroids
         for i in 0..3 {
             let angle: Rad<f64> = Rad(random::<f64>() * std::f64::consts::PI * 2.);
