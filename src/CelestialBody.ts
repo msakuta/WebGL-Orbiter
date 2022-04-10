@@ -590,9 +590,8 @@ export function addPlanet(orbitalElements: OrbitalElements,
         else{
             new OBJLoader().load( params.modelName, function ( object ) {
                 const radiusInAu = modelScale * (params.radius || 6534) / AU;
-                object.scale.set(radiusInAu, -radiusInAu, radiusInAu);
+                object.scale.set(radiusInAu, radiusInAu, radiusInAu);
                 group.add( object );
-                object.updateMatrix();
             } );
         }
         const blastGroup = new THREE.Object3D();
@@ -642,7 +641,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     // Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
     // https://en.wikipedia.org/wiki/Orbital_speed
     ret.setOrbitingVelocity(orbitalElements.semimajor_axis, rotation);
-    if(params && params.axialTilt && params.rotationPeriod){
+    if(params && params.axialTilt !== undefined && params.rotationPeriod){
         ret.quaternion = AxisAngleQuaternion(1, 0, 0, params.axialTilt);
         ret.angularVelocity = new THREE.Vector3(0, 0, 2 * Math.PI / params.rotationPeriod).applyQuaternion(ret.quaternion);
     }

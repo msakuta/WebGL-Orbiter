@@ -70,6 +70,10 @@ export default class Universe{
         const Rsun = 695800.;
         const sunGeometry = new THREE.SphereGeometry( 1, 20, 20 );
 
+        const day = 24. * 60. * 60.;
+        const hour = 60. * 60.;
+        const minute = 60.;
+
         const sunMesh = new THREE.Mesh( sunGeometry, material );
         sunMesh.scale.setScalar(viewScale * Rsun / AU);
         group.add( sunMesh );
@@ -207,7 +211,7 @@ export default class Universe{
             GM: 7.113901872e-05 / AU / AU / AU,
             radius: 11.2667,
             axialTilt: 0,
-            rotationPeriod: 58.646 * 24. * 60. * 60.,
+            rotationPeriod: 7 * hour + 39 * minute + 12.,
             sphereOfInfluence: 2e3,
         });
 
