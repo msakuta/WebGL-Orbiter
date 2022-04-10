@@ -224,8 +224,8 @@ export default class Universe{
             texture: saturnUrl,
             GM: 3.79315347480608e+6 / AU / AU / AU,
             radius: 60268,
-            axialTilt: 3.13 * rad_per_deg,
-            rotationPeriod: 9.925 * 60. * 60.,
+            axialTilt: 26.73 * rad_per_deg,
+            rotationPeriod: (10. * 60. + 33.) * 60. + 38.,
             sphereOfInfluence: 10e6,
             oblateness: 0.09796,
             ring: {
