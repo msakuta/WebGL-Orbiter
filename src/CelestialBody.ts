@@ -486,6 +486,7 @@ export interface AddPlanetParams{
     modelName?: string;
     modelScale?: number;
     mtlName?: string;
+    bumpMap?: string;
     modelColor?: string;
     controllable?: boolean;
     sphereOfInfluence?: number;
@@ -520,7 +521,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     ret.radius = params.radius;
     scene.add( group );
 
-    if(params.texture){
+    if(!params.modelName && params.texture){
         const loader = new THREE.TextureLoader();
 
         const promises = [];
@@ -576,16 +577,37 @@ export function addPlanet(orbitalElements: OrbitalElements,
                         } );
                     })
             }
-            new MTLLoader().load(params.mtlName, function ( materials ) {
-                materials.preload();
-                new OBJLoader()
-                    .setMaterials( materials )
-                    .load( params.modelName, function ( object ) {
-                        const radiusInAu = modelScale * (params.radius || 6534) / AU;
-                        object.scale.set(radiusInAu, radiusInAu, radiusInAu);
-                        group.add( object );
-                    } );
-            } );
+            else if(params.texture || params.bumpMap){
+                fetch(params.mtlName)
+                    .then(mtlFile => mtlFile.text())
+                    .then(mtlFile => {
+                        if(params.texture)
+                            mtlFile = mtlFile.replace(/^bump .+$/gm, `map_kd ${params.texture}`);
+                        if(params.bumpMap)
+                            mtlFile = mtlFile.replace(/^bump .+$/gm, `bump ${params.bumpMap}`);
+                        const materials = new MTLLoader().parse(mtlFile, "");
+                        // materials.preload();
+                        // materials.baseUrl = "";
+                        new OBJLoader()
+                        .setMaterials( materials )
+                        .load( params.modelName, function ( object ) {
+                            const radiusInAu = modelScale * (params.radius || 6534) / AU;
+                            object.scale.set(radiusInAu, -radiusInAu, radiusInAu);
+                            group.add( object );
+                        } );
+                    });
+            }
+            else{
+                new MTLLoader().load(params.mtlName, function( materials ) {
+                    new OBJLoader()
+                        .setMaterials( materials )
+                        .load( params.modelName, function ( object ) {
+                            const radiusInAu = modelScale * (params.radius || 6534) / AU;
+                            object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+                            group.add( object );
+                        } );
+                });
+            }
         }
         else{
             new OBJLoader().load( params.modelName, function ( object ) {

@@ -9,7 +9,11 @@ import { GraphicsParams } from './GameState';
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
 import marsUrl from './images/mars.jpg';
-import phobosModel from './phobos_t.obj';
+import phobosModelUrl from './phobos_t.obj';
+import phobosMtlUrl from './phobos_t.mtl';
+// import phobosBumpUrl from './phobosbump.jpg';
+import deimosModelUrl from './deimos_t.obj';
+import deimosMtlUrl from './deimos_t.mtl';
 import venusUrl from './images/venus.jpg';
 import jupiterUrl from './images/jupiter.jpg';
 import saturnUrl from './images/saturn.jpg';
@@ -206,12 +210,35 @@ export default class Universe{
             name: "phobos",
             parent: mars,
             color: "#3f7f7f",
-            modelName: phobosModel,
+            modelName: phobosModelUrl,
+            mtlName: phobosMtlUrl,
+            // texture: phobosBumpUrl,
             modelScale: 1,
             GM: 7.113901872e-05 / AU / AU / AU,
             radius: 11.2667,
             axialTilt: 0,
             rotationPeriod: 7 * hour + 39 * minute + 12.,
+            sphereOfInfluence: 2e3,
+        });
+
+        const deimos = addPlanetLocal({
+            semimajor_axis: 23455.5 / AU,
+            eccentricity: 0.00033,
+            inclination: 0.93 * rad_per_deg,
+            ascending_node: 48.331 * rad_per_deg,
+            argument_of_perihelion: 29.124 * rad_per_deg
+        },
+        {
+            name: "deimos",
+            parent: mars,
+            color: "#3f7f7f",
+            modelName: deimosModelUrl,
+            mtlName: deimosMtlUrl,
+            modelScale: 1,
+            GM: 7.113901872e-05 / AU / AU / AU,
+            radius: 11.2667,
+            axialTilt: 0,
+            rotationPeriod: 1.263 * day,
             sphereOfInfluence: 2e3,
         });
 
