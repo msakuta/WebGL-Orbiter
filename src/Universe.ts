@@ -207,6 +207,7 @@ export default class Universe{
             axialTilt: 3.13 * rad_per_deg,
             rotationPeriod: 9.925 * 60. * 60.,
             sphereOfInfluence: 10e6,
+            oblateness: 0.06487,
         });
 
         const saturn = addPlanetLocal({
@@ -221,7 +222,7 @@ export default class Universe{
             parent: this.sun,
             color: "#7f7f5f",
             texture: saturnUrl,
-            GM: 126686534 / AU / AU / AU,
+            GM: 3.79315347480608e+6 / AU / AU / AU,
             radius: 60268,
             axialTilt: 3.13 * rad_per_deg,
             rotationPeriod: 9.925 * 60. * 60.,
