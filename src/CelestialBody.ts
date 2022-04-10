@@ -484,6 +484,7 @@ export interface AddPlanetParams{
     GM: number;
     radius: number;
     modelName?: string;
+    modelScale?: number;
     mtlName?: string;
     modelColor?: string;
     controllable?: boolean;
@@ -558,6 +559,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
         } );
     }
     else if(params.modelName){
+        const modelScale = params.modelScale ?? 100;
         if(params.mtlName){
             if(params.modelColor){
                 fetch(params.mtlName)
@@ -568,8 +570,8 @@ export function addPlanet(orbitalElements: OrbitalElements,
                         new OBJLoader()
                         .setMaterials( materials )
                         .load( params.modelName, function ( object ) {
-                            const radiusInAu = 100 * (params.radius || 6534) / AU;
-                            object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+                            const radiusInAu = modelScale * (params.radius || 6534) / AU;
+                            object.scale.set(radiusInAu, -radiusInAu, radiusInAu);
                             group.add( object );
                         } );
                     })
@@ -579,7 +581,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
                 new OBJLoader()
                     .setMaterials( materials )
                     .load( params.modelName, function ( object ) {
-                        const radiusInAu = 100 * (params.radius || 6534) / AU;
+                        const radiusInAu = modelScale * (params.radius || 6534) / AU;
                         object.scale.set(radiusInAu, radiusInAu, radiusInAu);
                         group.add( object );
                     } );
@@ -587,9 +589,10 @@ export function addPlanet(orbitalElements: OrbitalElements,
         }
         else{
             new OBJLoader().load( params.modelName, function ( object ) {
-                const radiusInAu = 100 * (params.radius || 6534) / AU;
-                object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+                const radiusInAu = modelScale * (params.radius || 6534) / AU;
+                object.scale.set(radiusInAu, -radiusInAu, radiusInAu);
                 group.add( object );
+                object.updateMatrix();
             } );
         }
         const blastGroup = new THREE.Object3D();

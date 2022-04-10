@@ -9,6 +9,7 @@ import { GraphicsParams } from './GameState';
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
 import marsUrl from './images/mars.jpg';
+import phobosModel from './phobos_t.obj';
 import venusUrl from './images/venus.jpg';
 import jupiterUrl from './images/jupiter.jpg';
 import saturnUrl from './images/saturn.jpg';
@@ -188,6 +189,26 @@ export default class Universe{
             axialTilt: 	25.19 * rad_per_deg,
             rotationPeriod: 24.6229 * 60. * 60.,
             sphereOfInfluence: 3e5
+        });
+
+        const phobos = addPlanetLocal({
+            semimajor_axis: 9376 / AU,
+            eccentricity: 0.0151,
+            inclination: 1.093 * rad_per_deg,
+            ascending_node: 48.331 * rad_per_deg,
+            argument_of_perihelion: 29.124 * rad_per_deg
+        },
+        {
+            name: "phobos",
+            parent: mars,
+            color: "#3f7f7f",
+            modelName: phobosModel,
+            modelScale: 1,
+            GM: 7.113901872e-05 / AU / AU / AU,
+            radius: 11.2667,
+            axialTilt: 0,
+            rotationPeriod: 58.646 * 24. * 60. * 60.,
+            sphereOfInfluence: 2e3,
         });
 
         const jupiter = addPlanetLocal({
