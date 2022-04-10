@@ -11,6 +11,9 @@ import mercuryUrl from './images/mercury.jpg';
 import marsUrl from './images/mars.jpg';
 import venusUrl from './images/venus.jpg';
 import jupiterUrl from './images/jupiter.jpg';
+import saturnUrl from './images/saturn.jpg';
+import saturnRingUrl from './images/saturnringcolor.jpg';
+import saturnRingAlphaUrl from './images/saturnringpattern.gif';
 import earthUrl from './images/land_ocean_ice_cloud_2048.jpg';
 import rocketModelUrl from './rocket.obj';
 import rocketMtlUrl from './rocket.mtl';
@@ -205,6 +208,33 @@ export default class Universe{
             axialTilt: 3.13 * rad_per_deg,
             rotationPeriod: 9.925 * 60. * 60.,
             sphereOfInfluence: 10e6,
+            oblateness: 0.06487,
+        });
+
+        const saturn = addPlanetLocal({
+            semimajor_axis: 10.1238,
+            eccentricity: 0.0565,
+            inclination: 2.485 * rad_per_deg,
+            ascending_node: 113.665 * rad_per_deg,
+            argument_of_perihelion: 339.392 * rad_per_deg
+        },
+        {
+            name: "saturn",
+            parent: this.sun,
+            color: "#7f7f5f",
+            texture: saturnUrl,
+            GM: 3.79315347480608e+6 / AU / AU / AU,
+            radius: 60268,
+            axialTilt: 3.13 * rad_per_deg,
+            rotationPeriod: 9.925 * 60. * 60.,
+            sphereOfInfluence: 10e6,
+            oblateness: 0.09796,
+            ring: {
+                innerRadius: 60268 + 6630,
+                outerRadius: 60268 + 120700,
+                ringTexture: saturnRingUrl,
+                ringAlphaTexture: saturnRingAlphaUrl,
+            },
         });
 
         // Use icosahedron instead of sphere to make it look like uniform

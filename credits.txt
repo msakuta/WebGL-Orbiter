@@ -47,6 +47,21 @@ http://planetpixelemporium.com/jupiter.html
 and renamed from "jupiter2_1k.jpg"
 
 
+Saturn and its rings texture
+----------------------------
+
+These images
+
+* saturn.jpg
+* saturnringcolor.jpg
+* saturnringpattern.gif
+
+were obtained from
+
+http://planetpixelemporium.com/saturn.html
+
+
+
 Background Star Texture
 -----------------------
 

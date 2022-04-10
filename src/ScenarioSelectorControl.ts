@@ -38,12 +38,14 @@ export class ScenarioSelectorControl extends MenuControl{
             ascending_node?: number,
             eccentricity?: number,
             rotation?: THREE.Quaternion,
+            inclination?: number,
         }[] = [
             {title: "Earth orbit", parent: "earth", semimajor_axis: 10000 / AU},
             {title: "Moon orbit", parent: "moon", semimajor_axis: 3000 / AU},
             {title: "Mars orbit", parent: "mars", semimajor_axis: 5000 / AU},
             {title: "Venus orbit", parent: "venus", semimajor_axis: 10000 / AU, ascending_node: Math.PI},
             {title: "Jupiter orbit", parent: "jupiter", semimajor_axis: 100000 / AU},
+            {title: "Saturn orbit", parent: "saturn", semimajor_axis: 65000 / AU, inclination: 12 * Math.PI / 180},
         ];
         for(let i = 0; i < scenarios.length; i++){
             const elem = document.createElement('div');
@@ -57,7 +59,7 @@ export class ScenarioSelectorControl extends MenuControl{
                     var eccentricity = scenario.eccentricity || 0.;
                     var rotation = scenario.rotation ?? (() => {
                         var rotation = AxisAngleQuaternion(0, 0, 1, ascending_node - Math.PI / 2);
-                        rotation.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI));
+                        rotation.multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - (scenario.inclination ?? 0)));
                         return rotation;
                     })();
                     const select_obj = getRocket();

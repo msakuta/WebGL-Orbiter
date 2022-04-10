@@ -1,4 +1,5 @@
 import * as THREE from 'three/src/Three';
+import { RingUVGeometry } from './RingUVGeometry';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import blastUrl from './images/blast.png';
@@ -571,6 +572,13 @@ export interface AddPlanetParams{
     rotationPeriod?: number;
     quaternion?: THREE.Quaternion;
     angularVelocity?: THREE.Vector3;
+    oblateness?: number;
+    ring?: {
+        innerRadius: number;
+        outerRadius: number;
+        ringTexture: string;
+        ringAlphaTexture: string;
+    }
 }
 
 // Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
@@ -594,17 +602,40 @@ export function addPlanet(orbitalElements: OrbitalElements,
 
     if(params.texture){
         const loader = new THREE.TextureLoader();
-        loader.load( params.texture, function ( texture ) {
+
+        const promises = [];
+        promises.push(loader.load( params.texture));
+        if(params.ring){
+            promises.push(loader.load(params.ring.ringTexture));
+            if(params.ring)
+                promises.push(loader.load(params.ring.ringAlphaTexture));
+        }
+        
+        Promise.all(promises).then(([texture, ringTexture, ringAlphaTexture]) => {
 
             const geometry = new THREE.SphereGeometry( 1, 20, 20 );
 
             const material = new THREE.MeshLambertMaterial( { map: texture, color: 0xffffff, flatShading: false } );
             const mesh = new THREE.Mesh( geometry, material );
             const radiusInAu = viewScale * (params.radius || 6534) / AU;
-            mesh.scale.set(radiusInAu, radiusInAu, radiusInAu);
+            mesh.scale.set(radiusInAu, radiusInAu * (1. - (params.oblateness || 0.)), radiusInAu);
             mesh.rotation.x = Math.PI / 2;
             group.add( mesh );
 
+            if(params.ring && ringTexture){
+                const ringMaterial = new THREE.MeshPhongMaterial( {
+                    map: ringTexture, alphaMap: ringAlphaTexture,
+                    color: "rgb(255, 255, 255)", flatShading: false, transparent: true,
+                    emissive: "rgb(255, 255, 255)", emissiveIntensity: 0.15,
+                } );
+                const factor = viewScale / AU;
+                const ringGeometry = new RingUVGeometry(params.ring.innerRadius * factor, params.ring.outerRadius * factor, 64);
+                const ringMesh = new THREE.Mesh( ringGeometry, ringMaterial );
+                group.add(ringMesh);
+                const ringGeometryRev = new THREE.Mesh( ringGeometry, ringMaterial );
+                ringGeometryRev.rotateX(Math.PI);
+                group.add(ringGeometryRev);
+            }
         } );
     }
     else if(params.modelName){

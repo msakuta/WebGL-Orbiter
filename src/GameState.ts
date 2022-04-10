@@ -45,6 +45,7 @@ export default class GameState{
 
     serializeState(){
         return {
+            saveVersion: 1,
             simTime: this.simTime.getTime() * 1e-3,
             startTime: this.startTime.getTime() * 1e-3,
             bodies: this.universe.sun.serializeTree(),
@@ -52,10 +53,12 @@ export default class GameState{
     }
 
     loadState(state: any, settings: Settings){
+        const version = state.saveVersion || 0;
+        if(version === 0)
+            return;
         this.simTime = new Date(state.simTime * 1e3);
         this.startTime = new Date(state.startTime * 1e3);
         this.timescale = state.timeScale;
-
         const bodies = state.bodies;
         for(let i = 0; i < bodies.length; i++){
             const body = bodies[i];

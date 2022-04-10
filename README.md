@@ -12,6 +12,8 @@ https://msakuta.github.io/WebGL-Orbiter/index.html
 
 ## Screenshots
 
+![](screenshots/screenshot6.jpg)
+
 ![](screenshots/screenshot1.jpg)
 
 ![](screenshots/screenshot2.jpg)
