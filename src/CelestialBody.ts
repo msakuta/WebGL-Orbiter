@@ -591,8 +591,11 @@ export function addPlanet(orbitalElements: OrbitalElements,
                 fetch(params.mtlName)
                     .then(mtlFile => mtlFile.text())
                     .then(mtlFile => {
-                        if(params.texture)
+                        if(params.texture){
                             mtlFile = mtlFile.replace(/^map_kd \S+/gm, `map_kd ${params.texture}`);
+                            if(params.bumpMap)
+                                mtlFile += `bump ${params.bumpMap}`;
+                        }
                         if(params.bumpMap)
                             mtlFile = mtlFile.replace(/^bump \S+/gm, `bump ${params.bumpMap}`);
                         const materials = new MTLLoader().parse(mtlFile, "");
