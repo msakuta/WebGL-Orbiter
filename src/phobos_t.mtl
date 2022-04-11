@@ -11,4 +11,4 @@ Ns 0.1
 Ni 1.450000
 d 1.000000
 illum 2
-bump phobosbump.jpg
+bump phobosbump.jpg -bm 0.0002

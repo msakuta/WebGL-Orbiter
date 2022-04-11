@@ -2,6 +2,7 @@ import * as THREE from 'three/src/Three';
 import { RingUVGeometry } from './RingUVGeometry';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import blastUrl from './images/blast.png';
 import apoapsisUrl from './images/apoapsis.png';
 import periapsisUrl from './images/periapsis.png';
@@ -484,6 +485,7 @@ export interface AddPlanetParams{
     GM: number;
     radius: number;
     modelName?: string;
+    modelGlbName?: string;
     modelScale?: number;
     mtlName?: string;
     bumpMap?: string;
@@ -559,6 +561,14 @@ export function addPlanet(orbitalElements: OrbitalElements,
             }
         } );
     }
+    else if(params.modelGlbName){
+        const modelScale = params.modelScale ?? 100;
+        new GLTFLoader().load( params.modelName, function ( gltf ) {
+            const radiusInAu = modelScale * (params.radius || 6534) / AU;
+            // object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+            group.add( gltf.scene );
+        } );
+    }
     else if(params.modelName){
         const modelScale = params.modelScale ?? 100;
         if(params.mtlName){
@@ -582,9 +592,9 @@ export function addPlanet(orbitalElements: OrbitalElements,
                     .then(mtlFile => mtlFile.text())
                     .then(mtlFile => {
                         if(params.texture)
-                            mtlFile = mtlFile.replace(/^bump .+$/gm, `map_kd ${params.texture}`);
+                            mtlFile = mtlFile.replace(/^map_kd \S+/gm, `map_kd ${params.texture}`);
                         if(params.bumpMap)
-                            mtlFile = mtlFile.replace(/^bump .+$/gm, `bump ${params.bumpMap}`);
+                            mtlFile = mtlFile.replace(/^bump \S+/gm, `bump ${params.bumpMap}`);
                         const materials = new MTLLoader().parse(mtlFile, "");
                         // materials.preload();
                         // materials.baseUrl = "";
