@@ -1,7 +1,9 @@
 import * as THREE from 'three/src/Three';
 import { RingUVGeometry } from './RingUVGeometry';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+// import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { OBJLoader } from './OBJLoader';
+// import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+import { MTLLoader } from './MTLLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import blastUrl from './images/blast.png';
 import apoapsisUrl from './images/apoapsis.png';
