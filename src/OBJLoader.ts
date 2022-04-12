@@ -80,6 +80,7 @@ class ObjectState {
         normals: number[],
         colors: number[],
         uvs: number[],
+        altUvs: number[],
         hasUVIndices: boolean,
         type?: string,
     } = {
@@ -87,6 +88,7 @@ class ObjectState {
         normals: [],
         colors: [],
         uvs: [],
+        altUvs: [],
         hasUVIndices: false
     };
     materials: MaterialState[] = [];
@@ -94,7 +96,7 @@ class ObjectState {
 
     constructor(name?: string, fromDeclaration?: boolean){
         this.name = name || '';
-        this.fromDeclaration = fromDeclaration;    
+        this.fromDeclaration = fromDeclaration;
     }
 
     startMaterial( name: string, libraries: any ) {
@@ -197,6 +199,8 @@ function ParserState() {
         colors: number[] = [];
         uvs: number[] = [];
 
+        altUvs: number[] = [];
+
         materials: Map<string, Material> = new Map();
         materialLibraries: string[] = [];
 
@@ -273,8 +277,8 @@ function ParserState() {
 
         addVertex( a: number, b: number, c: number ) {
 
-            var src = this.vertices;
-            var dst = this.object.geometry.vertices;
+            const src = this.vertices;
+            const dst = this.object.geometry.vertices;
 
             dst.push( src[ a + 0 ], src[ a + 1 ], src[ a + 2 ] );
             dst.push( src[ b + 0 ], src[ b + 1 ], src[ b + 2 ] );
@@ -343,6 +347,15 @@ function ParserState() {
 
         }
 
+        addAltUV( a: number, b: number, c: number ) {
+            const uvSrc = this.altUvs;
+            const uvDst = this.object.geometry.altUvs;
+
+            uvDst.push( uvSrc[ a + 0 ], uvSrc[ a + 1 ] );
+            uvDst.push( uvSrc[ b + 0 ], uvSrc[ b + 1 ] );
+            uvDst.push( uvSrc[ c + 0 ], uvSrc[ c + 1 ] );
+        }
+
         addUV( a: number, b: number, c: number ) {
 
             var src = this.uvs;
@@ -404,7 +417,18 @@ function ParserState() {
 
             // uvs
 
-            if ( ua !== undefined && ua !== '' ) {
+            if (this.altUvs) {
+                const uvLen = this.altUvs.length;
+
+                const ia = this.parseUVIndex( a, uvLen );
+                const ib = this.parseUVIndex( b, uvLen );
+                const ic = this.parseUVIndex( c, uvLen );
+
+                this.addAltUV( ia, ib, ic );
+
+                this.object.geometry.hasUVIndices = true;
+            }
+            else if ( ua !== undefined && ua !== '' ) {
 
                 var uvLen = this.uvs.length;
 
@@ -583,11 +607,19 @@ class OBJLoader extends Loader {
                 switch ( data[ 0 ] ) {
 
                     case 'v':
-                        state.vertices.push(
-                            parseFloat( data[ 1 ] ),
-                            parseFloat( data[ 2 ] ),
-                            parseFloat( data[ 3 ] )
-                        );
+                        {
+                            const vec = [
+                                parseFloat( data[ 1 ] ),
+                                parseFloat( data[ 2 ] ),
+                                parseFloat( data[ 3 ] )
+                            ];
+                            state.vertices.push(...vec);
+
+                            const phi = Math.atan2(vec[1], vec[0]) / (2 * Math.PI);
+                            const theta = Math.acos(vec[2] /
+                                Math.sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2])) / Math.PI;
+                            state.altUvs.push(phi, theta);
+                        }
                         if ( data.length >= 7 ) {
 
                             state.colors.push(
@@ -810,7 +842,10 @@ class OBJLoader extends Loader {
 
                 }
 
-                if ( geometry.hasUVIndices === true ) {
+                if ( geometry.altUvs ) {
+                    buffergeometry.setAttribute( 'uv', new Float32BufferAttribute( geometry.altUvs, 2 ) );
+                }
+                else if ( geometry.hasUVIndices === true ) {
 
                     buffergeometry.setAttribute( 'uv', new Float32BufferAttribute( geometry.uvs, 2 ) );
 
