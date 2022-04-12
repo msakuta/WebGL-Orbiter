@@ -369,23 +369,6 @@ class MaterialCreator {
 	createMaterial_( materialName: string ) {
 
         type keys = "map" | "bumpMap" | "specularMap" | "emissiveMap" | "normalMap" | "bumpMap" | "alphaMap";
-        interface Params {
-            name: string;
-            side: Side;
-            color?: Color;
-            specular?: Color;
-            emissive?: Color;
-            map?: string;
-            bump?: string;
-            specularMap?: string;
-            emissiveMap?: string;
-            normalMap?: string;
-            bumpMap?: string;
-            alphaMap?: string;
-            transparent?: boolean;
-            shininess?: number;
-            opacity?: number;
-        }
 
 		// Create material
 

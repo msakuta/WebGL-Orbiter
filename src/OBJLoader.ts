@@ -190,29 +190,16 @@ function ParserState() {
     let cb = new Vector3();
 
     class State {
-        objects: ObjectState[];
-        object: ObjectState;
+        objects: ObjectState[] = [];
+        object: ObjectState = new ObjectState();
 
-        vertices: number[];
-        normals: number[];
-        colors: number[];
-        uvs: number[];
+        vertices: number[] = [];
+        normals: number[] = [];
+        colors: number[] = [];
+        uvs: number[] = [];
 
-        materials: Map<string, Material>;
-        materialLibraries: string[];
-
-        constructor(){
-            this.objects = [];
-            this.object = new ObjectState();
-
-            this.vertices = [];
-            this.normals = [];
-            this.colors = [];
-            this.uvs = [];
-
-            this.materials = new Map();
-            this.materialLibraries = [];
-        }
+        materials: Map<string, Material> = new Map();
+        materialLibraries: string[] = [];
 
         startObject( name: string, fromDeclaration: boolean = false ) {
 
