@@ -1,18 +1,17 @@
 import {
-	BufferGeometry,
-	FileLoader,
-	Float32BufferAttribute,
-	Group,
-	LineBasicMaterial,
-	LineSegments,
-	Loader,
-	Material,
-	Mesh,
-	MeshPhongMaterial,
-	Points,
-	PointsMaterial,
-	Vector3,
-    Vector2
+    BufferGeometry,
+    FileLoader,
+    Float32BufferAttribute,
+    Group,
+    LineBasicMaterial,
+    LineSegments,
+    Loader,
+    Material,
+    Mesh,
+    MeshPhongMaterial,
+    Points,
+    PointsMaterial,
+    Vector3,
 } from 'three/src/Three';
 import { MaterialCreator } from "./MTLLoader";
 
@@ -479,9 +478,9 @@ class OBJLoader extends Loader {
         super();
 
 
-		this.materials = null;
+        this.materials = null;
 
-	}
+    }
 
     materials: MaterialCreator | null;
 
