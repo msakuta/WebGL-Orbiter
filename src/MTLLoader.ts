@@ -19,31 +19,39 @@ import {
 
 export interface MaterialCreatorOptions {
     /**
-   * side: Which side to apply the material
-   * THREE.FrontSide (default), THREE.BackSide, THREE.DoubleSide
-   */
+     * side: Which side to apply the material
+     * THREE.FrontSide (default), THREE.BackSide, THREE.DoubleSide
+     */
     side?: Side;
-    /*
-   * wrap: What type of wrapping to apply for textures
-   * THREE.RepeatWrapping (default), THREE.ClampToEdgeWrapping, THREE.MirroredRepeatWrapping
-   */
+    /**
+     * wrap: What type of wrapping to apply for textures
+     * THREE.RepeatWrapping (default), THREE.ClampToEdgeWrapping, THREE.MirroredRepeatWrapping
+     */
     wrap?: Wrapping;
-    /*
-   * normalizeRGB: RGBs need to be normalized to 0-1 from 0-255
-   * Default: false, assumed to be already normalized
-   */
+    /**
+     * normalizeRGB: RGBs need to be normalized to 0-1 from 0-255
+     * Default: false, assumed to be already normalized
+     */
     normalizeRGB?: boolean;
-    /*
-   * ignoreZeroRGBs: Ignore values of RGBs (Ka,Kd,Ks) that are all 0's
-   * Default: false
-   */
+    /**
+     * ignoreZeroRGBs: Ignore values of RGBs (Ka,Kd,Ks) that are all 0's
+     * Default: false
+     */
     ignoreZeroRGBs?: boolean;
-    /*
-   * invertTrProperty: Use values 1 of Tr field for fully opaque. This option is useful for obj
-   * exported from 3ds MAX, vcglib or meshlab.
-   * Default: false
-   */
+    /**
+     * invertTrProperty: Use values 1 of Tr field for fully opaque. This option is useful for obj
+     * exported from 3ds MAX, vcglib or meshlab.
+     * Default: false
+     */
     invertTrProperty?: boolean;
+    /**
+     * A map to replace texture name. Convenient with a bundler that renames assets such as WebPack.
+     */
+    replaceMapKd?: Map<string, string>;
+    /**
+     * A map to replace bump map texture name. Convenient with a bundler that renames assets such as WebPack.
+     */
+    replaceBump?: Map<string, string>;
 }
 
 /**
@@ -397,8 +405,17 @@ class MaterialCreator {
 
             if ( params[ mapType ] ) return; // Keep the first encountered texture
 
-            var texParams = scope.getTextureParams( value, params );
-            var map = scope.loadTexture( resolveURL( scope.baseUrl, texParams.url ) );
+            const texParams = scope.getTextureParams( value, params );
+
+            if (mapType === "map" && scope.options?.replaceMapKd?.has(texParams.url)) {
+                texParams.url = scope.options.replaceMapKd.get(texParams.url);
+            }
+
+            if (mapType === "bumpMap" && scope.options?.replaceBump?.has(texParams.url)) {
+                texParams.url = scope.options.replaceBump.get(texParams.url);
+            }
+
+            const map = scope.loadTexture( resolveURL( scope.baseUrl, texParams.url ) );
 
             map.repeat.copy( texParams.scale );
             map.offset.copy( texParams.offset );

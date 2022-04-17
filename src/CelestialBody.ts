@@ -484,6 +484,7 @@ export interface AddPlanetParams{
     parent?: CelestialBody,
     color: string;
     texture?: string;
+    textureRename?: string;
     GM: number;
     radius: number;
     modelName?: string;
@@ -491,6 +492,7 @@ export interface AddPlanetParams{
     modelScale?: number;
     mtlName?: string;
     bumpMap?: string;
+    bumpMapRename?: string;
     modelColor?: string;
     controllable?: boolean;
     sphereOfInfluence?: number;
@@ -589,20 +591,23 @@ export function addPlanet(orbitalElements: OrbitalElements,
                         } );
                     })
             }
-            else if(params.texture || params.bumpMap){
+            else if(params.texture && params.textureRename || params.bumpMap && params.bumpMapRename){
                 fetch(params.mtlName)
                     .then(mtlFile => mtlFile.text())
                     .then(mtlFile => {
+                        const replaceMapKd = new Map<string, string>();
                         if(params.texture){
-                            mtlFile = mtlFile.replace(/^map_kd \S+/gm, `map_kd ${params.texture}`);
-                            if(params.bumpMap)
-                                mtlFile += `bump ${params.bumpMap}`;
+                            replaceMapKd.set(params.textureRename, params.texture);
                         }
-                        if(params.bumpMap)
-                            mtlFile = mtlFile.replace(/^bump \S+/gm, `bump ${params.bumpMap}`);
+                        const replaceBump = new Map<string, string>();
+                        if(params.bumpMap){
+                            replaceBump.set(params.bumpMapRename, params.bumpMap);
+                        }
                         const materials = new MTLLoader()
                             .setMaterialOptions({
                                 wrap: THREE.RepeatWrapping,
+                                replaceMapKd,
+                                replaceBump,
                             })
                             .parse(mtlFile, "");
                         // materials.preload();

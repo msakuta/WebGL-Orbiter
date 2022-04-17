@@ -11,9 +11,11 @@ import mercuryUrl from './images/mercury.jpg';
 import marsUrl from './images/mars.jpg';
 import phobosModelUrl from './models/phobos_tf.obj';
 import phobosMtlUrl from './models/phobos_t.mtl';
+import phobosColorUrl from './models/phoboscolor.jpg';
 import phobosBumpUrl from './models/phobosbump.jpg';
 import deimosModelUrl from './models/deimos_tf.obj';
 import deimosMtlUrl from './models/deimos_t.mtl';
+import deimosColorUrl from './models/deimoscolor.jpg';
 import deimosBumpUrl from './models/deimosbump.jpg';
 import venusUrl from './images/venus.jpg';
 import jupiterUrl from './images/jupiter.jpg';
@@ -212,9 +214,11 @@ export default class Universe{
             parent: mars,
             color: "#3f7f7f",
             modelName: phobosModelUrl,
-            // modelGlbName: phobosGlbUrl,
             mtlName: phobosMtlUrl,
+            texture: phobosColorUrl,
+            textureRename: "phoboscolor.jpg",
             bumpMap: phobosBumpUrl,
+            bumpMapRename: "phobosbump.jpg",
             modelScale: 1.5,
             GM: 7.113901872e-05 / AU / AU / AU,
             radius: 11.2667,
@@ -236,7 +240,10 @@ export default class Universe{
             color: "#3f7f7f",
             modelName: deimosModelUrl,
             mtlName: deimosMtlUrl,
+            texture: deimosColorUrl,
+            textureRename: "deimoscolor.jpg",
             bumpMap: deimosBumpUrl,
+            bumpMapRename: "deimosbump.jpg",
             modelScale: 1.5,
             GM: 7.113901872e-05 / AU / AU / AU,
             radius: 11.2667,
