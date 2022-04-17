@@ -40,9 +40,11 @@ export default class GameState{
         this.startTime = this.simTime;
     }
 
+    currentVersion: 3;
+
     serializeState(){
         return {
-            saveVersion: 1,
+            saveVersion: this.currentVersion,
             simTime: this.simTime,
             startTime: this.startTime,
             bodies: this.universe.sun.serializeTree(),
@@ -51,7 +53,7 @@ export default class GameState{
 
     loadState(state: any){
         const version = state.saveVersion || 0;
-        if(version === 0)
+        if(version !== this.currentVersion)
             return;
         this.simTime = new Date(state.simTime);
         this.startTime = new Date(state.startTime);
