@@ -37,6 +37,14 @@ http://planetpixelemporium.com/mars.html
 and renamed from "mars_1k_color.jpg"
 
 
+Phobos and Deimos models and textures
+-------------------------------------
+
+Obtained and edited from:
+
+http://planetpixelemporium.com/mars.html
+
+
 Jupiter Texture
 ------------
 
