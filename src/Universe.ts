@@ -12,8 +12,9 @@ import marsUrl from './images/mars.jpg';
 import phobosModelUrl from './models/phobos_tf.obj';
 import phobosMtlUrl from './models/phobos_t.mtl';
 import phobosBumpUrl from './models/phobosbump.jpg';
-import deimosModelUrl from './models/deimos_t.obj';
+import deimosModelUrl from './models/deimos_tf.obj';
 import deimosMtlUrl from './models/deimos_t.mtl';
+import deimosBumpUrl from './models/deimosbump.jpg';
 import venusUrl from './images/venus.jpg';
 import jupiterUrl from './images/jupiter.jpg';
 import saturnUrl from './images/saturn.jpg';
@@ -235,6 +236,7 @@ export default class Universe{
             color: "#3f7f7f",
             modelName: deimosModelUrl,
             mtlName: deimosMtlUrl,
+            bumpMap: deimosBumpUrl,
             modelScale: 1,
             GM: 7.113901872e-05 / AU / AU / AU,
             radius: 11.2667,
