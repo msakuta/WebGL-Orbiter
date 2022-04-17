@@ -600,14 +600,18 @@ export function addPlanet(orbitalElements: OrbitalElements,
                         }
                         if(params.bumpMap)
                             mtlFile = mtlFile.replace(/^bump \S+/gm, `bump ${params.bumpMap}`);
-                        const materials = new MTLLoader().parse(mtlFile, "");
+                        const materials = new MTLLoader()
+                            .setMaterialOptions({
+                                wrap: THREE.RepeatWrapping,
+                            })
+                            .parse(mtlFile, "");
                         // materials.preload();
                         // materials.baseUrl = "";
                         new OBJLoader()
                         .setMaterials( materials )
                         .load( params.modelName, function ( object ) {
                             const radiusInAu = modelScale * (params.radius || 6534) / AU;
-                            object.scale.set(radiusInAu, -radiusInAu, radiusInAu);
+                            object.scale.set(radiusInAu, radiusInAu, radiusInAu);
                             group.add( object );
                         } );
                     });

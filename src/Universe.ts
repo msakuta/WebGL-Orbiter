@@ -9,7 +9,7 @@ import { GraphicsParams } from './GameState';
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
 import marsUrl from './images/mars.jpg';
-import phobosModelUrl from './models/phobos_t.obj';
+import phobosModelUrl from './models/phobos_tf.obj';
 import phobosMtlUrl from './models/phobos_t.mtl';
 import phobosBumpUrl from './models/phobosbump.jpg';
 import deimosModelUrl from './models/deimos_t.obj';
@@ -214,7 +214,7 @@ export default class Universe{
             // modelGlbName: phobosGlbUrl,
             mtlName: phobosMtlUrl,
             bumpMap: phobosBumpUrl,
-            modelScale: 1,
+            modelScale: 2,
             GM: 7.113901872e-05 / AU / AU / AU,
             radius: 11.2667,
             axialTilt: 0,

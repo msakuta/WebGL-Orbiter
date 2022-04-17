@@ -74,6 +74,7 @@ class MaterialState implements IMaterialState {
 class ObjectState {
     name: string;
     fromDeclaration: boolean;
+    remapSphereUv: boolean;
 
     geometry: {
         vertices: number[],
@@ -94,9 +95,10 @@ class ObjectState {
     materials: MaterialState[] = [];
     smooth = true;
 
-    constructor(name?: string, fromDeclaration?: boolean){
+    constructor(name?: string, fromDeclaration?: boolean, remapSphereUv?: boolean){
         this.name = name || '';
         this.fromDeclaration = fromDeclaration;
+        this.remapSphereUv = remapSphereUv || false;
     }
 
     startMaterial( name: string, libraries: any ) {
@@ -181,7 +183,7 @@ class ObjectState {
     }
 }
 
-function ParserState() {
+function ParserState(remapSphereUv: boolean) {
 
     let vA = new Vector3();
     let vB = new Vector3();
@@ -224,7 +226,7 @@ function ParserState() {
 
             }
 
-            this.object = new ObjectState(name || '', fromDeclaration !== false );
+            this.object = new ObjectState(name || '', fromDeclaration !== false, remapSphereUv);
 
             // Inherit previous objects material.
             // Spec tells us that a declared material must be set to all objects until a new material is declared.
@@ -417,7 +419,7 @@ function ParserState() {
 
             // uvs
 
-            if (this.altUvs) {
+            if (remapSphereUv && this.altUvs) {
                 const uvLen = this.altUvs.length;
 
                 const ia = this.parseUVIndex( a, uvLen );
@@ -498,15 +500,17 @@ function ParserState() {
 
 class OBJLoader extends Loader {
 
-    constructor(){
+    constructor(remapSphereUv: boolean = false){
         super();
 
 
         this.materials = null;
+        this.remapSphereUv = remapSphereUv;
 
     }
 
     materials: MaterialCreator | null;
+    remapSphereUv: boolean;
 
     load( url: string,
         onLoad: (materialCreator: Group) => void,
@@ -561,7 +565,7 @@ class OBJLoader extends Loader {
 
     parse( text: string ) {
 
-        var state = ParserState();
+        var state = ParserState(this.remapSphereUv);
 
         if ( text.indexOf( '\r\n' ) !== - 1 ) {
 
@@ -842,7 +846,7 @@ class OBJLoader extends Loader {
 
                 }
 
-                if ( geometry.altUvs ) {
+                if ( this.remapSphereUv && geometry.altUvs ) {
                     buffergeometry.setAttribute( 'uv', new Float32BufferAttribute( geometry.altUvs, 2 ) );
                 }
                 else if ( geometry.hasUVIndices === true ) {
