@@ -38,7 +38,6 @@ class SphereUV:
                 elif tokens[0] == "vn":
                     self.normals.append([float(token) for token in tokens[1:]])
         self.vertices = np.asarray(self.vertices, dtype=float)
-        # print(faces)
 
     @staticmethod
     def gen_uvs(faces, vertices):
@@ -54,14 +53,11 @@ class SphereUV:
                     (math.atan2(vec[1], vec[0])) % (math.pi * 2) / (math.pi * 2.),
                     math.acos(vec[2] / ((vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]) ** 0.5)) / math.pi
                 ])
-                # print(f"uv: {uv[-1]}")
 
             for j in range(1, len(face)):
                 if 0.5 < abs(uv[0][0] - uv[j][0]):
-                    # if uv[j][0]
                     f = uv[j][0] - uv[0][0]
                     n = f - (math.floor(f - 0.5)) - 1. + uv[0][0]
-                    # print(f"uv {uv[j][0]} {uv[0][0]} = {n}")
                     uv[j][0] = n
                     invs += 1
 
@@ -75,7 +71,6 @@ class SphereUV:
                     v.t = len(uvbuf)
                     uvidx0.append(len(uvbuf))
                     uvmap[uv0] = len(uvbuf)
-                    # print(f"Adding uv {uv0} at {len(uvbuf)}: {uvidx0}")
                     uvbuf.append(uv0)
             uvidx.append(uvidx0)
 
@@ -93,8 +88,6 @@ o phobos
             for vertex in self.vertices:
                 f.write(f"v {' '.join([str(v) for v in vertex])}\n")
             for uv in uvbuf:
-                # print(uv, len(uvidx))
-                # uvv = ([uvbuf[vu] for vu in uv + [uv[0]]])
                 f.write(f"vt {' '.join([str(v) for v in uv])}\n")
             print(f"writing {len(self.normals)} normals")
             for n in self.normals:
