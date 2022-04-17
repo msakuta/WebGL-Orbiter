@@ -9,6 +9,14 @@ import { GraphicsParams } from './GameState';
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
 import marsUrl from './images/mars.jpg';
+import phobosModelUrl from './models/phobos_tf.obj';
+import phobosMtlUrl from './models/phobos_tf.mtl';
+import phobosColorUrl from './models/phoboscolor.jpg';
+import phobosBumpUrl from './models/phobosbump.jpg';
+import deimosModelUrl from './models/deimos_tf.obj';
+import deimosMtlUrl from './models/deimos_tf.mtl';
+import deimosColorUrl from './models/deimoscolor.jpg';
+import deimosBumpUrl from './models/deimosbump.jpg';
 import venusUrl from './images/venus.jpg';
 import jupiterUrl from './images/jupiter.jpg';
 import saturnUrl from './images/saturn.jpg';
@@ -68,6 +76,10 @@ export default class Universe{
 
         const Rsun = 695800.;
         const sunGeometry = new THREE.SphereGeometry( 1, 20, 20 );
+
+        const day = 24. * 60. * 60.;
+        const hour = 60. * 60.;
+        const minute = 60.;
 
         const sunMesh = new THREE.Mesh( sunGeometry, material );
         sunMesh.scale.setScalar(viewScale * Rsun / AU);
@@ -188,6 +200,56 @@ export default class Universe{
             axialTilt: 	25.19 * rad_per_deg,
             rotationPeriod: 24.6229 * 60. * 60.,
             sphereOfInfluence: 3e5
+        });
+
+        const phobos = addPlanetLocal({
+            semimajor_axis: 9376 / AU,
+            eccentricity: 0.0151,
+            inclination: 1.093 * rad_per_deg,
+            ascending_node: 48.331 * rad_per_deg,
+            argument_of_perihelion: 29.124 * rad_per_deg
+        },
+        {
+            name: "phobos",
+            parent: mars,
+            color: "#3f7f7f",
+            modelName: phobosModelUrl,
+            mtlName: phobosMtlUrl,
+            texture: phobosColorUrl,
+            textureRename: "phoboscolor.jpg",
+            bumpMap: phobosBumpUrl,
+            bumpMapRename: "phobosbump.jpg",
+            modelScale: 1.5,
+            GM: 7.113901872e-05 / AU / AU / AU,
+            radius: 11.2667,
+            axialTilt: 0,
+            rotationPeriod: 7 * hour + 39 * minute + 12.,
+            sphereOfInfluence: 2e3,
+        });
+
+        const deimos = addPlanetLocal({
+            semimajor_axis: 23455.5 / AU,
+            eccentricity: 0.00033,
+            inclination: 0.93 * rad_per_deg,
+            ascending_node: 48.331 * rad_per_deg,
+            argument_of_perihelion: 29.124 * rad_per_deg
+        },
+        {
+            name: "deimos",
+            parent: mars,
+            color: "#3f7f7f",
+            modelName: deimosModelUrl,
+            mtlName: deimosMtlUrl,
+            texture: deimosColorUrl,
+            textureRename: "deimoscolor.jpg",
+            bumpMap: deimosBumpUrl,
+            bumpMapRename: "deimosbump.jpg",
+            modelScale: 1.5,
+            GM: 7.113901872e-05 / AU / AU / AU,
+            radius: 11.2667,
+            axialTilt: 0,
+            rotationPeriod: 1.263 * day,
+            sphereOfInfluence: 1e3,
         });
 
         const jupiter = addPlanetLocal({
