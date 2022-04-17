@@ -242,7 +242,7 @@ export default class Universe{
             radius: 11.2667,
             axialTilt: 0,
             rotationPeriod: 1.263 * day,
-            sphereOfInfluence: 2e3,
+            sphereOfInfluence: 1e3,
         });
 
         const jupiter = addPlanetLocal({

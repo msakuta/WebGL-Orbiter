@@ -14,6 +14,7 @@ export interface GraphicsParams {
     windowHalfY: number;
 }
 
+const currentVersion = 3;
 export default class GameState{
     simTime: Date;
     startTime: Date;
@@ -40,11 +41,12 @@ export default class GameState{
         this.startTime = this.simTime;
     }
 
-    currentVersion: 3;
+    static get currentVersion() { return currentVersion };
 
     serializeState(){
+        console.log(`this.currentVersion: ${currentVersion}`)
         return {
-            saveVersion: this.currentVersion,
+            saveVersion: currentVersion,
             simTime: this.simTime,
             startTime: this.startTime,
             bodies: this.universe.sun.serializeTree(),
@@ -53,7 +55,7 @@ export default class GameState{
 
     loadState(state: any){
         const version = state.saveVersion || 0;
-        if(version !== this.currentVersion)
+        if(version !== currentVersion)
             return;
         this.simTime = new Date(state.simTime);
         this.startTime = new Date(state.startTime);
