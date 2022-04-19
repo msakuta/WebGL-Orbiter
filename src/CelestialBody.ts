@@ -1,7 +1,10 @@
 import * as THREE from 'three/src/Three';
 import { RingUVGeometry } from './RingUVGeometry';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+// import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { OBJLoader } from './OBJLoader';
+// import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+import { MTLLoader } from './MTLLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import blastUrl from './images/blast.png';
 import apoapsisUrl from './images/apoapsis.png';
 import periapsisUrl from './images/periapsis.png';
@@ -561,10 +564,15 @@ export interface AddPlanetParams{
     parent?: CelestialBody,
     color: string;
     texture?: string;
+    textureRename?: string;
     GM: number;
     radius: number;
     modelName?: string;
+    modelGlbName?: string;
+    modelScale?: number;
     mtlName?: string;
+    bumpMap?: string;
+    bumpMapRename?: string;
     modelColor?: string;
     controllable?: boolean;
     sphereOfInfluence?: number;
@@ -600,7 +608,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     ret.radius = params.radius;
     scene.add( group );
 
-    if(params.texture){
+    if(!params.modelName && params.texture){
         const loader = new THREE.TextureLoader();
 
         const promises = [];
@@ -638,7 +646,16 @@ export function addPlanet(orbitalElements: OrbitalElements,
             }
         } );
     }
+    else if(params.modelGlbName){
+        const modelScale = params.modelScale ?? 100;
+        new GLTFLoader().load( params.modelName, function ( gltf ) {
+            const radiusInAu = modelScale * (params.radius || 6534) / AU;
+            // object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+            group.add( gltf.scene );
+        } );
+    }
     else if(params.modelName){
+        const modelScale = params.modelScale ?? 100;
         if(params.mtlName){
             if(params.modelColor){
                 fetch(params.mtlName)
@@ -649,26 +666,57 @@ export function addPlanet(orbitalElements: OrbitalElements,
                         new OBJLoader()
                         .setMaterials( materials )
                         .load( params.modelName, function ( object ) {
-                            const radiusInAu = 100 * (params.radius || 6534) / AU;
-                            object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+                            const radiusInAu = modelScale * (params.radius || 6534) / AU;
+                            object.scale.set(radiusInAu, -radiusInAu, radiusInAu);
                             group.add( object );
                         } );
                     })
             }
-            new MTLLoader().load(params.mtlName, function ( materials ) {
-                materials.preload();
-                new OBJLoader()
-                    .setMaterials( materials )
-                    .load( params.modelName, function ( object ) {
-                        const radiusInAu = 100 * (params.radius || 6534) / AU;
-                        object.scale.set(radiusInAu, radiusInAu, radiusInAu);
-                        group.add( object );
-                    } );
-            } );
+            else if(params.texture && params.textureRename || params.bumpMap && params.bumpMapRename){
+                fetch(params.mtlName)
+                    .then(mtlFile => mtlFile.text())
+                    .then(mtlFile => {
+                        const replaceMapKd = new Map<string, string>();
+                        if(params.texture){
+                            replaceMapKd.set(params.textureRename, params.texture);
+                        }
+                        const replaceBump = new Map<string, string>();
+                        if(params.bumpMap){
+                            replaceBump.set(params.bumpMapRename, params.bumpMap);
+                        }
+                        const materials = new MTLLoader()
+                            .setMaterialOptions({
+                                wrap: THREE.RepeatWrapping,
+                                replaceMapKd,
+                                replaceBump,
+                            })
+                            .parse(mtlFile, "");
+                        // materials.preload();
+                        // materials.baseUrl = "";
+                        new OBJLoader()
+                        .setMaterials( materials )
+                        .load( params.modelName, function ( object ) {
+                            const radiusInAu = modelScale * (params.radius || 6534) / AU;
+                            object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+                            group.add( object );
+                        } );
+                    });
+            }
+            else{
+                new MTLLoader().load(params.mtlName, function( materials ) {
+                    new OBJLoader()
+                        .setMaterials( materials )
+                        .load( params.modelName, function ( object ) {
+                            const radiusInAu = modelScale * (params.radius || 6534) / AU;
+                            object.scale.set(radiusInAu, radiusInAu, radiusInAu);
+                            group.add( object );
+                        } );
+                });
+            }
         }
         else{
             new OBJLoader().load( params.modelName, function ( object ) {
-                const radiusInAu = 100 * (params.radius || 6534) / AU;
+                const radiusInAu = modelScale * (params.radius || 6534) / AU;
                 object.scale.set(radiusInAu, radiusInAu, radiusInAu);
                 group.add( object );
             } );
@@ -720,7 +768,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     // Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
     // https://en.wikipedia.org/wiki/Orbital_speed
     ret.setOrbitingVelocity(orbitalElements.semimajor_axis, rotation);
-    if(params && params.axialTilt && params.rotationPeriod){
+    if(params && params.axialTilt !== undefined && params.rotationPeriod){
         ret.quaternion = AxisAngleQuaternion(1, 0, 0, params.axialTilt);
         ret.angularVelocity = new THREE.Vector3(0, 0, 2 * Math.PI / params.rotationPeriod).applyQuaternion(ret.quaternion);
     }

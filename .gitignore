@@ -3,3 +3,5 @@ node_modules
 target/
 .env
 pkg/
+
+__pycache__/
