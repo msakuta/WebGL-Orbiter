@@ -5,7 +5,7 @@ use crate::{
 use ::actix::{prelude::*, Actor, StreamHandler};
 use ::actix_web::{web, HttpRequest, HttpResponse};
 use ::orbiter_logic::{
-    quaternion::QuaternionSerial, CelestialBody, CelestialBodyDynIter, SessionId, Universe, Vector3,
+    quaternion::QuaternionSerial, CelestialBody, CelestialBodyComb, SessionId, Universe, Vector3,
 };
 use ::serde::{Deserialize, Serialize};
 use actix_web_actors::ws;
@@ -101,7 +101,7 @@ pub(crate) struct SetRocketStateWs {
 }
 
 impl SetRocketStateWs {
-    pub(crate) fn from<'a>(body: &'a CelestialBody, bodies: CelestialBodyDynIter) -> Self {
+    pub(crate) fn from<'a>(body: &'a CelestialBody, bodies: CelestialBodyComb) -> Self {
         Self {
             name: body.name.clone(),
             parent: body

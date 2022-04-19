@@ -1,7 +1,7 @@
 use crate::{
     celestial_body::{
         builder::AddPlanetParams,
-        iter::{CelestialBodyDynIter, CelestialBodyImDynIter},
+        comb::{CelestialBodyComb, CelestialBodyImComb},
         CelestialBody, CelestialBodyEntry, CelestialId, OrbitalElementsInput,
     },
     session::SessionId,
@@ -347,8 +347,8 @@ impl Universe {
         None
     }
 
-    pub fn iter_bodies(&mut self) -> CelestialBodyDynIter {
-        CelestialBodyDynIter::new_all(&mut self.bodies)
+    pub fn iter_bodies(&mut self) -> CelestialBodyComb {
+        CelestialBodyComb::new_all(&mut self.bodies)
     }
 
     pub fn find_by_name(&self, name: &str) -> Option<(CelestialId, &CelestialBody)> {
@@ -490,8 +490,8 @@ impl Universe {
     pub fn split_bodies(
         bodies: &'_ mut [CelestialBodyEntry],
         i: usize,
-    ) -> anyhow::Result<(&mut CelestialBody, CelestialBodyDynIter)> {
-        let (body, rest) = CelestialBodyDynIter::new(bodies, i)?;
+    ) -> anyhow::Result<(&mut CelestialBody, CelestialBodyComb)> {
+        let (body, rest) = CelestialBodyComb::new(bodies, i)?;
         if let Some(ref mut body) = body.dynamic {
             Ok((body, rest))
         } else {
@@ -502,8 +502,8 @@ impl Universe {
     pub fn split_bodies_id(
         bodies: &'_ mut [CelestialBodyEntry],
         i: usize,
-    ) -> anyhow::Result<(&mut CelestialBody, CelestialId, CelestialBodyDynIter)> {
-        let (entry, rest) = CelestialBodyDynIter::new(bodies, i)?;
+    ) -> anyhow::Result<(&mut CelestialBody, CelestialId, CelestialBodyComb)> {
+        let (entry, rest) = CelestialBodyComb::new(bodies, i)?;
         if let Some(ref mut body) = entry.dynamic {
             let id = CelestialId {
                 id: i as u32,
@@ -519,7 +519,7 @@ impl Universe {
         &mut self,
         delta_time: f64,
         div: usize,
-        controller: &impl Fn(&mut CelestialBody, CelestialId, &CelestialBodyDynIter),
+        controller: &impl Fn(&mut CelestialBody, CelestialId, &CelestialBodyComb),
     ) {
         let mut bodies = std::mem::take(&mut self.bodies);
         for i in 0..bodies.len() {
@@ -538,7 +538,7 @@ impl Universe {
     pub fn update_orbital_elements(&mut self, select_obj: Option<CelestialId>) {
         let select_pos = select_obj
             .and_then(|select_obj| self.get(select_obj))
-            .map(|obj| obj.get_world_position(&CelestialBodyImDynIter::new_all(&self.bodies)))
+            .map(|obj| obj.get_world_position(&CelestialBodyImComb::new_all(&self.bodies)))
             .unwrap_or_else(Vector3::zero);
 
         let mut bodies = std::mem::take(&mut self.bodies);

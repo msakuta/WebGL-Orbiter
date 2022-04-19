@@ -1,11 +1,12 @@
 pub(crate) mod builder;
+pub(crate) mod comb;
 pub(crate) mod iter;
 pub mod orbital_elements;
 
 pub use self::orbital_elements::{OrbitalElements, OrbitalElementsInput};
 use self::{
     builder::CelestialBodyBuilder,
-    iter::{CelestialBodyDynIter, CelestialBodyImDynIter},
+    comb::{CelestialBodyComb, CelestialBodyImComb},
 };
 use super::{Quaternion, Universe, Vector3};
 use crate::session::SessionId;
@@ -108,7 +109,7 @@ impl CelestialBody {
 
     fn set_orbiting_velocity<'a>(
         &'a mut self,
-        bodies: CelestialBodyDynIter,
+        bodies: CelestialBodyComb,
         semimajor_axis: f64,
         rotation: Quaternion,
     ) {
@@ -123,7 +124,7 @@ impl CelestialBody {
         }
     }
 
-    pub fn get_world_position(&self, bodies: &CelestialBodyImDynIter) -> Vector3 {
+    pub fn get_world_position(&self, bodies: &CelestialBodyImComb) -> Vector3 {
         if let Some(parent) = self.parent.and_then(|parent| bodies.get(parent)) {
             if parent as *const _ == self as *const _ {
                 Vector3::zero()
@@ -137,7 +138,7 @@ impl CelestialBody {
 
     pub fn visual_position(
         &self,
-        bodies: &CelestialBodyImDynIter,
+        bodies: &CelestialBodyImComb,
         select_obj: Option<&CelestialBody>,
         view_scale: f64,
     ) -> Vector3 {
@@ -155,7 +156,7 @@ impl CelestialBody {
     /// but still renders in real scale when zoomed up.
     pub fn nlips_factor(
         &self,
-        bodies: &CelestialBodyImDynIter,
+        bodies: &CelestialBodyImComb,
         select_obj: Option<&CelestialBody>,
         view_scale: f64,
         camera_position: &Vector3,
@@ -175,7 +176,7 @@ impl CelestialBody {
     /// Update orbital elements from position and velocity.
     /// The whole discussion is found in chapter 4.4 in
     /// https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
-    pub(crate) fn update(&mut self, mut bodies: CelestialBodyDynIter, select_pos: Vector3) {
+    pub(crate) fn update(&mut self, mut bodies: CelestialBodyComb, select_pos: Vector3) {
         let (parent, rest) = if let Some((Some(parent), rest)) = self
             .parent
             .and_then(|parent| bodies.exclude_id(parent).ok())
@@ -248,7 +249,7 @@ impl CelestialBody {
             }
         }
 
-        let rest = CelestialBodyImDynIter::from(rest);
+        let rest = CelestialBodyImComb::from(rest);
 
         self.orbital_elements.orbit_position = rotation.rotate_vector(Vector3::new(
             0.,
@@ -260,10 +261,10 @@ impl CelestialBody {
 
     pub(crate) fn simulate_body(
         &mut self,
-        mut bodies: CelestialBodyDynIter,
+        mut bodies: CelestialBodyComb,
         delta_time: f64,
         div: f64,
-        controller: &impl Fn(&mut CelestialBody, CelestialId, &CelestialBodyDynIter),
+        controller: &impl Fn(&mut CelestialBody, CelestialId, &CelestialBodyComb),
     ) -> anyhow::Result<bool> {
         // let children = &self.children;
         // println!("Children: {:?}", self.children);
@@ -482,15 +483,30 @@ impl CelestialBody {
         Ok(ret)
     }
 
-    pub fn to_server_command(&self, others: &CelestialBodyDynIter) -> anyhow::Result<String> {
+    pub fn to_server_command(&self, others: &CelestialBodyComb) -> anyhow::Result<String> {
         let mut map = serde_json::Map::new();
         map.insert("type".to_owned(), serde_json::to_value("setRocketState")?);
         map.insert("name".to_owned(), serde_json::to_value(&self.name)?);
-        map.insert("parent".to_owned(), serde_json::to_value(&self.parent.and_then(|parent| others.get(parent)).map(|parent| &parent.name as &str).unwrap_or(""))?);
+        map.insert(
+            "parent".to_owned(),
+            serde_json::to_value(
+                &self
+                    .parent
+                    .and_then(|parent| others.get(parent))
+                    .map(|parent| &parent.name as &str)
+                    .unwrap_or(""),
+            )?,
+        );
         map.insert("position".to_owned(), serde_json::to_value(&self.position)?);
         map.insert("velocity".to_owned(), serde_json::to_value(&self.velocity)?);
-        map.insert("quaternion".to_owned(), serde_json::to_value(&QuaternionSerial(self.quaternion))?);
-        map.insert("angularVelocity".to_owned(), serde_json::to_value(self.angular_velocity)?);
+        map.insert(
+            "quaternion".to_owned(),
+            serde_json::to_value(&QuaternionSerial(self.quaternion))?,
+        );
+        map.insert(
+            "angularVelocity".to_owned(),
+            serde_json::to_value(self.angular_velocity)?,
+        );
         Ok(serde_json::Value::Object(map).to_string())
     }
 }
@@ -500,6 +516,9 @@ pub struct CelestialBodyEntry {
     pub gen: u32,
     pub dynamic: Option<CelestialBody>,
 }
+
+unsafe impl Send for CelestialBodyEntry {}
+unsafe impl Sync for CelestialBodyEntry {}
 
 #[test]
 fn serialize_cel() {

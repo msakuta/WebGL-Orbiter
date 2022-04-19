@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 use ::cgmath::{InnerSpace as _, Rotation as _, Zero};
 use ::js_sys::{Array, Function, Object, Reflect};
 use ::orbiter_logic::{
-    quaternion::QuaternionDeserial, CelestialBody, CelestialBodyImDynIter, CelestialId, Universe,
+    quaternion::QuaternionDeserial, CelestialBody, CelestialBodyImComb, CelestialId, Universe,
     Vector3,
 };
 use ::serde::Deserialize;
@@ -44,7 +44,7 @@ pub struct WasmState {
 }
 
 fn _print_bodies(universe: &Universe) {
-    let bodies = CelestialBodyImDynIter::new_all(&universe.bodies);
+    let bodies = CelestialBodyImComb::new_all(&universe.bodies);
 
     for body in universe
         .bodies
@@ -211,7 +211,7 @@ impl WasmState {
         // let select_obj = self.universe.find_by_name(select_obj);
         let select_obj = self.select_obj.and_then(|id| self.universe.get(id));
 
-        let body_iter = CelestialBodyImDynIter::new_all(&self.universe.bodies);
+        let body_iter = CelestialBodyImComb::new_all(&self.universe.bodies);
         let center = select_obj.map(|obj| obj.get_world_position(&body_iter));
 
         // console_log!("select_obj: {:?}", center);

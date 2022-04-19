@@ -1,5 +1,5 @@
 use super::{
-    iter::CelestialBodyDynIter, CelestialBody, CelestialId, OrbitalElementsInput, Quaternion,
+    comb::CelestialBodyComb, CelestialBody, CelestialId, OrbitalElementsInput, Quaternion,
     Universe, Vector3,
 };
 use crate::session::SessionId;
@@ -159,7 +159,7 @@ impl CelestialBodyBuilder {
         // Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
         // https://en.wikipedia.org/wiki/Orbital_speed
         ret.set_orbiting_velocity(
-            CelestialBodyDynIter::new_all(&mut universe.bodies),
+            CelestialBodyComb::new_all(&mut universe.bodies),
             ret.orbital_elements.semimajor_axis,
             rotation,
         );

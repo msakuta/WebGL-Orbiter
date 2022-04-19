@@ -5,7 +5,7 @@ mod session;
 mod universe;
 
 pub use crate::celestial_body::{
-    iter::{CelestialBodyDynIter, CelestialBodyImDynIter},
+    comb::{CelestialBodyComb, CelestialBodyImComb},
     CelestialBody, CelestialId, OrbitalElements,
 };
 pub use crate::session::SessionId;
