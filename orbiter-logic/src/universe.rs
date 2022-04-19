@@ -11,6 +11,10 @@ use cgmath::{InnerSpace, Rad, Rotation, Rotation3, Zero};
 use rand::prelude::*;
 use serde::{ser::SerializeMap, Serialize, Serializer};
 
+const MINUTE: f64 = 60.;
+const HOUR: f64 = MINUTE * 60.;
+const DAY: f64 = HOUR * 24.;
+
 #[derive(Debug)]
 pub struct Universe {
     pub bodies: Vec<CelestialBodyEntry>,
@@ -190,7 +194,55 @@ impl Universe {
                 },
             );
 
-        this.add_body(mars);
+        let mars_id = this.add_body(mars);
+
+        let phobos = CelestialBody::builder()
+            .name("phobos".to_string())
+            .parent(mars_id)
+            .gm(7.113901872e-05 / AU / AU / AU)
+            .radius(11.2667)
+            .soi(2e3 / AU)
+            .build_from_orbital_elements(
+                &mut this,
+                OrbitalElementsInput {
+                    semimajor_axis: 9376. / AU,
+                    eccentricity: 0.0151,
+                    inclination: 1.093 * rad_per_deg,
+                    ascending_node: 48.331 * rad_per_deg,
+                    argument_of_perihelion: 29.124 * rad_per_deg,
+                    epoch: 0.,
+                },
+                AddPlanetParams {
+                    axial_tilt: 0.,
+                    rotation_period: 7. * HOUR + 39. * MINUTE + 12.,
+                },
+            );
+
+        this.add_body(phobos);
+
+        let deimos = CelestialBody::builder()
+            .name("deimos".to_string())
+            .parent(mars_id)
+            .gm(7.113901872e-05 / AU / AU / AU)
+            .radius(11.2667)
+            .soi(1e3 / AU)
+            .build_from_orbital_elements(
+                &mut this,
+                OrbitalElementsInput {
+                    semimajor_axis: 23455.5 / AU,
+                    eccentricity: 0.00033,
+                    inclination: 0.93 * rad_per_deg,
+                    ascending_node: 48.331 * rad_per_deg,
+                    argument_of_perihelion: 29.124 * rad_per_deg,
+                    epoch: 0.,
+                },
+                AddPlanetParams {
+                    axial_tilt: 0.,
+                    rotation_period: 1.263 * DAY,
+                },
+            );
+
+        this.add_body(deimos);
 
         let jupiter = CelestialBody::builder()
             .name("jupiter".to_string())
