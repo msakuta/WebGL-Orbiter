@@ -515,11 +515,16 @@ impl Universe {
         }
     }
 
-    pub fn simulate_bodies(&mut self, delta_time: f64, div: usize) {
+    pub fn simulate_bodies(
+        &mut self,
+        delta_time: f64,
+        div: usize,
+        controller: &impl Fn(&mut CelestialBody, CelestialId, &CelestialBodyDynIter),
+    ) {
         let mut bodies = std::mem::take(&mut self.bodies);
         for i in 0..bodies.len() {
             if let Ok((center, chained)) = Self::split_bodies(&mut bodies, i) {
-                match center.simulate_body(chained, delta_time, div as f64) {
+                match center.simulate_body(chained, delta_time, div as f64, controller) {
                     Ok(true) => self.parent_dirty = true,
                     Err(e) => println!("Error in simulate_body: {:?}", e),
                     _ => (),
@@ -554,7 +559,7 @@ impl Universe {
 
         let div = 100;
         for _ in 0..div {
-            self.simulate_bodies(self.time_scale, div);
+            self.simulate_bodies(self.time_scale, div, &|_, _, _| ());
         }
 
         self.update_orbital_elements(select_obj);

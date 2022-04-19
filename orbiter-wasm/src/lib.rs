@@ -2,7 +2,7 @@ mod utils;
 
 use wasm_bindgen::prelude::*;
 
-use ::cgmath::Zero;
+use ::cgmath::{InnerSpace as _, Rotation as _, Zero};
 use ::js_sys::{Array, Function, Object, Reflect};
 use ::orbiter_logic::{
     quaternion::QuaternionDeserial, CelestialBody, CelestialBodyImDynIter, CelestialId, Universe,
@@ -101,6 +101,12 @@ struct RotationButtons {
     pub clockwise: bool,
 }
 
+impl RotationButtons {
+    fn any(&self) -> bool {
+        self.up || self.down || self.left || self.right || self.counterclockwise || self.clockwise
+    }
+}
+
 #[wasm_bindgen]
 impl WasmState {
     pub fn set_body_model(&mut self, name: &str, model: Object, js_body: JsValue) {
@@ -122,12 +128,62 @@ impl WasmState {
         delta_time: f64,
         div: usize,
         buttons: &str,
+        send_control_command: Function,
     ) -> Result<(), JsValue> {
         let buttons: RotationButtons =
             serde_json::from_str(buttons).map_err(|e| JsValue::from_str(&e.to_string()))?;
         // console_log!("simulate_body: {}", delta_time);
+        let angle_acceleration = 1e-0 * delta_time / div as f64;
+        let select_id = self.select_obj;
         for _ in 0..div {
-            self.universe.simulate_bodies(delta_time, div);
+            self.universe.simulate_bodies(delta_time, div, &|obj, id, others| {
+                if select_id == Some(id) && /*gameState.sessionId === a.sessionId && */ obj.controllable /* && timescale <= 1*/ {
+                    if buttons.any() {
+                        console_log!("rotation: {}", obj.quaternion.magnitude2());
+                    }
+                    if buttons.up {
+                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(0., 0., 1.)) * angle_acceleration;
+                    }
+                    if buttons.down {
+                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(0., 0., -1.)) * angle_acceleration;
+                    }
+                    if buttons.left {
+                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(0., 1., 0.)) * angle_acceleration;
+                    }
+                    if buttons.right {
+                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(0., -1., 0.)) * angle_acceleration;
+                    }
+                    if buttons.counterclockwise {
+                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(1., 0., 0.)) * angle_acceleration;
+                    }
+                    if buttons.clockwise {
+                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(-1., 0., 0.)) * angle_acceleration;
+                    }
+                    if !buttons.any() {
+                        // Immediately stop micro-rotation if the body is controlled.
+                        // This is done to make it still in larger timescale, since micro-rotation cannot be canceled
+                        // by product of angularVelocity and quaternion which underflows by square.
+                        // Think that the vehicle has a momentum wheels that cancels micro-rotation continuously working.
+                        const MICRO_ROTATION: f64 = 1e-6;
+                        if MICRO_ROTATION < obj.angular_velocity.magnitude2() {
+                            obj.angular_velocity += obj.angular_velocity.normalize() * -angle_acceleration;
+                            let mut force_send_command = false;
+                            if obj.angular_velocity.magnitude2() <= MICRO_ROTATION {
+                                obj.angular_velocity.set_zero();
+                                force_send_command = true;
+                            }
+                            // We want to send decelerate commands to the server until the rotation stops, otherwise it will rotate forever.
+                            if let Ok(obj) = obj.to_server_command(others) {
+                                if let Err(e) = send_control_command.call2(&JsValue::NULL, &JsValue::from_str(&obj), &JsValue::from_bool(force_send_command)) {
+                                    console_log!("Error in send_control_command: {:?}", e);
+                                }
+                            }
+                        } else {
+                            obj.angular_velocity.set_zero();
+                        }
+                    }
+                }
+            });
         }
         self.universe.update_orbital_elements(self.select_obj);
         Ok(())
@@ -165,7 +221,6 @@ impl WasmState {
             if let Some(center) = center {
                 position -= center;
             }
-            // position *= self.view_scale;
 
             let arr = Array::new();
 
@@ -183,9 +238,6 @@ impl WasmState {
             )?));
             arr.push(&body.js_body);
             let elems = body.get_orbital_elements();
-            // if body.name == "venus" {
-            //     console_log!("velo: {:?} pos: {:?} ang: {:?} incl: {:?}", body.velocity, body.position, elems.angular_momentum, elems.inclination);
-            // }
             arr.push(&JsValue::from_str(&serde_json::to_string(elems)?));
             Ok(arr)
         };

@@ -444,7 +444,12 @@ function render() {
     }
 
     if(wasmState){
-        wasmState.simulate_body(deltaTime, div, JSON.stringify(buttons));
+        wasmState.simulate_body(deltaTime, div, JSON.stringify(buttons), (obj: string, force: boolean) => {
+            console.log(`${obj}, force: ${force}`);
+            if(websocket.readyState === 1){
+                websocket.send(obj);
+            }
+        });
         wasmState.set_camera(JSON.stringify(camera.position));
         wasmState.set_select_obj(gameState.getSelectObj()?.name);
         wasmState.set_nonlinear_scale(settings.nlips_enable);

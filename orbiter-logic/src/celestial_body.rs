@@ -263,6 +263,7 @@ impl CelestialBody {
         mut bodies: CelestialBodyDynIter,
         delta_time: f64,
         div: f64,
+        controller: &impl Fn(&mut CelestialBody, CelestialId, &CelestialBodyDynIter),
     ) -> anyhow::Result<bool> {
         // let children = &self.children;
         // println!("Children: {:?}", self.children);
@@ -275,6 +276,8 @@ impl CelestialBody {
             };
             let sl = a.position.magnitude2();
             if sl != 0. {
+                controller(a, *child_id, &rest);
+
                 let accel = -a.position.normalize() * (delta_time / div * self.GM / sl);
                 let dvelo = accel * 0.5;
                 let vec0 = a.position + a.velocity.clone() * (delta_time / div / 2.);
@@ -477,6 +480,18 @@ impl CelestialBody {
             ret.orbital_elements = serde_json::from_value(val.clone())?;
         }
         Ok(ret)
+    }
+
+    pub fn to_server_command(&self, others: &CelestialBodyDynIter) -> anyhow::Result<String> {
+        let mut map = serde_json::Map::new();
+        map.insert("type".to_owned(), serde_json::to_value("setRocketState")?);
+        map.insert("name".to_owned(), serde_json::to_value(&self.name)?);
+        map.insert("parent".to_owned(), serde_json::to_value(&self.parent.and_then(|parent| others.get(parent)).map(|parent| &parent.name as &str).unwrap_or(""))?);
+        map.insert("position".to_owned(), serde_json::to_value(&self.position)?);
+        map.insert("velocity".to_owned(), serde_json::to_value(&self.velocity)?);
+        map.insert("quaternion".to_owned(), serde_json::to_value(&QuaternionSerial(self.quaternion))?);
+        map.insert("angularVelocity".to_owned(), serde_json::to_value(self.angular_velocity)?);
+        Ok(serde_json::Value::Object(map).to_string())
     }
 }
 
