@@ -35,16 +35,12 @@ macro_rules! console_log {
 }
 
 #[wasm_bindgen]
-pub fn greet() {
-    alert("Hello, orbiter-wasm!");
-}
-
-#[wasm_bindgen]
 pub struct WasmState {
     universe: Universe,
     view_scale: f64,
     camera: Vector3,
     select_obj: Option<CelestialId>,
+    nlips_enable: bool,
 }
 
 fn _print_bodies(universe: &Universe) {
@@ -91,6 +87,7 @@ pub fn load_state(json: JsValue, now_unix: f64, view_scale: f64) -> WasmState {
         view_scale,
         camera: Vector3::zero(),
         select_obj: None,
+        nlips_enable: true,
     }
 }
 
@@ -179,6 +176,7 @@ impl WasmState {
                 select_obj,
                 self.view_scale,
                 &self.camera,
+                self.nlips_enable,
             )));
             arr.push(&JsValue::from_str(&serde_json::to_string(
                 &QuaternionDeserial::from(body.quaternion),
@@ -204,5 +202,9 @@ impl WasmState {
             )?;
         }
         Ok(())
+    }
+
+    pub fn set_nonlinear_scale(&mut self, value: bool) {
+        self.nlips_enable = value;
     }
 }

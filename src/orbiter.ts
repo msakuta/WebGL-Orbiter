@@ -447,6 +447,7 @@ function render() {
         wasmState.simulate_body(deltaTime, div, JSON.stringify(buttons));
         wasmState.set_camera(JSON.stringify(camera.position));
         wasmState.set_select_obj(gameState.getSelectObj()?.name);
+        wasmState.set_nonlinear_scale(settings.nlips_enable);
         wasmState.update_model(gameState.getSelectObj()?.name, (
             model: THREE.Object3D,
             position: string,

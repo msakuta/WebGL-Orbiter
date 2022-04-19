@@ -159,7 +159,11 @@ impl CelestialBody {
         select_obj: Option<&CelestialBody>,
         view_scale: f64,
         camera_position: &Vector3,
+        nlips_enable: bool,
     ) -> f64 {
+        if !nlips_enable {
+            return 1.;
+        }
         const NLIPS_FACTOR: f64 = 1e6;
         let d = (self.visual_position(bodies, select_obj, view_scale) - camera_position)
             .magnitude()
