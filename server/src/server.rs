@@ -1,6 +1,6 @@
 use crate::{
     humanhash::human_hash,
-    websocket::{ChatHistoryRequest, ClientMessage, NotifyBodyState, TimeScaleMessage},
+    websocket::{ChatHistoryRequest, ClientMessage, NotifyBodyState},
 };
 use ::actix::prelude::*;
 use ::orbiter_logic::SessionId;
@@ -11,6 +11,12 @@ use std::{
 };
 
 /// Message for chat server communications
+#[derive(Deserialize, Serialize, Debug, Message)]
+#[rtype(result = "()")]
+#[serde(rename_all = "camelCase")]
+pub struct TimeScaleMessage {
+    pub time_scale: f64,
+}
 
 /// New chat session is created
 #[derive(Message)]

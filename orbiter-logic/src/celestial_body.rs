@@ -482,33 +482,6 @@ impl CelestialBody {
         }
         Ok(ret)
     }
-
-    pub fn to_server_command(&self, others: &CelestialBodyComb) -> anyhow::Result<String> {
-        let mut map = serde_json::Map::new();
-        map.insert("type".to_owned(), serde_json::to_value("setRocketState")?);
-        map.insert("name".to_owned(), serde_json::to_value(&self.name)?);
-        map.insert(
-            "parent".to_owned(),
-            serde_json::to_value(
-                &self
-                    .parent
-                    .and_then(|parent| others.get(parent))
-                    .map(|parent| &parent.name as &str)
-                    .unwrap_or(""),
-            )?,
-        );
-        map.insert("position".to_owned(), serde_json::to_value(&self.position)?);
-        map.insert("velocity".to_owned(), serde_json::to_value(&self.velocity)?);
-        map.insert(
-            "quaternion".to_owned(),
-            serde_json::to_value(&QuaternionSerial(self.quaternion))?,
-        );
-        map.insert(
-            "angularVelocity".to_owned(),
-            serde_json::to_value(self.angular_velocity)?,
-        );
-        Ok(serde_json::Value::Object(map).to_string())
-    }
 }
 
 #[derive(Debug)]

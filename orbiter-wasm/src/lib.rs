@@ -5,8 +5,8 @@ use wasm_bindgen::prelude::*;
 use ::cgmath::{InnerSpace as _, Rotation as _, Zero};
 use ::js_sys::{Array, Function, Object, Reflect};
 use ::orbiter_logic::{
-    quaternion::QuaternionDeserial, CelestialBody, CelestialBodyImComb, CelestialId, Universe,
-    Vector3,
+    quaternion::QuaternionDeserial, CelestialBody, CelestialBodyImComb, CelestialId,
+    SetRocketStateWs, Universe, Vector3,
 };
 use ::serde::Deserialize;
 
@@ -173,7 +173,7 @@ impl WasmState {
                                 force_send_command = true;
                             }
                             // We want to send decelerate commands to the server until the rotation stops, otherwise it will rotate forever.
-                            if let Ok(obj) = obj.to_server_command(others) {
+                            if let Ok(obj) = serde_json::to_string(&SetRocketStateWs::from(obj, others)) {
                                 if let Err(e) = send_control_command.call2(&JsValue::NULL, &JsValue::from_str(&obj), &JsValue::from_bool(force_send_command)) {
                                     console_log!("Error in send_control_command: {:?}", e);
                                 }

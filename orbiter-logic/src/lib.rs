@@ -1,15 +1,19 @@
 pub mod celestial_body;
 pub mod dyn_iter;
+mod protocol;
 pub mod quaternion;
 mod session;
 mod universe;
 
-pub use crate::celestial_body::{
-    comb::{CelestialBodyComb, CelestialBodyImComb},
-    CelestialBody, CelestialId, OrbitalElements,
+pub use crate::{
+    celestial_body::{
+        comb::{CelestialBodyComb, CelestialBodyImComb},
+        CelestialBody, CelestialId, OrbitalElements,
+    },
+    protocol::{SetRocketStateWs, WsMessage},
+    session::SessionId,
+    universe::{serialize, Universe},
 };
-pub use crate::session::SessionId;
-pub use crate::universe::{serialize, Universe};
 
 pub type Vector3 = cgmath::Vector3<f64>;
 pub type Quaternion = cgmath::Quaternion<f64>;

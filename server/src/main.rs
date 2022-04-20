@@ -8,14 +8,14 @@ mod websocket;
 use crate::{
     api::set_timescale::set_timescale,
     server::{ChatServer, NotifyNewBody},
-    websocket::{websocket_index, NotifyBodyState, SetRocketStateWs},
+    websocket::{websocket_index, NotifyBodyState},
 };
 use ::actix::prelude::*;
 use ::actix_cors::Cors;
 use ::actix_files::NamedFile;
 use ::actix_web::{error, middleware, web, App, HttpRequest, HttpResponse, HttpServer};
 use ::clap::Parser;
-use ::orbiter_logic::{serialize, Universe};
+use ::orbiter_logic::{serialize, SetRocketStateWs, Universe};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -218,7 +218,7 @@ async fn main() -> std::io::Result<()> {
                     if let Ok((body, chained)) = Universe::split_bodies(&mut universe.bodies, i) {
                         data_copy.srv.do_send(NotifyBodyState {
                             session_id: None,
-                            body_state: SetRocketStateWs::from(body, chained),
+                            body_state: SetRocketStateWs::from(body, &chained),
                         });
                     }
                 }

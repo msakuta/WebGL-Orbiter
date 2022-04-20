@@ -1,12 +1,10 @@
 use crate::{
-    server::{Connect, Message},
+    server::{Connect, Message, TimeScaleMessage},
     ChatServer, OrbiterData,
 };
 use ::actix::{prelude::*, Actor, StreamHandler};
 use ::actix_web::{web, HttpRequest, HttpResponse};
-use ::orbiter_logic::{
-    quaternion::QuaternionSerial, CelestialBody, CelestialBodyComb, SessionId, Universe, Vector3,
-};
+use ::orbiter_logic::{CelestialBody, SessionId, SetRocketStateWs, Universe, WsMessage};
 use ::serde::{Deserialize, Serialize};
 use actix_web_actors::ws;
 
@@ -89,42 +87,6 @@ impl Handler<Message> for SessionWs {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct SetRocketStateWs {
-    name: String,
-    parent: Option<String>,
-    position: Vector3,
-    velocity: Vector3,
-    quaternion: QuaternionSerial,
-    angular_velocity: Vector3,
-}
-
-impl SetRocketStateWs {
-    pub(crate) fn from<'a>(body: &'a CelestialBody, bodies: CelestialBodyComb) -> Self {
-        Self {
-            name: body.name.clone(),
-            parent: body
-                .parent
-                .and_then(|parent| bodies.get(parent))
-                .map(|b| b.name.clone()),
-            position: body.position,
-            velocity: body.velocity,
-            quaternion: body.quaternion.into(),
-            angular_velocity: body.angular_velocity,
-        }
-    }
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-#[serde(tag = "type", rename_all = "camelCase")]
-enum WsMessage {
-    SetRocketState(SetRocketStateWs),
-    Message { payload: String },
-    TimeScale { payload: TimeScaleMessage },
-    ChatHistoryRequest,
-}
-
 #[derive(Deserialize, Serialize, Debug, Message)]
 #[rtype(result = "()")]
 #[serde(rename_all = "camelCase")]
@@ -139,13 +101,6 @@ pub(crate) struct NotifyBodyState {
 pub(crate) struct ClientMessage {
     pub session_id: SessionId,
     pub message: String,
-}
-
-#[derive(Deserialize, Serialize, Debug, Message)]
-#[rtype(result = "()")]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct TimeScaleMessage {
-    pub time_scale: f64,
 }
 
 #[derive(Deserialize, Serialize, Debug, Message)]
@@ -186,7 +141,9 @@ impl StreamHandler<WsResult> for SessionWs {
                         let mut data = self.data.universe.write().unwrap();
                         println!("Got timeScale: {}", payload.time_scale);
                         data.time_scale = payload.time_scale;
-                        self.addr.do_send(payload);
+                        self.addr.do_send(TimeScaleMessage {
+                            time_scale: payload.time_scale,
+                        });
                     }
                     WsMessage::ChatHistoryRequest => {
                         self.addr.do_send(ChatHistoryRequest(self.session_id));
