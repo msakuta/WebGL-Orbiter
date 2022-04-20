@@ -114,8 +114,6 @@ impl CelestialBodyBuilder {
             radius: self.radius.unwrap_or(1. / crate::AU),
             soi: self.soi.unwrap_or(0.),
             #[cfg(feature = "wasm")]
-            model: wasm_bindgen::JsValue::null(),
-            #[cfg(feature = "wasm")]
             js_body: wasm_bindgen::JsValue::null(),
         }
     }

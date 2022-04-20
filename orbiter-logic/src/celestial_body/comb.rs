@@ -1,4 +1,5 @@
 use super::{CelestialBody, CelestialBodyEntry, CelestialId};
+use crate::dyn_iter::{DynIter, DynIterMut};
 use std::{collections::HashSet, marker::PhantomData};
 
 #[derive(Debug)]
@@ -32,6 +33,11 @@ impl<'a> CelestialBodyComb<'a> {
                 _mark: PhantomData,
             },
         ))
+    }
+
+    pub(crate) fn len(&self) -> usize {
+        // Safety: self.slice is always non-null and valid slice
+        unsafe { &(*self.slice).len() - self.picked.len() }
     }
 
     #[allow(dead_code)]
@@ -122,6 +128,30 @@ impl<'a> CelestialBodyComb<'a> {
         } else {
             None
         }
+    }
+}
+
+impl<'a> DynIter for CelestialBodyComb<'a> {
+    type Item = CelestialBody;
+    fn dyn_iter(&self) -> Box<dyn Iterator<Item = &Self::Item> + '_> {
+        Box::new(
+            unsafe { &*self.slice }
+                .iter()
+                .filter_map(|entry| entry.dynamic.as_ref()),
+        )
+    }
+    fn as_dyn_iter(&self) -> &dyn DynIter<Item = Self::Item> {
+        self
+    }
+}
+
+impl<'a> DynIterMut for CelestialBodyComb<'a> {
+    fn dyn_iter_mut(&mut self) -> Box<dyn Iterator<Item = &mut Self::Item> + '_> {
+        Box::new(
+            unsafe { &mut *self.slice }
+                .iter_mut()
+                .filter_map(|entry| entry.dynamic.as_mut()),
+        )
     }
 }
 
@@ -221,6 +251,20 @@ impl<'a> CelestialBodyImComb<'a> {
         } else {
             None
         }
+    }
+}
+
+impl<'a> DynIter for CelestialBodyImComb<'a> {
+    type Item = CelestialBody;
+    fn dyn_iter(&self) -> Box<dyn Iterator<Item = &Self::Item> + '_> {
+        Box::new(
+            unsafe { &*self.slice }
+                .iter()
+                .filter_map(|entry| entry.dynamic.as_ref()),
+        )
+    }
+    fn as_dyn_iter(&self) -> &dyn DynIter<Item = Self::Item> {
+        self
     }
 }
 

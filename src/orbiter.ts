@@ -15,7 +15,7 @@ import { BodiesControl } from './BodiesControl';
 import { MessageControl } from './MessageControl';
 import { ChatControl } from './ChatControl';
 import Overlay from './Overlay';
-import GameState from './GameState';
+import GameState, { AddModelPayload } from './GameState';
 
 import backgroundUrl from './images/hipparcoscyl1.jpg';
 
@@ -335,9 +335,16 @@ function init() {
             const data = await res.json();
             console.log(data);
             wasmState = wasmModule.load_state(data, Date.now(), viewScale);
-            gameState.universe.sun.forEachBody((body) => {
-                wasmState.set_body_model(body.name, body.model, body);
-            });
+            wasmState.for_each_body((data: string) => {
+                const begin = performance.now();
+                const payload: AddModelPayload = JSON.parse(data);
+                const obj = gameState.addModels(payload, settings);
+                console.log(`body: name: ${payload.name}, parent: ${payload.parent}, time: ${performance.now() - begin}`);
+                return obj;
+            })
+            // gameState.universe.sun.forEachBody((body) => {
+            //     wasmState.set_body_model(body.name, body.model, body);
+            // });
             // gameState.loadState(data, settings);
             bodiesControl.setContent(gameState.universe.sun);
             bodiesControl.highlightBody(gameState.findSessionRocket());
@@ -454,13 +461,13 @@ function render() {
         wasmState.set_select_obj(gameState.getSelectObj()?.name);
         wasmState.set_nonlinear_scale(settings.nlips_enable);
         wasmState.update_model(gameState.getSelectObj()?.name, (
-            model: THREE.Object3D,
             position: string,
             scale: number,
             quaternion: string,
             body: CelestialBody,
             orbitalElements: string,
         ) => {
+            const model = body.model;
             if(model){
                 // console.log(`model: ${model.name}`);
                 model.position.copy(JSON.parse(position));

@@ -16,6 +16,10 @@ export interface GraphicsParams {
     windowHalfY: number;
 }
 
+export interface AddModelPayload {
+    name: string, parent: string, orbitalElements: OrbitalElements, modelColor: string,
+}
+
 const currentVersion = 3;
 export default class GameState{
     simTime: Date;
@@ -89,6 +93,24 @@ export default class GameState{
 
         if(this.select_obj && this.onStateLoad)
             this.onStateLoad();
+    }
+
+    addModels(body: AddModelPayload, settings: Settings) {
+        let obj;
+        if(CelestialBody.celestialBodies.has(body.name)){
+            obj = CelestialBody.celestialBodies.get(body.name);
+        }
+        else if(body.name.match(/rocket\d+/)){
+            const parent = body.parent !== null ? CelestialBody.celestialBodies.get(body.parent) : undefined;
+            obj = this.universe.addRocket(
+                body.name,
+                body.orbitalElements,
+                parent,
+                this.graphicsParams,
+                settings,
+                body.modelColor);
+        }
+        return obj;
     }
 
     findSessionRocket(){

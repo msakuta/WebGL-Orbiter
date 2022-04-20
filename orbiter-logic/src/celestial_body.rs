@@ -62,9 +62,6 @@ pub struct CelestialBody {
     pub soi: f64,
 
     #[cfg(feature = "wasm")]
-    pub model: wasm_bindgen::JsValue,
-
-    #[cfg(feature = "wasm")]
     pub js_body: wasm_bindgen::JsValue,
 }
 
@@ -86,8 +83,6 @@ impl Default for CelestialBody {
             radius: Rsun,
             orbital_elements: OrbitalElements::default(),
             soi: 0.,
-            #[cfg(feature = "wasm")]
-            model: wasm_bindgen::JsValue::null(),
             #[cfg(feature = "wasm")]
             js_body: wasm_bindgen::JsValue::null(),
         }
@@ -481,6 +476,29 @@ impl CelestialBody {
             ret.orbital_elements = serde_json::from_value(val.clone())?;
         }
         Ok(ret)
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AddModelPayload<'a> {
+    name: &'a str,
+    parent: Option<&'a str>,
+    orbital_elements: &'a OrbitalElements,
+    model_color: &'a str,
+}
+
+impl CelestialBody {
+    pub fn to_add_model<'a>(&'a self, others: &'a CelestialBodyImComb) -> AddModelPayload<'a> {
+        AddModelPayload {
+            name: &self.name,
+            parent: self
+                .parent
+                .and_then(|parent| others.get(parent))
+                .map(|parent| &parent.name as &str),
+            orbital_elements: &self.orbital_elements,
+            model_color: &self.model_color,
+        }
     }
 }
 

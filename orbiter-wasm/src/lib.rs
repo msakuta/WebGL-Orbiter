@@ -5,8 +5,8 @@ use wasm_bindgen::prelude::*;
 use ::cgmath::{InnerSpace as _, Rotation as _, Zero};
 use ::js_sys::{Array, Function, Object, Reflect};
 use ::orbiter_logic::{
-    quaternion::QuaternionDeserial, CelestialBody, CelestialBodyImComb, CelestialId,
-    SetRocketStateWs, Universe, Vector3,
+    quaternion::QuaternionDeserial, CelestialBody, CelestialBodyComb, CelestialBodyImComb,
+    CelestialId, SetRocketStateWs, Universe, Vector3,
 };
 use ::serde::Deserialize;
 
@@ -68,17 +68,9 @@ pub fn load_state(json: JsValue, now_unix: f64, view_scale: f64) -> WasmState {
     utils::set_panic_hook();
     let json: serde_json::Value = json.into_serde().unwrap();
     let mut universe = Universe::new(now_unix);
-    console_log!("Time: {}", now_unix);
+    console_log!("Time: {}, {} bodies", now_unix, universe.bodies.len());
     universe.deserialize(json).unwrap();
-
-    if let Some(body) = universe
-        .bodies
-        .iter()
-        .filter_map(|body| body.dynamic.as_ref())
-        .find(|body| body.name == "earth")
-    {
-        console_log!("Celbody: {:#?}", body);
-    }
+    console_log!("{} bodies after deserialize", universe.bodies.len());
 
     // print_bodies(&universe);
 
@@ -109,17 +101,17 @@ impl RotationButtons {
 
 #[wasm_bindgen]
 impl WasmState {
-    pub fn set_body_model(&mut self, name: &str, model: Object, js_body: JsValue) {
+    pub fn set_body_model(&mut self, name: &str, js_body: Object) {
         if let Some((_, body)) = self.universe.find_by_name_mut(name) {
-            let get_model_id = |model: &Object| {
-                Reflect::get(&model, &JsValue::from("id"))
+            let get_model_id = |js_body: &Object| {
+                Reflect::get(&js_body, &JsValue::from("model"))
+                    .and_then(|model| Reflect::get(&model, &JsValue::from("id")))
                     .ok()
                     .and_then(|o| o.as_f64())
                     .unwrap_or(0.)
             };
-            console_log!("Setting model {} to {}!", get_model_id(&model), name);
-            body.model = JsValue::from(model);
-            body.js_body = js_body;
+            console_log!("Setting model {} to {}!", get_model_id(&js_body), name);
+            body.js_body = JsValue::from(js_body);
         }
     }
 
@@ -224,7 +216,6 @@ impl WasmState {
 
             let arr = Array::new();
 
-            arr.push(&body.model);
             arr.push(&JsValue::from_str(&serde_json::to_string(&position)?));
             arr.push(&JsValue::from_f64(body.nlips_factor(
                 &body_iter,
@@ -258,5 +249,25 @@ impl WasmState {
 
     pub fn set_nonlinear_scale(&mut self, value: bool) {
         self.nlips_enable = value;
+    }
+
+    pub fn for_each_body(&mut self, f: Function) -> Result<(), JsValue> {
+        let bodies = &mut self.universe.bodies;
+        for i in 0..bodies.len() {
+            let (body, others) =
+                CelestialBodyComb::new(bodies, i).map_err(|e| JsValue::from_str(&e.to_string()))?;
+            let body = if let Some(body) = body.dynamic.as_mut() {
+                body
+            } else {
+                continue;
+            };
+            let payload =
+                serde_json::to_string(&body.to_add_model(&CelestialBodyImComb::from(&others)))
+                    .map_err(|e| JsValue::from_str(&e.to_string()))?;
+
+            body.js_body = f.call1(&JsValue::NULL, &JsValue::from_str(&payload))?;
+            console_log!("Setting js_body to {}!", body.name);
+        }
+        Ok(())
     }
 }

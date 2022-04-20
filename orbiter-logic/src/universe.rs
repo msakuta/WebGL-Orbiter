@@ -347,7 +347,11 @@ impl Universe {
         None
     }
 
-    pub fn iter_bodies(&mut self) -> CelestialBodyComb {
+    pub fn iter_bodies(&self) -> CelestialBodyImComb {
+        CelestialBodyImComb::new_all(&self.bodies)
+    }
+
+    pub fn iter_bodies_mut(&mut self) -> CelestialBodyComb {
         CelestialBodyComb::new_all(&mut self.bodies)
     }
 
