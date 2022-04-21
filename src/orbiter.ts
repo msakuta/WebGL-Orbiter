@@ -452,10 +452,7 @@ function render() {
 
     if(wasmState){
         wasmState.simulate_body(deltaTime, div, JSON.stringify(buttons), (obj: string, force: boolean) => {
-            console.log(`${obj}, force: ${force}`);
-            if(websocket.readyState === 1){
-                websocket.send(obj);
-            }
+            gameState.sendControlCommand(obj, force);
         });
         wasmState.set_camera(JSON.stringify(camera.position));
         wasmState.set_select_obj(gameState.getSelectObj()?.name);

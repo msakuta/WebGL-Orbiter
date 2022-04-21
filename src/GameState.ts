@@ -1,5 +1,5 @@
 import * as THREE from 'three/src/Three';
-import { CelestialBody, addPlanet, OrbitalElements, AddPlanetParams } from './CelestialBody';
+import { CelestialBody, OrbitalElements, statePublishInterval_ms } from './CelestialBody';
 import { Settings } from './SettingsControl';
 import Universe from './Universe';
 import { RotationButtons } from './RotationControl';
@@ -37,6 +37,7 @@ export default class GameState{
     sendMessage: (text: string) => void;
     graphicsParams: GraphicsParams;
     sessionId?: string;
+    lastUpdateCommand?: number = null;
 
     constructor(graphicsParams: GraphicsParams, settings: Settings, sendMessage: (text: string) => void){
         this.sendMessage = sendMessage;
@@ -146,6 +147,19 @@ export default class GameState{
 
     simulateBody(deltaTime: number, div: number, buttons: RotationButtons){
         this.universe.simulateBody(this, deltaTime, div, this.timescale, buttons, this.select_obj);
+    }
+
+    sendControlCommand(payload: string, force = false){
+        if(!this.sessionId && websocket)
+            return;
+        const now = Date.now();
+        if(!force && this.lastUpdateCommand !== null && now - this.lastUpdateCommand < statePublishInterval_ms){
+            return;
+        }
+        this.lastUpdateCommand = now;
+        if(websocket.readyState === 1){
+            websocket.send(payload);
+        }
     }
 
     setTimeScale(scale: number){

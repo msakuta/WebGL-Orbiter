@@ -173,6 +173,8 @@ impl WasmState {
                         } else {
                             obj.angular_velocity.set_zero();
                         }
+                    } else {
+                        control_commands.insert(id, false);
                     }
                 }
             });

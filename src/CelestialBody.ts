@@ -18,7 +18,7 @@ export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 const epsilon = 1e-40; // Doesn't the machine epsilon depend on browsers!??
 const acceleration = 5e-10;
-const statePublishInterval_ms = 100;
+export const statePublishInterval_ms = 100;
 
 function deserializeVector3(json: any){
     return new THREE.Vector3(json.x, json.y, json.z);
