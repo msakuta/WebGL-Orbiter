@@ -1,4 +1,6 @@
-use crate::{quaternion::QuaternionSerial, CelestialBody, CelestialBodyImComb, Vector3};
+use crate::{
+    dyn_iter::DynIter, quaternion::QuaternionSerial, CelestialBody, CelestialBodyImComb, Vector3,
+};
 use ::serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -31,6 +33,17 @@ impl SetRocketStateWs {
             quaternion: body.quaternion.into(),
             angular_velocity: body.angular_velocity,
         }
+    }
+
+    pub fn update_body(self, target: &mut CelestialBody, others: &CelestialBodyImComb) {
+        let parent = self
+            .parent
+            .and_then(|parent| others.find_with_id(|body| body.name == parent));
+        target.parent = parent.map(|(id, _)| id);
+        target.position = self.position;
+        target.velocity = self.velocity;
+        target.quaternion = self.quaternion.into();
+        target.angular_velocity = self.angular_velocity;
     }
 }
 

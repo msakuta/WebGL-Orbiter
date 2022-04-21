@@ -4,6 +4,8 @@ use std::{collections::HashSet, marker::PhantomData};
 
 #[derive(Debug)]
 pub struct CelestialBodyComb<'a> {
+    /// TODO: I guess a raw pointer to a slice is unsound since we need to cast it to a slice which technically
+    /// refers to the whole area of memory.
     slice: *mut [CelestialBodyEntry],
     picked: HashSet<usize>,
     _mark: PhantomData<&'a mut CelestialBodyEntry>,
@@ -129,6 +131,34 @@ impl<'a> CelestialBodyComb<'a> {
             None
         }
     }
+
+    pub fn find_with_id_mut<'b>(
+        &'b mut self,
+        predicate: impl Fn(&CelestialBody) -> bool,
+    ) -> Option<(CelestialId, &'a mut CelestialBody)>
+    where
+        'a: 'b,
+    {
+        // Safety: self.slice will be never NULL and picked items are mutually excluded
+        for (i, entry) in unsafe { &mut *self.slice }.iter_mut().enumerate() {
+            if self.picked.contains(&i) {
+                continue;
+            }
+            if let Some(body) = entry.dynamic.as_mut() {
+                if predicate(body) {
+                    self.picked.insert(i);
+                    return Some((
+                        CelestialId {
+                            id: i as u32,
+                            gen: entry.gen,
+                        },
+                        body,
+                    ));
+                }
+            }
+        }
+        None
+    }
 }
 
 impl<'a> DynIter for CelestialBodyComb<'a> {
@@ -251,6 +281,30 @@ impl<'a> CelestialBodyImComb<'a> {
         } else {
             None
         }
+    }
+
+    pub fn find_with_id(
+        &self,
+        predicate: impl Fn(&CelestialBody) -> bool,
+    ) -> Option<(CelestialId, &CelestialBody)> {
+        // Safety: self.slice will be never NULL and picked items are mutually excluded
+        for (i, entry) in unsafe { &*self.slice }.iter().enumerate() {
+            if self.picked.contains(&i) {
+                continue;
+            }
+            if let Some(body) = entry.dynamic.as_ref() {
+                if predicate(body) {
+                    return Some((
+                        CelestialId {
+                            id: i as u32,
+                            gen: entry.gen,
+                        },
+                        body,
+                    ));
+                }
+            }
+        }
+        None
     }
 }
 

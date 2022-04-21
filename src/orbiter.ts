@@ -74,11 +74,14 @@ export function reconnectWebSocket(){
             // console.log(`Event through WebSocket: ${event.data}`);
             const data = JSON.parse(event.data);
             if(data.type === "clientUpdate"){
-                const payload = data.payload;
-                const body = CelestialBody.celestialBodies.get(payload.bodyState.name);
-                if(body){
-                    body.clientUpdate(payload.bodyState);
+                if(wasmState){
+                    wasmState.client_update(data.payload);
                 }
+                // const payload = data.payload;
+                // const body = CelestialBody.celestialBodies.get(payload.bodyState.name);
+                // if(body){
+                //     body.clientUpdate(payload.bodyState);
+                // }
             }
             else if(data.type === "newBody"){
                 const payload = data.payload;

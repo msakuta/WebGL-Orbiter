@@ -167,7 +167,6 @@ impl WasmState {
                                 obj.angular_velocity.set_zero();
                                 force_send_command = true;
                             }
-                            console_log!("rotation: {} parent: {:?}", obj.quaternion.magnitude2(), others);
                             // We want to send decelerate commands to the server until the rotation stops, otherwise it will rotate forever.
                             control_commands.insert(id, force_send_command);
                         } else {
@@ -291,6 +290,18 @@ impl WasmState {
 
             body.js_body = f.call1(&JsValue::NULL, &JsValue::from_str(&payload))?;
             console_log!("Setting js_body to {}!", body.name);
+        }
+        Ok(())
+    }
+
+    pub fn client_update(&mut self, payload: Object) -> Result<(), JsValue> {
+        let body_state = Reflect::get(&payload, &JsValue::from_str("bodyState"))?;
+        let state: SetRocketStateWs = body_state
+            .into_serde()
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let mut bodies = CelestialBodyComb::new_all(&mut self.universe.bodies);
+        if let Some((_, body)) = bodies.find_with_id_mut(|body| body.name == state.name) {
+            state.update_body(body, &CelestialBodyImComb::from(&bodies));
         }
         Ok(())
     }
