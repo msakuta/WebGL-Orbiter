@@ -259,7 +259,7 @@ impl CelestialBody {
         mut bodies: CelestialBodyComb,
         delta_time: f64,
         div: f64,
-        controller: &impl Fn(&mut CelestialBody, CelestialId, &CelestialBodyComb),
+        controller: &mut impl FnMut(&mut CelestialBody, CelestialId, &CelestialBodyComb),
     ) -> anyhow::Result<bool> {
         // let children = &self.children;
         // println!("Children: {:?}", self.children);
@@ -427,10 +427,10 @@ impl CelestialBody {
         };
         let deserialize_quaternion = |target: &mut Quaternion, key: &str| {
             if let Some(serde_json::Value::Object(v)) = map.get(key) {
-                deserialize_f64(&mut target.s, v, "w");
-                deserialize_f64(&mut target.v.x, v, "x");
-                deserialize_f64(&mut target.v.y, v, "y");
-                deserialize_f64(&mut target.v.z, v, "z");
+                deserialize_f64(&mut target.s, v, "_w");
+                deserialize_f64(&mut target.v.x, v, "_x");
+                deserialize_f64(&mut target.v.y, v, "_y");
+                deserialize_f64(&mut target.v.z, v, "_z");
             }
             Some(())
         };
@@ -486,6 +486,7 @@ pub struct AddModelPayload<'a> {
     parent: Option<&'a str>,
     orbital_elements: &'a OrbitalElements,
     model_color: &'a str,
+    session_id: Option<&'a SessionId>,
 }
 
 impl CelestialBody {
@@ -498,6 +499,7 @@ impl CelestialBody {
                 .map(|parent| &parent.name as &str),
             orbital_elements: &self.orbital_elements,
             model_color: &self.model_color,
+            session_id: self.session_id.as_ref(),
         }
     }
 }

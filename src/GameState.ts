@@ -17,7 +17,11 @@ export interface GraphicsParams {
 }
 
 export interface AddModelPayload {
-    name: string, parent: string, orbitalElements: OrbitalElements, modelColor: string,
+    name: string,
+    parent: string,
+    orbitalElements: OrbitalElements,
+    modelColor: string,
+    sessionId: string,
 }
 
 const currentVersion = 3;
@@ -109,6 +113,7 @@ export default class GameState{
                 this.graphicsParams,
                 settings,
                 body.modelColor);
+            obj.sessionId = body.sessionId;
         }
         return obj;
     }

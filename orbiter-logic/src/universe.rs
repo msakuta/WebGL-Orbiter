@@ -355,6 +355,16 @@ impl Universe {
         CelestialBodyComb::new_all(&mut self.bodies)
     }
 
+    pub fn find_by_id(&self, id: CelestialId) -> Option<&CelestialBody> {
+        if let Some(entry) = self.bodies.get(id.id as usize) {
+            if entry.gen != id.gen {
+                return None;
+            }
+            return entry.dynamic.as_ref();
+        }
+        None
+    }
+
     pub fn find_by_name(&self, name: &str) -> Option<(CelestialId, &CelestialBody)> {
         self.bodies
             .iter()
@@ -523,7 +533,7 @@ impl Universe {
         &mut self,
         delta_time: f64,
         div: usize,
-        controller: &impl Fn(&mut CelestialBody, CelestialId, &CelestialBodyComb),
+        controller: &mut impl FnMut(&mut CelestialBody, CelestialId, &CelestialBodyComb),
     ) {
         let mut bodies = std::mem::take(&mut self.bodies);
         for i in 0..bodies.len() {
@@ -563,7 +573,7 @@ impl Universe {
 
         let div = 100;
         for _ in 0..div {
-            self.simulate_bodies(self.time_scale, div, &|_, _, _| ());
+            self.simulate_bodies(self.time_scale, div, &mut |_, _, _| ());
         }
 
         self.update_orbital_elements(select_obj);

@@ -1,4 +1,4 @@
-use crate::{quaternion::QuaternionSerial, CelestialBody, CelestialBodyComb, Vector3};
+use crate::{quaternion::QuaternionSerial, CelestialBody, CelestialBodyImComb, Vector3};
 use ::serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -19,7 +19,7 @@ pub struct SetRocketStateWs {
 }
 
 impl SetRocketStateWs {
-    pub fn from<'a>(body: &'a CelestialBody, bodies: &CelestialBodyComb) -> Self {
+    pub fn from<'a>(body: &'a CelestialBody, bodies: &CelestialBodyImComb) -> Self {
         Self {
             name: body.name.clone(),
             parent: body

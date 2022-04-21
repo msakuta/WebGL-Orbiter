@@ -35,7 +35,7 @@ impl<'a> CelestialBodyComb<'a> {
         ))
     }
 
-    pub(crate) fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         // Safety: self.slice is always non-null and valid slice
         unsafe { &(*self.slice).len() - self.picked.len() }
     }

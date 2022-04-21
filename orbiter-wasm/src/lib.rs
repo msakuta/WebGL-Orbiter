@@ -5,10 +5,11 @@ use wasm_bindgen::prelude::*;
 use ::cgmath::{InnerSpace as _, Rotation as _, Zero};
 use ::js_sys::{Array, Function, Object, Reflect};
 use ::orbiter_logic::{
-    quaternion::QuaternionDeserial, CelestialBody, CelestialBodyComb, CelestialBodyImComb,
-    CelestialId, SetRocketStateWs, Universe, Vector3,
+    dyn_iter::DynIter, quaternion::QuaternionDeserial, CelestialBody, CelestialBodyComb,
+    CelestialBodyImComb, CelestialId, SetRocketStateWs, Universe, Vector3, WsMessage,
 };
 use ::serde::Deserialize;
+use std::collections::HashMap;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -72,6 +73,10 @@ pub fn load_state(json: JsValue, now_unix: f64, view_scale: f64) -> WasmState {
     universe.deserialize(json).unwrap();
     console_log!("{} bodies after deserialize", universe.bodies.len());
 
+    for body in universe.iter_bodies().dyn_iter() {
+        console_log!("session_id: {:?} q: {:?}", body.session_id, body.quaternion);
+    }
+
     // print_bodies(&universe);
 
     WasmState {
@@ -127,12 +132,10 @@ impl WasmState {
         // console_log!("simulate_body: {}", delta_time);
         let angle_acceleration = 1e-0 * delta_time / div as f64;
         let select_id = self.select_obj;
+        let mut control_commands = HashMap::new();
         for _ in 0..div {
-            self.universe.simulate_bodies(delta_time, div, &|obj, id, others| {
+            self.universe.simulate_bodies(delta_time, div, &mut |obj, id, others| {
                 if select_id == Some(id) && /*gameState.sessionId === a.sessionId && */ obj.controllable /* && timescale <= 1*/ {
-                    if buttons.any() {
-                        console_log!("rotation: {}", obj.quaternion.magnitude2());
-                    }
                     if buttons.up {
                         obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(0., 0., 1.)) * angle_acceleration;
                     }
@@ -164,12 +167,9 @@ impl WasmState {
                                 obj.angular_velocity.set_zero();
                                 force_send_command = true;
                             }
+                            console_log!("rotation: {} parent: {:?}", obj.quaternion.magnitude2(), others);
                             // We want to send decelerate commands to the server until the rotation stops, otherwise it will rotate forever.
-                            if let Ok(obj) = serde_json::to_string(&SetRocketStateWs::from(obj, others)) {
-                                if let Err(e) = send_control_command.call2(&JsValue::NULL, &JsValue::from_str(&obj), &JsValue::from_bool(force_send_command)) {
-                                    console_log!("Error in send_control_command: {:?}", e);
-                                }
-                            }
+                            control_commands.insert(id, force_send_command);
                         } else {
                             obj.angular_velocity.set_zero();
                         }
@@ -177,6 +177,27 @@ impl WasmState {
                 }
             });
         }
+
+        for (command, force_send_command) in control_commands {
+            let mut bodies = CelestialBodyImComb::new_all(&self.universe.bodies);
+            if let (Some(obj), others) = bodies
+                .exclude_id(command)
+                .map_err(|e| JsValue::from_str(&e.to_string()))?
+            {
+                if let Ok(obj) = serde_json::to_string(&WsMessage::SetRocketState(
+                    SetRocketStateWs::from(obj, &others),
+                )) {
+                    if let Err(e) = send_control_command.call2(
+                        &JsValue::NULL,
+                        &JsValue::from_str(&obj),
+                        &JsValue::from_bool(force_send_command),
+                    ) {
+                        console_log!("Error in send_control_command: {:?}", e);
+                    }
+                }
+            }
+        }
+
         self.universe.update_orbital_elements(self.select_obj);
         Ok(())
     }

@@ -362,6 +362,10 @@ function init() {
 
         console.log(`gameSession: ${gameState.sessionId}`);
 
+        if(!websocket){
+            reconnectWebSocket();
+        }
+
         await tryLoadState();
 
         let sessionRocket;
@@ -377,10 +381,6 @@ function init() {
             const sessionId = await sessionRes.text();
             gameState.sessionId = sessionId;
             await tryLoadState();
-        }
-
-        if(!websocket){
-            reconnectWebSocket();
         }
 
         // const state = localStorage.getItem('WebGLOrbiterAutoSave');
