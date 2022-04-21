@@ -237,6 +237,7 @@ impl WasmState {
 
             let arr = Array::new();
 
+            arr.push(&JsValue::from_str(&serde_json::to_string(&body.position)?));
             arr.push(&JsValue::from_str(&serde_json::to_string(&position)?));
             arr.push(&JsValue::from_f64(body.nlips_factor(
                 &body_iter,

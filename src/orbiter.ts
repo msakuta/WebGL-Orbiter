@@ -461,6 +461,7 @@ function render() {
         wasmState.set_select_obj(gameState.getSelectObj()?.name);
         wasmState.set_nonlinear_scale(settings.nlips_enable);
         wasmState.update_model(gameState.getSelectObj()?.name, (
+            localPosition: string,
             position: string,
             scale: number,
             quaternion: string,
@@ -474,7 +475,7 @@ function render() {
                 model.position.multiplyScalar(viewScale);
                 model.scale.set(scale, scale, scale);
                 model.quaternion.copy(JSON.parse(quaternion));
-                body.position.copy(JSON.parse(position));
+                body.position.copy(JSON.parse(localPosition));
                 body.quaternion.copy(JSON.parse(quaternion));
                 body.orbitalElements = JSON.parse(orbitalElements);
             }
