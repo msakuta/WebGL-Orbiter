@@ -109,6 +109,7 @@ impl CelestialBodyBuilder {
             parent: self.parent,
             session_id: self.session_id,
             controllable: self.controllable,
+            throttle: 0.,
             GM: self.gm.unwrap(),
             orbital_elements: orbital_elements.into(),
             radius: self.radius.unwrap_or(1. / crate::AU),

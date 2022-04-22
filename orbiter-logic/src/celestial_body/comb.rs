@@ -119,7 +119,7 @@ impl<'a> CelestialBodyComb<'a> {
     }
 
     /// Mutable accessor with generation checking.
-    pub(crate) fn get_mut(&mut self, id: CelestialId) -> Option<&mut CelestialBody> {
+    pub fn get_mut(&mut self, id: CelestialId) -> Option<&mut CelestialBody> {
         let idx = id.id as usize;
         if self.picked.contains(&idx) {
             return None;

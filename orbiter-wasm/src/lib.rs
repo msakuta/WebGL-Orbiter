@@ -42,6 +42,7 @@ pub struct WasmState {
     camera: Vector3,
     select_obj: Option<CelestialId>,
     nlips_enable: bool,
+    control_commands: HashMap<CelestialId, bool>,
 }
 
 fn _print_bodies(universe: &Universe) {
@@ -85,6 +86,7 @@ pub fn load_state(json: JsValue, now_unix: f64, view_scale: f64) -> WasmState {
         camera: Vector3::zero(),
         select_obj: None,
         nlips_enable: true,
+        control_commands: HashMap::new(),
     }
 }
 
@@ -120,6 +122,18 @@ impl WasmState {
         }
     }
 
+    pub fn set_throttle(&mut self, throttle: f64) -> Result<(), JsValue> {
+        if let Some(obj) = self.select_obj {
+            let mut bodies = CelestialBodyComb::new_all(&mut self.universe.bodies);
+            if let Some(body) = bodies.get_mut(obj) {
+                body.throttle = throttle;
+                console_log!("Setting throttle {}", body.throttle);
+                self.control_commands.insert(obj, false);
+            }
+        }
+        Ok(())
+    }
+
     pub fn simulate_body(
         &mut self,
         delta_time: f64,
@@ -130,11 +144,16 @@ impl WasmState {
         let buttons: RotationButtons =
             serde_json::from_str(buttons).map_err(|e| JsValue::from_str(&e.to_string()))?;
         // console_log!("simulate_body: {}", delta_time);
+        let acceleration: f64 = 5e-10 * delta_time / div as f64;
         let angle_acceleration = 1e-0 * delta_time / div as f64;
         let select_id = self.select_obj;
-        let mut control_commands = HashMap::new();
+        let Self {
+            universe,
+            control_commands,
+            ..
+        } = self;
         for _ in 0..div {
-            self.universe.simulate_bodies(delta_time, div, &mut |obj, id, others| {
+            universe.simulate_bodies(delta_time, div, &mut |obj, id, others| {
                 if select_id == Some(id) && /*gameState.sessionId === a.sessionId && */ obj.controllable /* && timescale <= 1*/ {
                     if buttons.up {
                         obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(0., 0., 1.)) * angle_acceleration;
@@ -154,6 +173,14 @@ impl WasmState {
                     if buttons.clockwise {
                         obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(-1., 0., 0.)) * angle_acceleration;
                     }
+
+                    if 0. < obj.throttle {
+                        let delta_v = acceleration;
+                        obj.velocity += obj.quaternion.rotate_vector(Vector3::new(1., 0., 0.)) * delta_v;
+                        control_commands.insert(id, false);
+                        // obj.totalDeltaV += deltaV;
+                    }
+
                     if !buttons.any() {
                         // Immediately stop micro-rotation if the body is controlled.
                         // This is done to make it still in larger timescale, since micro-rotation cannot be canceled
@@ -179,7 +206,7 @@ impl WasmState {
             });
         }
 
-        for (command, force_send_command) in control_commands {
+        for (command, force_send_command) in self.control_commands.drain() {
             let mut bodies = CelestialBodyImComb::new_all(&self.universe.bodies);
             if let (Some(obj), others) = bodies
                 .exclude_id(command)

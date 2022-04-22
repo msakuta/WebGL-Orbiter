@@ -55,6 +55,8 @@ pub struct CelestialBody {
     pub session_id: Option<SessionId>,
     pub controllable: bool,
 
+    pub throttle: f64,
+
     GM: f64,
     radius: f64,
 
@@ -79,6 +81,7 @@ impl Default for CelestialBody {
             parent: None,
             session_id: None,
             controllable: false,
+            throttle: 0.,
             GM: super::GMsun,
             radius: Rsun,
             orbital_elements: OrbitalElements::default(),

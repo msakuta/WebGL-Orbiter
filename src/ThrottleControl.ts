@@ -14,12 +14,16 @@ export class ThrottleControl{
     get domElement(): HTMLElement{ return this.element; }
     protected allowThrottleCallback: (thr: number) => boolean;
     protected getSelectObj: () => CelestialBody;
+    protected setThrottleCallback: (thr: number) => void;
     protected throttleBack: HTMLImageElement;
     protected handle: HTMLImageElement;
 
-    constructor(windowHalfX: number, allowThrottleCallback: (thr: number) => boolean, getSelectObj: () => CelestialBody){
+    constructor(windowHalfX: number, allowThrottleCallback: (thr: number) => boolean, getSelectObj: () => CelestialBody,
+        setThrottleCallback: (thr: number) => void)
+    {
         this.allowThrottleCallback = allowThrottleCallback;
         this.getSelectObj = getSelectObj;
+        this.setThrottleCallback = setThrottleCallback;
         this.element = document.createElement('div');
         this.element.style.position = 'absolute';
         this.element.style.top = (window.innerHeight - guideHeight) + 'px';
@@ -93,17 +97,7 @@ export class ThrottleControl{
     setThrottle(pos: number){
         if(!this.allowThrottleCallback(pos))
             return;
-        const select_obj = this.getSelectObj();
-        if(!select_obj)
-            return;
-        if(select_obj.throttle === 0. && 0. < pos)
-            select_obj.ignitionCount++;
-        select_obj.throttle = pos;
-        if(select_obj && select_obj.blastModel){
-            select_obj.blastModel.visible = 0 < select_obj.throttle;
-            const size = (select_obj.throttle + 0.1) / 1.1;
-            select_obj.blastModel.scale.set(size, size, size);
-        }
+        this.setThrottleCallback(pos);
         this.visualizePosition();
     }
 

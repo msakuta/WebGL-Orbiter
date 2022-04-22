@@ -218,8 +218,25 @@ function init() {
     timescaleControl = new TimeScaleControl(function(scale){ return gameState.setTimeScale(scale); });
     container.appendChild( timescaleControl.domElement );
 
-    throttleControl = new ThrottleControl(windowHalfX, function(pos){ return gameState.allowThrottle(pos); },
-        function(){ return gameState.getSelectObj(); });
+    throttleControl = new ThrottleControl(windowHalfX,
+        function(pos){ return gameState.allowThrottle(pos); },
+        function(){ return gameState.getSelectObj(); },
+        (pos: number) => {
+            const select_obj = gameState.getSelectObj();
+            if(!select_obj)
+                return;
+            if(select_obj.throttle === 0. && 0. < pos)
+                select_obj.ignitionCount++;
+            if(wasmState)
+                wasmState.set_throttle(pos);
+            select_obj.throttle = pos;
+            if(select_obj && select_obj.blastModel){
+                select_obj.blastModel.visible = 0 < select_obj.throttle;
+                const size = (select_obj.throttle + 0.1) / 1.1;
+                select_obj.blastModel.scale.set(size, size, size);
+            }
+        }
+    );
     container.appendChild( throttleControl.domElement );
 
     const rotationControl = new RotationControl(buttons, () => gameState.getSelectObj());
