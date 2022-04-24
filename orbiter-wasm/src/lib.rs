@@ -267,6 +267,7 @@ impl WasmState {
 
             arr.push(&JsValue::from_str(&serde_json::to_string(&body.position)?));
             arr.push(&JsValue::from_str(&serde_json::to_string(&position)?));
+            arr.push(&JsValue::from_str(&serde_json::to_string(&body.velocity)?));
             arr.push(&JsValue::from_f64(body.nlips_factor(
                 &body_iter,
                 select_obj,
