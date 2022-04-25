@@ -355,6 +355,7 @@ function init() {
             const data = await res.json();
             console.log(data);
             wasmState = wasmModule.load_state(data, Date.now(), viewScale);
+            wasmState.set_session_id(gameState.sessionId);
             wasmState.for_each_body((data: string) => {
                 const begin = performance.now();
                 const payload: AddModelPayload = JSON.parse(data);
@@ -471,7 +472,7 @@ function render() {
     }
 
     if(wasmState){
-        wasmState.simulate_body(deltaTime, div, JSON.stringify(buttons), (obj: string, force: boolean) => {
+        wasmState.simulate_body(deltaTime, div, gameState.timescale, JSON.stringify(buttons), (obj: string, force: boolean) => {
             gameState.sendControlCommand(obj, force);
         });
         wasmState.set_camera(JSON.stringify(camera.position));

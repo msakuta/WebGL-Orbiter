@@ -6,7 +6,7 @@ use ::cgmath::{InnerSpace as _, Rotation as _, Zero};
 use ::js_sys::{Array, Function, Object, Reflect};
 use ::orbiter_logic::{
     dyn_iter::DynIter, quaternion::QuaternionDeserial, CelestialBody, CelestialBodyComb,
-    CelestialBodyImComb, CelestialId, SetRocketStateWs, Universe, Vector3, WsMessage,
+    CelestialBodyImComb, CelestialId, SessionId, SetRocketStateWs, Universe, Vector3, WsMessage,
 };
 use ::serde::Deserialize;
 use std::collections::HashMap;
@@ -41,6 +41,7 @@ pub struct WasmState {
     view_scale: f64,
     camera: Vector3,
     select_obj: Option<CelestialId>,
+    session_id: Option<SessionId>,
     nlips_enable: bool,
     control_commands: HashMap<CelestialId, bool>,
 }
@@ -85,6 +86,7 @@ pub fn load_state(json: JsValue, now_unix: f64, view_scale: f64) -> WasmState {
         view_scale,
         camera: Vector3::zero(),
         select_obj: None,
+        session_id: None,
         nlips_enable: true,
         control_commands: HashMap::new(),
     }
@@ -122,6 +124,10 @@ impl WasmState {
         }
     }
 
+    pub fn set_session_id(&mut self, session_id: &str) {
+        self.session_id = Some(SessionId::from(session_id));
+    }
+
     pub fn set_throttle(&mut self, throttle: f64) -> Result<(), JsValue> {
         if let Some(obj) = self.select_obj {
             let mut bodies = CelestialBodyComb::new_all(&mut self.universe.bodies);
@@ -138,6 +144,7 @@ impl WasmState {
         &mut self,
         delta_time: f64,
         div: usize,
+        time_scale: f64,
         buttons: &str,
         send_control_command: Function,
     ) -> Result<(), JsValue> {
@@ -150,33 +157,51 @@ impl WasmState {
         let Self {
             universe,
             control_commands,
+            session_id,
             ..
         } = self;
         for _ in 0..div {
             universe.simulate_bodies(delta_time, div, &mut |obj, id, others| {
-                if select_id == Some(id) && /*gameState.sessionId === a.sessionId && */ obj.controllable /* && timescale <= 1*/ {
+                if select_id == Some(id)
+                    && *session_id == obj.session_id
+                    && obj.controllable
+                    && time_scale <= 1.
+                {
                     if buttons.up {
-                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(0., 0., 1.)) * angle_acceleration;
+                        obj.angular_velocity +=
+                            obj.quaternion.rotate_vector(Vector3::new(0., 0., 1.))
+                                * angle_acceleration;
                     }
                     if buttons.down {
-                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(0., 0., -1.)) * angle_acceleration;
+                        obj.angular_velocity +=
+                            obj.quaternion.rotate_vector(Vector3::new(0., 0., -1.))
+                                * angle_acceleration;
                     }
                     if buttons.left {
-                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(0., 1., 0.)) * angle_acceleration;
+                        obj.angular_velocity +=
+                            obj.quaternion.rotate_vector(Vector3::new(0., 1., 0.))
+                                * angle_acceleration;
                     }
                     if buttons.right {
-                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(0., -1., 0.)) * angle_acceleration;
+                        obj.angular_velocity +=
+                            obj.quaternion.rotate_vector(Vector3::new(0., -1., 0.))
+                                * angle_acceleration;
                     }
                     if buttons.counterclockwise {
-                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(1., 0., 0.)) * angle_acceleration;
+                        obj.angular_velocity +=
+                            obj.quaternion.rotate_vector(Vector3::new(1., 0., 0.))
+                                * angle_acceleration;
                     }
                     if buttons.clockwise {
-                        obj.angular_velocity += obj.quaternion.rotate_vector(Vector3::new(-1., 0., 0.)) * angle_acceleration;
+                        obj.angular_velocity +=
+                            obj.quaternion.rotate_vector(Vector3::new(-1., 0., 0.))
+                                * angle_acceleration;
                     }
 
                     if 0. < obj.throttle {
                         let delta_v = acceleration;
-                        obj.velocity += obj.quaternion.rotate_vector(Vector3::new(1., 0., 0.)) * delta_v;
+                        obj.velocity +=
+                            obj.quaternion.rotate_vector(Vector3::new(1., 0., 0.)) * delta_v;
                         control_commands.insert(id, false);
                         // obj.totalDeltaV += deltaV;
                     }
@@ -188,7 +213,8 @@ impl WasmState {
                         // Think that the vehicle has a momentum wheels that cancels micro-rotation continuously working.
                         const MICRO_ROTATION: f64 = 1e-6;
                         if MICRO_ROTATION < obj.angular_velocity.magnitude2() {
-                            obj.angular_velocity += obj.angular_velocity.normalize() * -angle_acceleration;
+                            obj.angular_velocity +=
+                                obj.angular_velocity.normalize() * -angle_acceleration;
                             let mut force_send_command = false;
                             if obj.angular_velocity.magnitude2() <= MICRO_ROTATION {
                                 obj.angular_velocity.set_zero();
