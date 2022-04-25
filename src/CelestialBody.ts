@@ -269,12 +269,12 @@ export class CelestialBody{
         if(this.parent){
             // Angular momentum vectors
             // const ang = this.velocity.clone().cross(this.position);
-            // const r = this.position.length();
-            // const v = this.velocity.length();
-            // // Node vector
+            const r = this.position.length();
+            const v = this.velocity.length();
+            // Node vector
             // const N = (new THREE.Vector3(0, 0, 1)).cross(ang);
-            // // Eccentricity vector
-            // e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velocity.clone().multiplyScalar(this.position.dot(this.velocity) / this.parent.GM));
+            // Eccentricity vector
+            e = this.position.clone().multiplyScalar(1 / this.parent.GM * ((v * v - this.parent.GM / r))).sub(this.velocity.clone().multiplyScalar(this.position.dot(this.velocity) / this.parent.GM));
             // orbitalElements.eccentricity = e.length();
             // orbitalElements.inclination = Math.acos(-ang.z / ang.length());
             // // Avoid zero division

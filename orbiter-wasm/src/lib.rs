@@ -274,7 +274,7 @@ impl WasmState {
         Ok(())
     }
 
-    pub fn update_model(&self, select_obj: &str, setter: &Function) -> Result<(), JsValue> {
+    pub fn update_model(&self, setter: &Function) -> Result<(), JsValue> {
         // let select_obj = self.universe.find_by_name(select_obj);
         let select_obj = self.select_obj.and_then(|id| self.universe.get(id));
 

@@ -478,7 +478,7 @@ function render() {
         wasmState.set_camera(JSON.stringify(camera.position));
         wasmState.set_select_obj(gameState.getSelectObj()?.name);
         wasmState.set_nonlinear_scale(settings.nlips_enable);
-        wasmState.update_model(gameState.getSelectObj()?.name, (
+        wasmState.update_model((
             localPosition: string,
             position: string,
             velocity: string,
