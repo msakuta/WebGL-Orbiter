@@ -387,8 +387,8 @@ function render() {
     camera.position.copy(position);
     renderer.render( scene, camera );
 
-    if(select_obj && select_obj.controllable){
-        overlay.updateRotation(select_obj);
+    if(select_obj){
+        overlay.update(select_obj);
         camera.position.set(0,0,0);
         camera.quaternion.set(1,0,0,0);
         overlay.render(renderer);

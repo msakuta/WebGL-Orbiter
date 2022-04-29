@@ -8,6 +8,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import blastUrl from './images/blast.png';
 import apoapsisUrl from './images/apoapsis.png';
 import periapsisUrl from './images/periapsis.png';
+import markerUrl from './images/marker.png';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
 import { GraphicsParams } from './GameState';
@@ -56,6 +57,8 @@ export class CelestialBody{
     radius: number;
     apoapsis?: THREE.Sprite = null;
     periapsis?: THREE.Sprite = null;
+    marker?: THREE.Sprite = null;
+    markerMaterial?: THREE.SpriteMaterial = null;
     vertex?: THREE.Vector3 = null;
     model?: THREE.Object3D = null;
     hyperbolicGeometry?: THREE.BufferGeometry = null;
@@ -192,6 +195,11 @@ export class CelestialBody{
             position.multiplyScalar(viewScale);
             return position;
         }
+
+        function visualSize(o: CelestialBody){
+            return visualPosition(o).distanceTo(camera.position) / viewScale;
+        }
+
         /// NLIPS: Non-Linear Inverse Perspective Scrolling
         /// Idea originally found in a game Homeworld that enable
         /// distant small objects to appear on screen in recognizable size
@@ -200,7 +208,7 @@ export class CelestialBody{
             if(!nlips_enable)
                 return 1;
             const g_nlips_factor = 1e6;
-            const d = visualPosition(o).distanceTo(camera.position) / viewScale;
+            const d = visualSize(o);
             const f = d / o.radius * g_nlips_factor + 1;
             return f;
         }
@@ -346,17 +354,32 @@ export class CelestialBody{
 
             if(this.apoapsis){
                 // if eccentricity is zero or more than 1, apoapsis is not defined
-                if(this === select_obj && 0 < orbitalElements.eccentricity && orbitalElements.eccentricity < 1)
+                if(this === select_obj && this.controllable && 0 < orbitalElements.eccentricity && orbitalElements.eccentricity < 1)
                     calcApsePosition(-1, this.apoapsis);
                 else
                     this.apoapsis.visible = false;
             }
             if(this.periapsis){
                 // if eccentricity is zero, periapsis is not defined
-                if(this === select_obj && 0 < orbitalElements.eccentricity)
+                if(this === select_obj && this.controllable && 0 < orbitalElements.eccentricity)
                     calcApsePosition(1, this.periapsis);
                 else
                     this.periapsis.visible = false;
+            }
+            if(this.marker){
+                const worldPos = visualPosition(this);
+                const cameraPos = worldPos.applyMatrix4(camera.matrixWorldInverse);
+                const markerPos = cameraPos.applyMatrix4(camera.projectionMatrix);
+                markerPos.x *= windowHalfX;
+                markerPos.y *= windowHalfY;
+                if(0 < markerPos.z && markerPos.z < 1){
+                    this.marker.position.copy(markerPos);
+                    let s = Math.min(1, visualSize(this) / (this.radius / AU) / windowHalfX);
+                    this.markerMaterial.opacity = s;
+                    this.marker.visible = true;
+                }
+                else
+                    this.marker.visible = false;
             }
         }
 
@@ -683,6 +706,14 @@ export function addPlanet(orbitalElements: OrbitalElements,
     }));
     ret.periapsis.scale.set(16,16,16);
     overlay.add(ret.periapsis);
+
+    ret.markerMaterial = new THREE.SpriteMaterial({
+        map: new THREE.TextureLoader().load(markerUrl),
+        transparent: true,
+    });
+    ret.marker = new THREE.Sprite(ret.markerMaterial);
+    ret.marker.scale.set(16,16,16);
+    overlay.add(ret.marker);
 
     // Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
     // https://en.wikipedia.org/wiki/Orbital_speed

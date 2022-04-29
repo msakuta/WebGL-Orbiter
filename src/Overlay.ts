@@ -72,7 +72,7 @@ export default class Overlay{
 
     }
 
-    updateRotation(select_obj: CelestialBody){
+    protected updateRotation(select_obj: CelestialBody){
         if(!(this.navballMesh && select_obj && select_obj.controllable))
             return;
         // First, calculate the quaternion for rotating the system so that
@@ -108,6 +108,19 @@ export default class Overlay{
         grade.visible = true;
         grade.position.y = -window.innerHeight / 2 + navballRadius + factor * new THREE.Vector3(0, 1, 0).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) / select_obj.velocity.length() * navballRadius;
         grade.position.x = factor * new THREE.Vector3(0, 0, 1).applyQuaternion(select_obj.quaternion).dot(select_obj.velocity) / select_obj.velocity.length() * navballRadius;
+    }
+
+    update(select_obj: CelestialBody){
+        this.updateRotation(select_obj);
+        if(select_obj.controllable){
+            if(this.navballMesh)
+                this.navballMesh.visible = true;
+        }
+        else{
+            if(this.navballMesh)
+                this.navballMesh.visible = false;
+            this.retrograde.visible = this.prograde.visible = false;
+        }
     }
 
     render(renderer: THREE.Renderer){
