@@ -18,6 +18,8 @@ export class Settings{
     sync_rotate = false;
     nlips_enable = true;
     units_km = true;
+    show_label = true;
+    show_marker = true;
     center_select = true;
 }
 
@@ -87,6 +89,8 @@ export class SettingsControl{
                 'Chase&nbsp;camera&nbsp;(H)',
                 'Nonlinear&nbsp;scale&nbsp;(N)',
                 'Units in KM&nbsp;(K)',
+                'Show name labels&nbsp;(L)',
+                'Show marker&nbsp;(M)',
                 'Center selected&nbsp;(C)'][i];
             lineElement.appendChild(label);
             lineElement.style.fontWeight = 'bold';
@@ -131,6 +135,8 @@ export class SettingsControl{
         this.checkElements[1].checked = this.settings.sync_rotate;
         this.checkElements[2].checked = this.settings.nlips_enable;
         this.checkElements[3].checked = this.settings.units_km;
+        this.checkElements[4].checked = this.settings.show_label;
+        this.checkElements[5].checked = this.settings.show_marker;
         this.valueElement.style.marginLeft = (this.config.buttonWidth - this.valueElement.getBoundingClientRect().width) + 'px';
     }
 
@@ -155,6 +161,14 @@ export class SettingsControl{
 
         case 'k':
             this.settings.units_km = !this.settings.units_km;
+            break;
+
+        case 'l':
+            this.settings.show_label = !this.settings.show_label;
+            break;
+
+        case 'm':
+            this.settings.show_marker = !this.settings.show_marker;
             break;
         }
     }

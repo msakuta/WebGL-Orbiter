@@ -346,8 +346,8 @@ export default class Universe{
             scene.add(orbitMesh);
 
             asteroid.init();
-            asteroid.update(settings.center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
-                settings.units_km, (_) => {}, scene);
+            asteroid.update(settings.center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
+                (_) => {}, scene);
 
         }
 
@@ -372,13 +372,12 @@ export default class Universe{
         return rocket;
     }
 
-    update(center_select: boolean, viewScale: number, nlips_enable: boolean,
+    update(center_select: boolean, viewScale: number, settings: Settings,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
-        units_km: boolean, updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
+        updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
         scene: THREE.Scene, select_obj?: CelestialBody)
     {
-        this.sun.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfY,
-            units_km,
+        this.sun.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
             updateOrbitalElements,
             scene,
             select_obj);

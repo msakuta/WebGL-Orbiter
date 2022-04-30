@@ -359,8 +359,7 @@ function render() {
     }
 
     const select_obj = gameState.getSelectObj();
-    gameState.universe.update(settings.center_select, viewScale, settings.nlips_enable, camera, windowHalfX, windowHalfY,
-        settings.units_km,
+    gameState.universe.update(settings.center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
         function(o, headingApoapsis){
             orbitalElementsControl.setText(o, headingApoapsis, settings.units_km);
         },

@@ -182,11 +182,12 @@ export class CelestialBody{
     // Update orbital elements from position and velocity.
     // The whole discussion is found in chapter 4.4 in
     // https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
-    update(center_select: boolean, viewScale: number, nlips_enable: boolean,
+    update(center_select: boolean, viewScale: number, settings: Settings,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
-        units_km: boolean, updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
+        updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
         scene: THREE.Scene, select_obj?: CelestialBody)
     {
+        const { nlips_enable, show_label, show_marker } = settings;
         let scope = this;
         let orbitalElements = this.orbitalElements;
         function visualPosition(o: CelestialBody){
@@ -375,15 +376,23 @@ export class CelestialBody{
                 markerPos.y *= windowHalfY;
                 if(0 < markerPos.z && markerPos.z < 1){
                     if(this.marker){
-                        this.marker.position.copy(markerPos);
-                        let s = Math.min(1, visualSize(this) / (this.radius / AU) / windowHalfX);
-                        this.markerMaterial.opacity = s;
-                        this.marker.visible = true;
+                        if(show_marker){
+                            this.marker.position.copy(markerPos);
+                            let s = Math.min(1, visualSize(this) / (this.radius / AU) / windowHalfX);
+                            this.markerMaterial.opacity = s;
+                            this.marker.visible = true;
+                        }
+                        else
+                            this.marker.visible = false;
                     }
                     if(this.markerLabel){
-                        this.markerLabel.style.display = "block";
-                        this.markerLabel.style.left = `${(8 + markerPos.x + windowHalfX)}px`;
-                        this.markerLabel.style.top = `${(-8 - markerPos.y + windowHalfY)}px`;
+                        if(show_label){
+                            this.markerLabel.style.display = "block";
+                            this.markerLabel.style.left = `${(8 + markerPos.x + windowHalfX)}px`;
+                            this.markerLabel.style.top = `${(-8 - markerPos.y + windowHalfY)}px`;
+                        }
+                        else
+                            this.markerLabel.style.display = "none";
                     }
                 }
                 else{
@@ -400,8 +409,8 @@ export class CelestialBody{
 
         for(let i = 0; i < this.children.length; i++){
             const a = this.children[i];
-            a.update(center_select, viewScale, nlips_enable, camera, windowHalfX, windowHalfY,
-                units_km, updateOrbitalElements, scene, select_obj);
+            a.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
+                updateOrbitalElements, scene, select_obj);
         }
 
     };
@@ -748,7 +757,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     ret.orbit = orbitMesh;
     scene.add(orbitMesh);
     ret.init();
-    ret.update(settings.center_select, graphicsParams.viewScale, settings.nlips_enable, graphicsParams.camera, graphicsParams.windowHalfX, graphicsParams.windowHalfY,
-        settings.units_km, (_) => {}, scene);
+    ret.update(settings.center_select, graphicsParams.viewScale, settings, graphicsParams.camera, graphicsParams.windowHalfX, graphicsParams.windowHalfY,
+        (_) => {}, scene);
     return ret;
 }
