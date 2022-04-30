@@ -59,6 +59,7 @@ export class CelestialBody{
     periapsis?: THREE.Sprite = null;
     marker?: THREE.Sprite = null;
     markerMaterial?: THREE.SpriteMaterial = null;
+    markerLabel?: HTMLDivElement = null;
     vertex?: THREE.Vector3 = null;
     model?: THREE.Object3D = null;
     hyperbolicGeometry?: THREE.BufferGeometry = null;
@@ -366,20 +367,31 @@ export class CelestialBody{
                 else
                     this.periapsis.visible = false;
             }
-            if(this.marker){
+            if(this.marker || this.markerLabel){
                 const worldPos = visualPosition(this);
                 const cameraPos = worldPos.applyMatrix4(camera.matrixWorldInverse);
                 const markerPos = cameraPos.applyMatrix4(camera.projectionMatrix);
                 markerPos.x *= windowHalfX;
                 markerPos.y *= windowHalfY;
                 if(0 < markerPos.z && markerPos.z < 1){
-                    this.marker.position.copy(markerPos);
-                    let s = Math.min(1, visualSize(this) / (this.radius / AU) / windowHalfX);
-                    this.markerMaterial.opacity = s;
-                    this.marker.visible = true;
+                    if(this.marker){
+                        this.marker.position.copy(markerPos);
+                        let s = Math.min(1, visualSize(this) / (this.radius / AU) / windowHalfX);
+                        this.markerMaterial.opacity = s;
+                        this.marker.visible = true;
+                    }
+                    if(this.markerLabel){
+                        this.markerLabel.style.display = "block";
+                        this.markerLabel.style.left = `${(8 + markerPos.x + windowHalfX)}px`;
+                        this.markerLabel.style.top = `${(-8 - markerPos.y + windowHalfY)}px`;
+                    }
                 }
-                else
-                    this.marker.visible = false;
+                else{
+                    if(this.marker)
+                        this.marker.visible = false;
+                    if(this.markerLabel)
+                        this.markerLabel.style.display = "none";
+                }
             }
         }
 
@@ -714,6 +726,14 @@ export function addPlanet(orbitalElements: OrbitalElements,
     ret.marker = new THREE.Sprite(ret.markerMaterial);
     ret.marker.scale.set(16,16,16);
     overlay.add(ret.marker);
+
+    ret.markerLabel = document.createElement("div");
+    ret.markerLabel.innerHTML = ret.name;
+    ret.markerLabel.style.position = "absolute";
+    ret.markerLabel.style.backgroundColor = "rgba(0,0,0,0.75)";
+    ret.markerLabel.style.pointerEvents = "none";
+    ret.markerLabel.style.padding = "2px";
+    document.body.appendChild(ret.markerLabel);
 
     // Orbital speed at given position and eccentricity can be calculated by v = \sqrt(\mu (2 / r - 1 / a))
     // https://en.wikipedia.org/wiki/Orbital_speed
