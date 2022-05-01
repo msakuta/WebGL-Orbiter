@@ -364,7 +364,7 @@ function render() {
             orbitalElementsControl.setText(o, headingApoapsis, settings.units_km);
         },
         scene,
-        select_obj
+        select_obj, gameState.selectMarker
     );
 
     grids.visible = settings.grid_enable;

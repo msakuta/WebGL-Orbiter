@@ -185,7 +185,7 @@ export class CelestialBody{
     update(center_select: boolean, viewScale: number, settings: Settings,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
         updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
-        scene: THREE.Scene, select_obj?: CelestialBody)
+        scene: THREE.Scene, select_obj?: CelestialBody, selectMark?: THREE.Sprite)
     {
         const { nlips_enable, show_label, show_marker } = settings;
         let scope = this;
@@ -368,7 +368,8 @@ export class CelestialBody{
                 else
                     this.periapsis.visible = false;
             }
-            if(this.marker || this.markerLabel){
+            const selectMarker = selectMark && this.name === "earth";
+            if(this.marker || this.markerLabel || selectMarker){
                 const worldPos = visualPosition(this);
                 const cameraPos = worldPos.applyMatrix4(camera.matrixWorldInverse);
                 const markerPos = cameraPos.applyMatrix4(camera.projectionMatrix);
@@ -394,12 +395,18 @@ export class CelestialBody{
                         else
                             this.markerLabel.style.display = "none";
                     }
+                    if(selectMarker){
+                        selectMark.visible = true;
+                        selectMark.position.copy(markerPos);
+                    }
                 }
                 else{
                     if(this.marker)
                         this.marker.visible = false;
                     if(this.markerLabel)
                         this.markerLabel.style.display = "none";
+                    if(selectMarker)
+                        selectMark.visible = false;
                 }
             }
         }
@@ -410,7 +417,7 @@ export class CelestialBody{
         for(let i = 0; i < this.children.length; i++){
             const a = this.children[i];
             a.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
-                updateOrbitalElements, scene, select_obj);
+                updateOrbitalElements, scene, select_obj, selectMark);
         }
 
     };

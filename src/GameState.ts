@@ -3,6 +3,7 @@ import { CelestialBody, addPlanet, OrbitalElements, AddPlanetParams } from './Ce
 import { Settings } from './SettingsControl';
 import Universe from './Universe';
 import { RotationButtons } from './RotationControl';
+import selectMarker from './images/selectMarker.png';
 
 
 export interface GraphicsParams {
@@ -22,6 +23,7 @@ export default class GameState{
     timescale = 1e0; // This is not a constant; it can be changed by the user
     select_obj?: CelestialBody = null;
     getSelectObj(){ return this.select_obj; }
+    selectMarker?: THREE.Sprite = null;
     universe: Universe;
     onStateLoad?: () => void = null;
     sendMessage: (text: string) => void;
@@ -33,6 +35,13 @@ export default class GameState{
 
         this.universe = new Universe(graphicsParams, settings);
         this.select_obj = this.universe.rocket;
+
+        this.selectMarker = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: new THREE.TextureLoader().load( selectMarker ),
+            transparent: true,
+        }));
+        this.selectMarker.scale.set(64, 64, 64);
+        graphicsParams.overlay.add(this.selectMarker);
     }
 
     resetTime(){

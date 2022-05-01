@@ -375,12 +375,12 @@ export default class Universe{
     update(center_select: boolean, viewScale: number, settings: Settings,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
         updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
-        scene: THREE.Scene, select_obj?: CelestialBody)
+        scene: THREE.Scene, select_obj?: CelestialBody, selectMark?: THREE.Sprite)
     {
         this.sun.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
             updateOrbitalElements,
             scene,
-            select_obj);
+            select_obj, selectMark);
 
         // offset sun position
         this.light.position.copy(this.sun.model.position);
