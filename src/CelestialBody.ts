@@ -400,6 +400,7 @@ export class CelestialBody{
         const select_obj = gameState.getSelectObj();
 
         const selectMarker = gameState && gameState.selectMarker && this === gameState.selected;
+        const selectEyeIcon = gameState && gameState.eyeIcon && this === gameState.selected;
         const selectPreviewMarker = gameState && gameState.selectPreviewMarker && this === gameState.selectPreview;
         const worldPos = this.visualPosition(viewScale, select_obj);
         const cameraPos = worldPos.applyMatrix4(camera.matrixWorldInverse);
@@ -434,6 +435,11 @@ export class CelestialBody{
                 gameState.selectPreviewMarker.visible = true;
                 gameState.selectPreviewMarker.position.copy(markerPos);
             }
+            if(selectEyeIcon){
+                gameState.eyeIcon.style.display = "block";
+                gameState.eyeIcon.style.left = `${(-32 + 8 + markerPos.x + windowHalfX)}px`;
+                gameState.eyeIcon.style.top = `${(40 - 8 - markerPos.y + windowHalfY)}px`;
+            }
         }
         else{
             if(this.marker)
@@ -444,6 +450,8 @@ export class CelestialBody{
                 gameState.selectMarker.visible = false;
             if(selectPreviewMarker)
                 gameState.selectPreviewMarker.visible = false;
+            if(selectEyeIcon)
+                gameState.eyeIcon.style.display = "none";
         }
     }
 

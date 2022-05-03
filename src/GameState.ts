@@ -4,6 +4,7 @@ import { Settings } from './SettingsControl';
 import Universe from './Universe';
 import { RotationButtons } from './RotationControl';
 import selectMarker from './images/selectMarker.png';
+import eyeIcon from './images/eyeIcon.png';
 
 
 export interface GraphicsParams {
@@ -27,12 +28,13 @@ export default class GameState{
     selectMarker?: THREE.Sprite = null;
     selectPreview?: CelestialBody = null;
     selectPreviewMarker?: THREE.Sprite = null;
+    eyeIcon?: HTMLDivElement = null;
     universe: Universe;
     onStateLoad?: () => void = null;
     sendMessage: (text: string) => void;
     graphicsParams: GraphicsParams;
 
-    constructor(graphicsParams: GraphicsParams, settings: Settings, sendMessage: (text: string) => void){
+    constructor(graphicsParams: GraphicsParams, settings: Settings, sendMessage: (text: string) => void, setFocus: (focus: CelestialBody) => void){
         this.sendMessage = sendMessage;
         this.graphicsParams = graphicsParams;
 
@@ -47,6 +49,18 @@ export default class GameState{
         }));
         this.selectMarker.scale.set(64, 64, 64);
         graphicsParams.overlay.add(this.selectMarker);
+
+        this.eyeIcon = document.createElement("div");
+        this.eyeIcon.style.position = "absolute";
+        this.eyeIcon.style.display = "none";
+        this.eyeIcon.addEventListener('click', () => {
+            this.select_obj = this.selected;
+            setFocus(this.selected);
+        });
+        const eyeImg = document.createElement("img");
+        eyeImg.src = eyeIcon;
+        this.eyeIcon.appendChild(eyeImg);
+        document.body.appendChild(this.eyeIcon);
 
         this.selectPreviewMarker = new THREE.Sprite(new THREE.SpriteMaterial({
             map: markerTexture,

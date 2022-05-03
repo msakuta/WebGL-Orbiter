@@ -99,14 +99,19 @@ function init() {
     const orbitMaterial = new THREE.LineBasicMaterial({color: 0x3f3f7f});
     CelestialBody.prototype.orbitMaterial = orbitMaterial; // Default orbit material
 
-    gameState = new GameState({
-        scene,
-        viewScale,
-        overlay: overlay.overlay,
-        camera,
-        windowHalfX,
-        windowHalfY,
-     }, settings, (msg) => messageControl.setText(msg));
+    gameState = new GameState(
+        {
+            scene,
+            viewScale,
+            overlay: overlay.overlay,
+            camera,
+            windowHalfX,
+            windowHalfY,
+        },
+        settings,
+        (msg) => messageControl.setText(msg),
+        focusObj => throttleControl.visible = focusObj.controllable,
+    );
 
     const meshMaterial = new THREE.LineBasicMaterial({color: 0x3f3f3f});
     const meshGeometry = new THREE.BufferGeometry();
@@ -413,6 +418,8 @@ function render() {
 
         gameState.simulateBody(deltaTime, div, buttons);
     }
+
+    gameState.eyeIcon.style.display = "none";
 
     const select_obj = gameState.getSelectObj();
     gameState.universe.update(settings.center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
