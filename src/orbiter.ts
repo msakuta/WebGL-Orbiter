@@ -4,7 +4,8 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import "./main.css";
 
-import { CelestialBody, AU, AxisAngleQuaternion, HitResult } from './CelestialBody';
+import { CelestialBody, AU, AxisAngleQuaternion } from './CelestialBody';
+import { HitResult } from './hitCheck';
 import { Settings, SettingsControl } from './SettingsControl';
 import { TimeScaleControl } from './TimeScaleControl';
 import { ThrottleControl } from './ThrottleControl';
