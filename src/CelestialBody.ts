@@ -194,7 +194,7 @@ export class CelestialBody{
     update(center_select: boolean, viewScale: number, settings: Settings,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
         updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
-        scene: THREE.Scene, gameState?: GameState)
+        gameState?: GameState)
     {
         const { nlips_enable, show_label, show_marker } = settings;
         const select_obj = gameState?.getSelectObj();
@@ -324,7 +324,7 @@ export class CelestialBody{
                 // Allocate hyperbola mesh and add it to the scene.
                 if(!this.hyperbolicMesh){
                     this.hyperbolicMesh = new THREE.Line(this.hyperbolicGeometry, this.orbitMaterial);
-                    scene.add(this.hyperbolicMesh);
+                    gameState.graphicsParams.scene.add(this.hyperbolicMesh);
                 }
                 this.hyperbolicMesh.quaternion.copy(rotation);
                 this.hyperbolicMesh.scale.x = viewScale;
@@ -420,7 +420,7 @@ export class CelestialBody{
         for(let i = 0; i < this.children.length; i++){
             const a = this.children[i];
             a.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
-                updateOrbitalElements, scene, gameState);
+                updateOrbitalElements, gameState);
         }
 
     };
@@ -773,7 +773,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     scene.add(orbitMesh);
     ret.init();
     ret.update(settings.center_select, graphicsParams.viewScale, settings, graphicsParams.camera, graphicsParams.windowHalfX, graphicsParams.windowHalfY,
-        (_) => {}, scene);
+        (_) => {});
     return ret;
 }
 

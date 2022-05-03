@@ -347,7 +347,7 @@ export default class Universe{
 
             asteroid.init();
             asteroid.update(settings.center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
-                (_) => {}, scene);
+                (_) => {});
 
         }
 
@@ -382,7 +382,6 @@ export default class Universe{
 
         this.sun.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
             updateOrbitalElements,
-            scene,
             gameState);
 
         // offset sun position
