@@ -11,7 +11,7 @@ import periapsisUrl from './images/periapsis.png';
 import markerUrl from './images/marker.png';
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
-import { GraphicsParams } from './GameState';
+import GameState, { GraphicsParams } from './GameState';
 
 export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
@@ -179,27 +179,28 @@ export class CelestialBody{
             this.parent.children.push(this);
     }
 
+    visualPosition(viewScale: number, select_obj?: CelestialBody){
+        const position = this.getWorldPosition();
+        if(select_obj)
+            position.sub(select_obj.getWorldPosition());
+        position.multiplyScalar(viewScale);
+        return position;
+    }
+
     // Update orbital elements from position and velocity.
     // The whole discussion is found in chapter 4.4 in
     // https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
     update(center_select: boolean, viewScale: number, settings: Settings,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
         updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
-        scene: THREE.Scene, select_obj?: CelestialBody, selectMark?: THREE.Sprite)
+        scene: THREE.Scene, select_obj?: CelestialBody, gameState?: GameState)
     {
         const { nlips_enable, show_label, show_marker } = settings;
         let scope = this;
         let orbitalElements = this.orbitalElements;
-        function visualPosition(o: CelestialBody){
-            const position = o.getWorldPosition();
-            if(select_obj && center_select)
-                position.sub(select_obj.getWorldPosition());
-            position.multiplyScalar(viewScale);
-            return position;
-        }
 
         function visualSize(o: CelestialBody){
-            return visualPosition(o).distanceTo(camera.position) / viewScale;
+            return o.visualPosition(viewScale, select_obj).distanceTo(camera.position) / viewScale;
         }
 
         /// NLIPS: Non-Linear Inverse Perspective Scrolling
@@ -236,10 +237,10 @@ export class CelestialBody{
         }
 
         if(this.vertex)
-            this.vertex.copy(visualPosition(this));
+            this.vertex.copy(this.visualPosition(viewScale, select_obj));
 
         if(this.model){
-            this.model.position.copy(visualPosition(this));
+            this.model.position.copy(this.visualPosition(viewScale, select_obj));
             this.model.scale.set(1,1,1).multiplyScalar(nlipsFactor(this));
             this.model.quaternion.copy(this.quaternion);
         }
@@ -368,9 +369,9 @@ export class CelestialBody{
                 else
                     this.periapsis.visible = false;
             }
-            const selectMarker = selectMark && this.name === "earth";
+            const selectMarker = gameState && gameState.selectMarker && this === gameState.selected;
             if(this.marker || this.markerLabel || selectMarker){
-                const worldPos = visualPosition(this);
+                const worldPos = this.visualPosition(viewScale, select_obj);
                 const cameraPos = worldPos.applyMatrix4(camera.matrixWorldInverse);
                 const markerPos = cameraPos.applyMatrix4(camera.projectionMatrix);
                 markerPos.x *= windowHalfX;
@@ -396,8 +397,8 @@ export class CelestialBody{
                             this.markerLabel.style.display = "none";
                     }
                     if(selectMarker){
-                        selectMark.visible = true;
-                        selectMark.position.copy(markerPos);
+                        gameState.selectMarker.visible = true;
+                        gameState.selectMarker.position.copy(markerPos);
                     }
                 }
                 else{
@@ -406,7 +407,7 @@ export class CelestialBody{
                     if(this.markerLabel)
                         this.markerLabel.style.display = "none";
                     if(selectMarker)
-                        selectMark.visible = false;
+                        gameState.selectMarker.visible = false;
                 }
             }
         }
@@ -417,7 +418,7 @@ export class CelestialBody{
         for(let i = 0; i < this.children.length; i++){
             const a = this.children[i];
             a.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
-                updateOrbitalElements, scene, select_obj, selectMark);
+                updateOrbitalElements, scene, select_obj, gameState);
         }
 
     };
@@ -526,6 +527,11 @@ export class CelestialBody{
                 return res;
         }
         return null;
+    }
+
+    raycast(raySrc: THREE.Vector3, rayDir: THREE.Vector3, gameState: GameState): HitResult | null {
+        return jHitSpherePos(this.visualPosition(gameState.graphicsParams.viewScale, gameState.select_obj),
+            this.radius / AU * gameState.graphicsParams.viewScale, raySrc, rayDir, 10.);
     }
 }
 
@@ -767,4 +773,61 @@ export function addPlanet(orbitalElements: OrbitalElements,
     ret.update(settings.center_select, graphicsParams.viewScale, settings, graphicsParams.camera, graphicsParams.windowHalfX, graphicsParams.windowHalfY,
         (_) => {}, scene);
     return ret;
+}
+
+
+export interface HitResult {
+    retf: number;
+    pos: THREE.Vector3;
+    dist: number;
+}
+
+
+/** determine intersection of a sphere shell and a ray. it's equivalent to inter-sphere hit detection,
+ * when the radius argument is sum of the two spheres. */
+function jHitSpherePos(obj: THREE.Vector3, radius: number, src: THREE.Vector3, dir: THREE.Vector3, dt: number): HitResult | null {
+    // let b, c, D, d, t0, t1, dirslen;
+    // let ret;
+
+    const del = src.clone().sub(obj);
+
+    /* scalar product of the ray and the vector. */
+    const b = dir.dot(del);
+
+    /* ??? */
+    const dirslen = dir.lengthSq();
+    const c = dirslen * (del.lengthSq() - radius * radius);
+
+    // Return the nearest point to the sphere's center on the line if no hit detected.
+    let pos = del.sub(dir.clone().multiplyScalar(b / dirslen));
+    // We can always return the distance of the ray and the sphere's center.
+    const dist = pos.length();
+
+    /* discriminant?? */
+    const D = b * b - c;
+    if(D <= 0)
+        return null;
+
+    const d = Math.sqrt(D);
+
+    /* we need vector equation's parameter value to determine hitness with line segment */
+    if(dirslen === 0.)
+        return null;
+    const t0 = (-b - d) / dirslen;
+    const t1 = (-b + d) / dirslen;
+
+    const ret = 0. <= t1 && /*t0 < dt || 0. <= t1 &&*/ t0 < dt;
+
+    let retf;
+    if(t0 < 0 /*&& dt < t1*/){
+        pos = new THREE.Vector3();
+        retf = 0.;
+    }
+    else /*if(dt <= t1)*/{
+        pos = dir.multiplyScalar(t0);
+        retf = t0;
+    }
+    pos.add(src);
+
+    return ret ? { retf, pos, dist } : null;
 }

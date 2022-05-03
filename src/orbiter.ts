@@ -4,7 +4,7 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 import "./main.css";
 
-import { CelestialBody, AU, AxisAngleQuaternion } from './CelestialBody';
+import { CelestialBody, AU, AxisAngleQuaternion, HitResult } from './CelestialBody';
 import { Settings, SettingsControl } from './SettingsControl';
 import { TimeScaleControl } from './TimeScaleControl';
 import { ThrottleControl } from './ThrottleControl';
@@ -311,6 +311,54 @@ function init() {
         localStorage.setItem('WebGLOrbiterAutoSave', JSON.stringify(gameState.serializeState()));
     });
 
+    // We don't want to select unintended objects. However, we use mouse left button for both camera rotation and selecting.
+    // Changing selection with a mouse drag intended for rotating view is annoying.
+    // So we capture the event of clicking only if the mouse has not been moved between mouse down and mouse up.
+    // Because OrbitControl captures mouse events, we need to register events to it in order to detect this event.
+    let dragging = false;
+    let changed = false;
+    cameraControls.addEventListener('start', () => {
+        changed = false;
+        dragging = true;
+        console.log(`start dragging ${dragging}`);
+    });
+    cameraControls.addEventListener('change', () => {
+        changed = true;
+        console.log(`changed dragging ${dragging}`);
+    });
+    renderer.domElement.addEventListener('click', (evt) => {
+        if(changed){
+            return;
+        }
+
+        interface BodyHitResult extends HitResult {
+            body: CelestialBody;
+        }
+
+        const fov = camera.getEffectiveFOV() / 90;
+        const ray = new THREE.Vector3(
+            (evt.clientX / windowHalfX - 1.) * camera.aspect * fov,
+            -(evt.clientY / windowHalfY - 1.) * fov,
+            -1
+        ).transformDirection(camera.matrixWorld);
+        let best: BodyHitResult | null = null;
+        gameState.universe.sun.forEachBody((o) => {
+            const result = o.raycast(camera.position, ray, gameState);
+            if(result){
+                if(best === null || result.retf < best.retf){
+                    best = {...result, body: o};
+                }
+            }
+        });
+
+        if(best !== null){
+            gameState.selected = best.body;
+        }
+        else{
+            gameState.selected = null;
+        }
+    }, true);
+
     gameState.startTicking();
 }
 
@@ -364,7 +412,7 @@ function render() {
             orbitalElementsControl.setText(o, headingApoapsis, settings.units_km);
         },
         scene,
-        select_obj, gameState.selectMarker
+        select_obj, gameState
     );
 
     grids.visible = settings.grid_enable;

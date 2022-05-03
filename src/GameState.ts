@@ -23,6 +23,7 @@ export default class GameState{
     timescale = 1e0; // This is not a constant; it can be changed by the user
     select_obj?: CelestialBody = null;
     getSelectObj(){ return this.select_obj; }
+    selected?: CelestialBody = null;
     selectMarker?: THREE.Sprite = null;
     universe: Universe;
     onStateLoad?: () => void = null;

@@ -4,7 +4,7 @@ import { CelestialBody, OrbitalElements, AU, AxisAngleQuaternion, AddPlanetParam
 import { Settings } from './SettingsControl';
 import { RotationButtons } from './RotationControl';
 import { ModulatedIcosahedronGeometry } from './ModulatedIcosahedronGeometry';
-import { GraphicsParams } from './GameState';
+import GameState, { GraphicsParams } from './GameState';
 
 import moonUrl from './images/moon.png';
 import mercuryUrl from './images/mercury.jpg';
@@ -375,15 +375,19 @@ export default class Universe{
     update(center_select: boolean, viewScale: number, settings: Settings,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
         updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
-        scene: THREE.Scene, select_obj?: CelestialBody, selectMark?: THREE.Sprite)
+        scene: THREE.Scene, select_obj?: CelestialBody, gameState?: GameState)
     {
+        if(gameState.selected === null && gameState.selectMarker)
+            gameState.selectMarker.visible = false;
+
         this.sun.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
             updateOrbitalElements,
             scene,
-            select_obj, selectMark);
+            select_obj, gameState);
 
         // offset sun position
-        this.light.position.copy(this.sun.model.position);
+        if(this.sun.model)
+            this.light.position.copy(this.sun.model.position);
     }
 
     simulateBody(deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
