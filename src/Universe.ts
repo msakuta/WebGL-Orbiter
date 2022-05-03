@@ -346,7 +346,7 @@ export default class Universe{
             scene.add(orbitMesh);
 
             asteroid.init();
-            asteroid.update(settings.center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
+            asteroid.update(viewScale, settings, camera, windowHalfX, windowHalfY,
                 (_) => {});
 
         }
@@ -380,7 +380,7 @@ export default class Universe{
         if(gameState.selected === null && gameState.selectMarker)
             gameState.selectMarker.visible = false;
 
-        this.sun.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
+        this.sun.update(viewScale, settings, camera, windowHalfX, windowHalfY,
             updateOrbitalElements,
             gameState);
 

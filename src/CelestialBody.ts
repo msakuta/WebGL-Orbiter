@@ -191,12 +191,12 @@ export class CelestialBody{
     // Update orbital elements from position and velocity.
     // The whole discussion is found in chapter 4.4 in
     // https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
-    update(center_select: boolean, viewScale: number, settings: Settings,
+    update(viewScale: number, settings: Settings,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
         updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
         gameState?: GameState)
     {
-        const { nlips_enable, show_label, show_marker } = settings;
+        const { nlips_enable, show_label, show_marker, center_select } = settings;
         const select_obj = gameState?.getSelectObj();
         let scope = this;
         let orbitalElements = this.orbitalElements;
@@ -419,7 +419,7 @@ export class CelestialBody{
 
         for(let i = 0; i < this.children.length; i++){
             const a = this.children[i];
-            a.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
+            a.update(viewScale, settings, camera, windowHalfX, windowHalfY,
                 updateOrbitalElements, gameState);
         }
 
@@ -772,7 +772,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     ret.orbit = orbitMesh;
     scene.add(orbitMesh);
     ret.init();
-    ret.update(settings.center_select, graphicsParams.viewScale, settings, graphicsParams.camera, graphicsParams.windowHalfX, graphicsParams.windowHalfY,
+    ret.update(graphicsParams.viewScale, settings, graphicsParams.camera, graphicsParams.windowHalfX, graphicsParams.windowHalfY,
         (_) => {});
     return ret;
 }
