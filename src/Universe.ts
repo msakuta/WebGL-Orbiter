@@ -60,7 +60,8 @@ export default class Universe{
     light: THREE.PointLight;
     orbitGeometry: THREE.BufferGeometry;
 
-    constructor(graphicsParams: GraphicsParams, settings: Settings){
+    constructor(gameState: GameState, settings: Settings){
+        const { graphicsParams } = gameState;
         const { scene, viewScale, camera, windowHalfX, windowHalfY } = graphicsParams;
         this.light = new THREE.PointLight( 0xffffff, 1, 0, 1e-6 );
         scene.add( this.light );
@@ -88,7 +89,7 @@ export default class Universe{
         scene.add(group);
 
         const addPlanetLocal = (orbitalElements: OrbitalElements, params: AddPlanetParams) =>
-            addPlanet(orbitalElements, params, graphicsParams, orbitGeometry, settings);
+            addPlanet(orbitalElements, params, gameState, orbitGeometry, settings);
 
         this.sun = new CelestialBody(null, new THREE.Vector3(), null, "#ffffff", GMsun, "sun");
         this.sun.radius = Rsun;
@@ -161,7 +162,7 @@ export default class Universe{
             argument_of_perihelion: 0
         },
         earth,
-        graphicsParams,
+        gameState,
         settings);
 
         const moon = addPlanetLocal({
@@ -347,13 +348,13 @@ export default class Universe{
 
             asteroid.init();
             asteroid.update(viewScale, settings, camera, windowHalfX, windowHalfY,
-                (_) => {});
+                (_) => {}, gameState);
 
         }
 
     }
 
-    addRocket(name: string, orbitalElements: OrbitalElements, parent: CelestialBody, graphicsParams: GraphicsParams, settings: Settings){
+    addRocket(name: string, orbitalElements: OrbitalElements, parent: CelestialBody, gameState: GameState, settings: Settings){
         const rocket = addPlanet(orbitalElements,
         {
             name,
@@ -366,7 +367,7 @@ export default class Universe{
             modelColor: COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)],
             controllable: true
         },
-        graphicsParams, this.orbitGeometry, settings);
+        gameState, this.orbitGeometry, settings);
         rocket.quaternion.multiply(AxisAngleQuaternion(1, 0, 0, Math.PI / 2)).multiply(AxisAngleQuaternion(0, 1, 0, Math.PI / 2));
 
         return rocket;

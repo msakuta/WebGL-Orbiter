@@ -56,6 +56,8 @@ let buttons = new RotationButtons();
 let accelerate = false;
 let decelerate = false;
 
+let mouseMoveEvt: MouseEvent = null;
+
 function init() {
 
     container = document.createElement( 'div' );
@@ -312,15 +314,17 @@ function init() {
         localStorage.setItem('WebGLOrbiterAutoSave', JSON.stringify(gameState.serializeState()));
     });
 
+    window.addEventListener('mousemove', (evt) => {
+        mouseMoveEvt = evt;
+    })
+
     // We don't want to select unintended objects. However, we use mouse left button for both camera rotation and selecting.
     // Changing selection with a mouse drag intended for rotating view is annoying.
     // So we capture the event of clicking only if the mouse has not been moved between mouse down and mouse up.
     // Because OrbitControl captures mouse events, we need to register events to it in order to detect this event.
-    let dragging = false;
     let changed = false;
     cameraControls.addEventListener('start', () => {
         changed = false;
-        dragging = true;
     });
     cameraControls.addEventListener('change', () => {
         changed = true;
@@ -330,25 +334,7 @@ function init() {
             return;
         }
 
-        interface BodyHitResult extends HitResult {
-            body: CelestialBody;
-        }
-
-        const fov = camera.getEffectiveFOV() / 90;
-        const ray = new THREE.Vector3(
-            (evt.clientX / windowHalfX - 1.) * camera.aspect * fov,
-            -(evt.clientY / windowHalfY - 1.) * fov,
-            -1
-        ).transformDirection(camera.matrixWorld);
-        let best: BodyHitResult | null = null;
-        gameState.universe.sun.forEachBody((o) => {
-            const result = o.raycast(camera.position, ray, gameState);
-            if(result){
-                if(best === null || result.retf < best.retf){
-                    best = {...result, body: o};
-                }
-            }
-        });
+        const best = raycastSelection(evt.clientX, evt.clientY);
 
         if(best !== null){
             gameState.selected = best.body;
@@ -371,6 +357,29 @@ function onWindowResize() {
 
     renderer.setSize( window.innerWidth, window.innerHeight );
 
+}
+
+interface BodyHitResult extends HitResult {
+    body: CelestialBody;
+}
+
+function raycastSelection(mouseX: number, mouseY: number){
+    const fov = camera.getEffectiveFOV() / 90;
+    const ray = new THREE.Vector3(
+        (mouseX / windowHalfX - 1.) * camera.aspect * fov,
+        -(mouseY / windowHalfY - 1.) * fov,
+        -1
+    ).transformDirection(camera.matrixWorld);
+    let best: BodyHitResult | null = null;
+    gameState.universe.sun.forEachBody((o) => {
+        const result = o.raycast(camera.position, ray, gameState);
+        if(result){
+            if(best === null || result.retf < best.retf){
+                best = {...result, body: o};
+            }
+        }
+    });
+    return best;
 }
 
 function animate() {
@@ -415,6 +424,18 @@ function render() {
     );
 
     grids.visible = settings.grid_enable;
+
+    if(mouseMoveEvt){
+        const best = raycastSelection(mouseMoveEvt.clientX, mouseMoveEvt.clientY);
+
+        if(best !== null){
+            gameState.selectPreview = best.body;
+        }
+        else{
+            gameState.selectPreviewMarker.visible = false;
+            gameState.selectPreview = null;
+        }
+    }
 
 //				camera.up.copy(new THREE.Vector3(0,0,1)); // This did't work with OrbitControls
     cameraControls.update();

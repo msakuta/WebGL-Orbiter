@@ -209,16 +209,12 @@ export class CelestialBody{
     update(viewScale: number, settings: Settings,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
         updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
-        gameState?: GameState)
+        gameState: GameState)
     {
         const { nlips_enable, show_label, show_marker, center_select } = settings;
         const select_obj = gameState?.getSelectObj();
         let scope = this;
         let orbitalElements = this.orbitalElements;
-
-        function visualSize(o: CelestialBody){
-            return o.visualSize(viewScale, select_obj, camera);
-        }
 
         function nlipsFactor(o: CelestialBody){
             if(!nlips_enable)
@@ -380,45 +376,9 @@ export class CelestialBody{
                     this.periapsis.visible = false;
             }
             const selectMarker = gameState && gameState.selectMarker && this === gameState.selected;
-            if(this.marker || this.markerLabel || selectMarker){
-                const worldPos = this.visualPosition(viewScale, select_obj);
-                const cameraPos = worldPos.applyMatrix4(camera.matrixWorldInverse);
-                const markerPos = cameraPos.applyMatrix4(camera.projectionMatrix);
-                markerPos.x *= windowHalfX;
-                markerPos.y *= windowHalfY;
-                if(0 < markerPos.z && markerPos.z < 1){
-                    if(this.marker){
-                        if(show_marker){
-                            this.marker.position.copy(markerPos);
-                            let s = Math.min(1, visualSize(this) / (this.radius / AU) / windowHalfX);
-                            this.markerMaterial.opacity = s;
-                            this.marker.visible = true;
-                        }
-                        else
-                            this.marker.visible = false;
-                    }
-                    if(this.markerLabel){
-                        if(show_label){
-                            this.markerLabel.style.display = "block";
-                            this.markerLabel.style.left = `${(8 + markerPos.x + windowHalfX)}px`;
-                            this.markerLabel.style.top = `${(-8 - markerPos.y + windowHalfY)}px`;
-                        }
-                        else
-                            this.markerLabel.style.display = "none";
-                    }
-                    if(selectMarker){
-                        gameState.selectMarker.visible = true;
-                        gameState.selectMarker.position.copy(markerPos);
-                    }
-                }
-                else{
-                    if(this.marker)
-                        this.marker.visible = false;
-                    if(this.markerLabel)
-                        this.markerLabel.style.display = "none";
-                    if(selectMarker)
-                        gameState.selectMarker.visible = false;
-                }
+            const selectPreviewMarker = gameState && gameState.selectPreviewMarker && this === gameState.selectPreview;
+            if(this.marker || this.markerLabel || selectMarker || selectPreviewMarker){
+                this.updateSelectMarker(settings, windowHalfX, windowHalfY, gameState);
             }
         }
 
@@ -432,6 +392,59 @@ export class CelestialBody{
         }
 
     };
+
+    updateSelectMarker(settings: Settings, windowHalfX: number, windowHalfY: number, gameState: GameState){
+        const { show_label, show_marker } = settings;
+        const { camera, viewScale } = gameState.graphicsParams;
+        const select_obj = gameState.getSelectObj();
+
+        const selectMarker = gameState && gameState.selectMarker && this === gameState.selected;
+        const selectPreviewMarker = gameState && gameState.selectPreviewMarker && this === gameState.selectPreview;
+        const worldPos = this.visualPosition(viewScale, select_obj);
+        const cameraPos = worldPos.applyMatrix4(camera.matrixWorldInverse);
+        const markerPos = cameraPos.applyMatrix4(camera.projectionMatrix);
+        markerPos.x *= windowHalfX;
+        markerPos.y *= windowHalfY;
+        if(0 < markerPos.z && markerPos.z < 1){
+            if(this.marker){
+                if(show_marker){
+                    this.marker.position.copy(markerPos);
+                    let s = Math.min(1, this.visualSize(viewScale, select_obj, camera) / (this.radius / AU) / windowHalfX);
+                    this.markerMaterial.opacity = s;
+                    this.marker.visible = true;
+                }
+                else
+                    this.marker.visible = false;
+            }
+            if(this.markerLabel){
+                if(show_label){
+                    this.markerLabel.style.display = "block";
+                    this.markerLabel.style.left = `${(8 + markerPos.x + windowHalfX)}px`;
+                    this.markerLabel.style.top = `${(-8 - markerPos.y + windowHalfY)}px`;
+                }
+                else
+                    this.markerLabel.style.display = "none";
+            }
+            if(selectMarker){
+                gameState.selectMarker.visible = true;
+                gameState.selectMarker.position.copy(markerPos);
+            }
+            if(selectPreviewMarker){
+                gameState.selectPreviewMarker.visible = true;
+                gameState.selectPreviewMarker.position.copy(markerPos);
+            }
+        }
+        else{
+            if(this.marker)
+                this.marker.visible = false;
+            if(this.markerLabel)
+                this.markerLabel.style.display = "none";
+            if(selectMarker)
+                gameState.selectMarker.visible = false;
+            if(selectPreviewMarker)
+                gameState.selectPreviewMarker.visible = false;
+        }
+    }
 
     simulateBody(deltaTime: number, div: number, timescale: number, buttons: RotationButtons, select_obj?: CelestialBody){
         const children = this.children;
@@ -580,9 +593,10 @@ export interface AddPlanetParams{
 // Add a planet having desired orbital elements. Note that there's no way to specify anomaly (phase) on the orbit right now.
 // It's a bit difficult to calculate in Newtonian dynamics simulation.
 export function addPlanet(orbitalElements: OrbitalElements,
-    params: AddPlanetParams, graphicsParams: GraphicsParams,
+    params: AddPlanetParams, gameState: GameState,
     orbitGeometry: THREE.BufferGeometry, settings: Settings)
 {
+    const { graphicsParams } = gameState;
     const { scene, viewScale, overlay } = graphicsParams;
     const rotation = AxisAngleQuaternion(0, 0, 1, orbitalElements.ascending_node - Math.PI / 2)
         .multiply(AxisAngleQuaternion(0, 1, 0, Math.PI - orbitalElements.inclination))
@@ -782,7 +796,7 @@ export function addPlanet(orbitalElements: OrbitalElements,
     scene.add(orbitMesh);
     ret.init();
     ret.update(graphicsParams.viewScale, settings, graphicsParams.camera, graphicsParams.windowHalfX, graphicsParams.windowHalfY,
-        (_) => {});
+        (_) => {}, gameState);
     return ret;
 }
 

@@ -25,6 +25,8 @@ export default class GameState{
     getSelectObj(){ return this.select_obj; }
     selected?: CelestialBody = null;
     selectMarker?: THREE.Sprite = null;
+    selectPreview?: CelestialBody = null;
+    selectPreviewMarker?: THREE.Sprite = null;
     universe: Universe;
     onStateLoad?: () => void = null;
     sendMessage: (text: string) => void;
@@ -34,15 +36,25 @@ export default class GameState{
         this.sendMessage = sendMessage;
         this.graphicsParams = graphicsParams;
 
-        this.universe = new Universe(graphicsParams, settings);
+        this.universe = new Universe(this, settings);
         this.select_obj = this.universe.rocket;
 
+        const markerTexture = new THREE.TextureLoader().load( selectMarker );
+
         this.selectMarker = new THREE.Sprite(new THREE.SpriteMaterial({
-            map: new THREE.TextureLoader().load( selectMarker ),
+            map: markerTexture,
             transparent: true,
         }));
         this.selectMarker.scale.set(64, 64, 64);
         graphicsParams.overlay.add(this.selectMarker);
+
+        this.selectPreviewMarker = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: markerTexture,
+            transparent: true,
+            opacity: 0.25,
+        }));
+        this.selectPreviewMarker.scale.set(64, 64, 64);
+        graphicsParams.overlay.add(this.selectPreviewMarker);
     }
 
     resetTime(){
