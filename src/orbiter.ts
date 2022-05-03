@@ -321,11 +321,9 @@ function init() {
     cameraControls.addEventListener('start', () => {
         changed = false;
         dragging = true;
-        console.log(`start dragging ${dragging}`);
     });
     cameraControls.addEventListener('change', () => {
         changed = true;
-        console.log(`changed dragging ${dragging}`);
     });
     renderer.domElement.addEventListener('click', (evt) => {
         if(changed){
@@ -413,7 +411,7 @@ function render() {
             orbitalElementsControl.setText(o, headingApoapsis, settings.units_km);
         },
         scene,
-        select_obj, gameState
+        gameState
     );
 
     grids.visible = settings.grid_enable;

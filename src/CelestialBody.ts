@@ -194,9 +194,10 @@ export class CelestialBody{
     update(center_select: boolean, viewScale: number, settings: Settings,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
         updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
-        scene: THREE.Scene, select_obj?: CelestialBody, gameState?: GameState)
+        scene: THREE.Scene, gameState?: GameState)
     {
         const { nlips_enable, show_label, show_marker } = settings;
+        const select_obj = gameState?.getSelectObj();
         let scope = this;
         let orbitalElements = this.orbitalElements;
 
@@ -419,7 +420,7 @@ export class CelestialBody{
         for(let i = 0; i < this.children.length; i++){
             const a = this.children[i];
             a.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
-                updateOrbitalElements, scene, select_obj, gameState);
+                updateOrbitalElements, scene, gameState);
         }
 
     };

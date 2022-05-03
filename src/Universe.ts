@@ -375,7 +375,7 @@ export default class Universe{
     update(center_select: boolean, viewScale: number, settings: Settings,
         camera: THREE.Camera, windowHalfX: number, windowHalfY: number,
         updateOrbitalElements: (o: CelestialBody, headingApoapsis: number) => void,
-        scene: THREE.Scene, select_obj?: CelestialBody, gameState?: GameState)
+        scene: THREE.Scene, gameState?: GameState)
     {
         if(gameState.selected === null && gameState.selectMarker)
             gameState.selectMarker.visible = false;
@@ -383,7 +383,7 @@ export default class Universe{
         this.sun.update(center_select, viewScale, settings, camera, windowHalfX, windowHalfY,
             updateOrbitalElements,
             scene,
-            select_obj, gameState);
+            gameState);
 
         // offset sun position
         if(this.sun.model)
