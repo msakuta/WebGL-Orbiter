@@ -18,6 +18,7 @@ export const AU = 149597871; // Astronomical unit in kilometers
 const GMsun = 1.327124400e11 / AU / AU/ AU; // Product of gravitational constant (G) and Sun's mass (Msun)
 const epsilon = 1e-40; // Doesn't the machine epsilon depend on browsers!??
 const acceleration = 5e-10;
+const g_nlips_factor = 1e6;
 
 function deserializeVector3(json: any){
     return new THREE.Vector3(json.x, json.y, json.z);
@@ -196,10 +197,9 @@ export class CelestialBody{
      *  Idea originally found in a game Homeworld that enable
      *  distant small objects to appear on screen in recognizable size
      *  but still renders in real scale when zoomed up. */
-    nlipsFactor(viewScale: number, select_obj: CelestialBody, camera: THREE.Camera){
-        const g_nlips_factor = 1e6;
+    nlipsFactor(viewScale: number, select_obj: CelestialBody, camera: THREE.Camera, nlipsFactor = g_nlips_factor){
         const d = this.visualSize(viewScale, select_obj, camera);
-        const f = d / this.radius * g_nlips_factor + 1;
+        const f = d / this.radius * nlipsFactor + 1;
         return f;
     }
 
@@ -375,11 +375,12 @@ export class CelestialBody{
                 else
                     this.periapsis.visible = false;
             }
-            const selectMarker = gameState && gameState.selectMarker && this === gameState.selected;
-            const selectPreviewMarker = gameState && gameState.selectPreviewMarker && this === gameState.selectPreview;
-            if(this.marker || this.markerLabel || selectMarker || selectPreviewMarker){
-                this.updateSelectMarker(settings, windowHalfX, windowHalfY, gameState);
-            }
+        }
+
+        const selectMarker = gameState && gameState.selectMarker && this === gameState.selected;
+        const selectPreviewMarker = gameState && gameState.selectPreviewMarker && this === gameState.selectPreview;
+        if(this.marker || this.markerLabel || selectMarker || selectPreviewMarker){
+            this.updateSelectMarker(settings, windowHalfX, windowHalfY, gameState);
         }
 
         if(select_obj === this)
@@ -554,8 +555,13 @@ export class CelestialBody{
 
     raycast(raySrc: THREE.Vector3, rayDir: THREE.Vector3, gameState: GameState): HitResult | null {
         const { viewScale, camera } = gameState.graphicsParams;
-        return jHitSpherePos(this.visualPosition(viewScale, gameState.select_obj),
-            this.nlipsFactor(viewScale, gameState.select_obj, camera) * this.radius / AU * viewScale, raySrc, rayDir, 10.);
+        return jHitSpherePos(
+            this.visualPosition(viewScale, gameState.select_obj),
+            this.nlipsFactor(viewScale, gameState.select_obj, camera, g_nlips_factor * 10.) * this.radius / AU * viewScale,
+            raySrc,
+            rayDir,
+            10.
+        );
     }
 }
 
