@@ -188,6 +188,21 @@ export class CelestialBody{
         return position;
     }
 
+    protected visualSize(viewScale: number, select_obj: CelestialBody, camera: THREE.Camera){
+        return this.visualPosition(viewScale, select_obj).distanceTo(camera.position) / viewScale;
+    }
+
+    /** NLIPS: Non-Linear Inverse Perspective Scrolling
+     *  Idea originally found in a game Homeworld that enable
+     *  distant small objects to appear on screen in recognizable size
+     *  but still renders in real scale when zoomed up. */
+    nlipsFactor(viewScale: number, select_obj: CelestialBody, camera: THREE.Camera){
+        const g_nlips_factor = 1e6;
+        const d = this.visualSize(viewScale, select_obj, camera);
+        const f = d / this.radius * g_nlips_factor + 1;
+        return f;
+    }
+
     // Update orbital elements from position and velocity.
     // The whole discussion is found in chapter 4.4 in
     // https://www.academia.edu/8612052/ORBITAL_MECHANICS_FOR_ENGINEERING_STUDENTS
@@ -202,20 +217,13 @@ export class CelestialBody{
         let orbitalElements = this.orbitalElements;
 
         function visualSize(o: CelestialBody){
-            return o.visualPosition(viewScale, select_obj).distanceTo(camera.position) / viewScale;
+            return o.visualSize(viewScale, select_obj, camera);
         }
 
-        /// NLIPS: Non-Linear Inverse Perspective Scrolling
-        /// Idea originally found in a game Homeworld that enable
-        /// distant small objects to appear on screen in recognizable size
-        /// but still renders in real scale when zoomed up.
         function nlipsFactor(o: CelestialBody){
             if(!nlips_enable)
                 return 1;
-            const g_nlips_factor = 1e6;
-            const d = visualSize(o);
-            const f = d / o.radius * g_nlips_factor + 1;
-            return f;
+            return o.nlipsFactor(viewScale, select_obj, camera);
         }
 
         let e = new THREE.Vector3(0,0,0);
@@ -532,8 +540,9 @@ export class CelestialBody{
     }
 
     raycast(raySrc: THREE.Vector3, rayDir: THREE.Vector3, gameState: GameState): HitResult | null {
-        return jHitSpherePos(this.visualPosition(gameState.graphicsParams.viewScale, gameState.select_obj),
-            this.radius / AU * gameState.graphicsParams.viewScale, raySrc, rayDir, 10.);
+        const { viewScale, camera } = gameState.graphicsParams;
+        return jHitSpherePos(this.visualPosition(viewScale, gameState.select_obj),
+            this.nlipsFactor(viewScale, gameState.select_obj, camera) * this.radius / AU * viewScale, raySrc, rayDir, 10.);
     }
 }
 
