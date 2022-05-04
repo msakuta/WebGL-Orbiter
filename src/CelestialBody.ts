@@ -565,7 +565,7 @@ export class CelestialBody{
         const { viewScale, camera } = gameState.graphicsParams;
         return jHitSpherePos(
             this.visualPosition(viewScale, gameState.select_obj),
-            this.nlipsFactor(viewScale, gameState.select_obj, camera, g_nlips_factor * 10.) * this.radius / AU * viewScale,
+            this.nlipsFactor(viewScale, gameState.select_obj, camera, g_nlips_factor * 100.) * this.radius / AU * viewScale,
             raySrc,
             rayDir,
             10.

@@ -144,6 +144,8 @@ function init() {
 
     scene.add(grids);
 
+    scene.add(rayMesh);
+
     camera.position.set(0.005, 0.003, 0.005);
 
     renderer = new THREE.WebGLRenderer();
@@ -364,17 +366,39 @@ function onWindowResize() {
 
 }
 
+let rayGeometry = new THREE.BufferGeometry();
+let rayMesh = new THREE.Line(rayGeometry, new THREE.LineBasicMaterial({color: "rgb(255, 255, 0)"}));
+
+function buildRayMesh(raySrc: THREE.Vector3, rayDir: THREE.Vector3){
+    let geometryVertices = [];
+
+    // Calculate the vertices every frame since the hyperbola changes shape
+    // depending on orbital elements.
+    geometryVertices.push(0,0,0);
+    geometryVertices.push(raySrc.x, raySrc.y, raySrc.z);
+    const dest = raySrc.clone().add(rayDir.clone().multiplyScalar(100));
+    geometryVertices.push(dest.x, dest.y, dest.z);
+    geometryVertices.push(0,0,0);
+    rayGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(geometryVertices), 3));
+
+    return rayMesh;
+}
+
 interface BodyHitResult extends HitResult {
     body: CelestialBody;
 }
 
+
 function raycastSelection(mouseX: number, mouseY: number){
-    const fov = camera.getEffectiveFOV() / 90;
+    const fov = Math.tan(camera.getEffectiveFOV() / 180 * Math.PI / 2);
     const ray = new THREE.Vector3(
         (mouseX / windowHalfX - 1.) * camera.aspect * fov,
         -(mouseY / windowHalfY - 1.) * fov,
         -1
     ).transformDirection(camera.matrixWorld);
+
+    buildRayMesh(camera.position, ray);
+
     let best: BodyHitResult | null = null;
     gameState.universe.sun.forEachBody((o) => {
         const result = o.raycast(camera.position, ray, gameState);
