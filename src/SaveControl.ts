@@ -27,7 +27,7 @@ export class SaveControl extends MenuControl{
         const inputButton = document.createElement('button');
         inputButton.innerHTML = 'save'
         inputButton.onclick = (event) => {
-            const saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
+            const saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData') ?? "") : [];
             saveData.push({title: inputElement.value, state: serializeState()});
             localStorage.setItem('WebGLOrbiterSavedData', JSON.stringify(saveData));
             sendMessage('Game State Saved!');
@@ -45,7 +45,7 @@ export class SaveControl extends MenuControl{
 
         this.updateSaveDataList = () => {
             while(0 < saveContainer.children.length) saveContainer.removeChild(saveContainer.children[0]);
-            const saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData')) : [];
+            const saveData = localStorage.getItem('WebGLOrbiterSavedData') ? JSON.parse(localStorage.getItem('WebGLOrbiterSavedData') ?? "") : [];
             for(let i = 0; i < saveData.length; i++){
                 const elem = document.createElement('div');
                 elem.style.margin = "5px";
