@@ -17,7 +17,7 @@
     "style-loader": "^1.2.1",
     "three": "^0.125.0",
     "url-loader": "^4.1.0",
-    "webpack-dev-server": "^3.11.3",
+    "webpack-dev-server": "^5.0.4",
     "webpack-merge": "^4.2.2"
   },
   "scripts": {
